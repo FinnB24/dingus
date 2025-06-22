@@ -8,6 +8,10 @@ from PySide6.QtWidgets import (QApplication, QColorDialog, QFileDialog, QLabel, 
                               QMessageBox, QSlider, QToolBar, QWidget, QPushButton, QDialog, 
                               QFormLayout, QDialogButtonBox, QLineEdit, QSpinBox, QMenu)
 
+###### Aufgabe 2a: Erweiterung für Shape-Beschreibung mit Dreiecken ######
+from typing import List
+######
+
 class MyPaintArea(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -647,6 +651,17 @@ class MyWindow(QMainWindow):
         self.paintArea.scene = scene
         self.paintArea.update()
 
+###### Aufgabe 2a: Triangle-Datentyp ######
+class Triangle:
+    def __init__(self, p0, p1, p2, fill_color, border_color, border_width):
+        self.p0 = p0  # (x, y)
+        self.p1 = p1
+        self.p2 = p2
+        self.fill_color = fill_color
+        self.border_color = border_color
+        self.border_width = border_width
+######
+
 #abstrct base class for all shapes
 class Shape:
     def __init__(self, x: float, y: float, fill_color: QColor, border_color: QColor, border_width: int = 1):
@@ -702,6 +717,16 @@ class Shape:
         painter.setBrush(QColor(200, 200, 255))
         for hx, hy in handles:
             painter.drawRect(hx - handle_size/2, hy - handle_size/2, handle_size, handle_size)
+
+    ###### Aufgabe 2a: describe_shape() Methode ######
+    def describe_shape(self, max_edge_length: float = 10.0) -> List['Triangle']:
+        """
+        Abstrakte Methode: Zerlegt die Geometrie in Dreiecke.
+        max_edge_length gibt an, wie fein zerlegt wird.
+        """
+        raise NotImplementedError("describe_shape() must be implemented in subclasses!")
+    ######
+
             
 class Rectangle(Shape):
     def __init__(self, x: float, y: float, width: float, height: float,
@@ -727,6 +752,35 @@ class Rectangle(Shape):
     def contains_point(self, point_x: float, point_y: float) -> bool:
         return (self.x <= point_x <= self.x + self.width and 
                 self.y <= point_y <= self.y + self.height)
+
+    ###### Aufgabe 2a: describe_shape für Rectangle ######
+    def describe_shape(self, max_edge_length: float = 10.0) -> List['Triangle']:
+        """
+        Zerlegt das Rechteck in kleine Dreiecke (Triangularisierung eines Gitters).
+        """
+        tris = []
+        # Zahl der Schritte in x/y (mindestens 1)
+        nx = max(1, int(math.ceil(self.width / max_edge_length)))
+        ny = max(1, int(math.ceil(self.height / max_edge_length)))
+        dx = self.width / nx
+        dy = self.height / ny
+        # Gitterpunkte erzeugen
+        for ix in range(nx):
+            for iy in range(ny):
+                # Koordinaten der vier Ecken der aktuellen Zelle
+                x0 = self.x + ix*dx
+                y0 = self.y + iy*dy
+                x1 = x0 + dx
+                y1 = y0 + dy
+                # Zwei Dreiecke pro Zelle ("unten links" + "oben rechts")
+                tris.append(Triangle(
+                    (x0, y0), (x1, y0), (x1, y1), self.fill_color, self.border_color, self.border_width
+                ))
+                tris.append(Triangle(
+                    (x0, y0), (x1, y1), (x0, y1), self.fill_color, self.border_color, self.border_width
+                ))
+        return tris
+    ######
         
 
 class Circle(Shape):
@@ -756,6 +810,77 @@ class Circle(Shape):
         dx = point_x - self.x
         dy = point_y - self.y
         return dx*dx + dy*dy <= self.radius*self.radius
+
+    ###### Aufgabe 2a: describe_shape für Circle ######
+    def describe_shape(self, max_edge_length: float = 10.0) -> List['Triangle']:
+        """
+        Approximiert den Kreis als Vieleck und zerlegt ihn in Dreiecke (Fächer-Triangulierung).
+        """
+        # Umfang = 2 * pi * r, daraus wie viele Ecken für etwa max_edge_length?
+        circumference = 2 * math.pi * self.radius
+        n_segments = max(6, int(math.ceil(circumference / max_edge_length)))
+        tris = []
+        cx, cy = self.x, self.y
+        for i in range(n_segments):
+            angle0 = 2 * math.pi * i / n_segments
+            angle1 = 2 * math.pi * (i+1) / n_segments
+            p0 = (cx, cy)
+            p1 = (cx + self.radius * math.cos(angle0), cy + self.radius * math.sin(angle0))
+            p2 = (cx + self.radius * math.cos(angle1), cy + self.radius * math.sin(angle1))
+            tris.append(Triangle(p0, p1, p2, self.fill_color, self.border_color, self.border_width))
+        return tris
+    ######
+
+###### Aufgabe 2a: (optional) Stern-Shape für Test etc. ######
+class Star(Shape):
+    def __init__(self, x: float, y: float, radius: float, points: int,
+                 fill_color: QColor, border_color: QColor, border_width: int = 1):
+        super().__init__(x, y, fill_color, border_color, border_width)
+        self.radius = radius
+        self.points = max(5, points)
+
+    def bounding_box(self):
+        r = self.radius
+        return (self.x - r, self.x + r, self.y - r, self.y + r)
+
+    def draw(self, painter: QPainter):
+        # (nur grob, für Tests)
+        painter.setPen(QPen(self.border_color, self.border_width))
+        painter.setBrush(self.fill_color)
+        pts = []
+        for i in range(self.points * 2):
+            angle = math.pi * i / self.points
+            r = self.radius if i % 2 == 0 else self.radius * 0.5
+            pts.append(QPointF(self.x + r * math.cos(angle), self.y + r * math.sin(angle)))
+        painter.drawPolygon(QPolygonF(pts))
+        self.draw_selection(painter)
+
+    def scale(self, factor_x: float, factor_y: float):
+        avg_factor = (factor_x + factor_y) / 2
+        self.radius *= avg_factor
+
+    def contains_point(self, point_x: float, point_y: float) -> bool:
+        # grob
+        dx = point_x - self.x
+        dy = point_y - self.y
+        return dx*dx + dy*dy <= self.radius*self.radius
+
+    def describe_shape(self, max_edge_length: float = 10.0) -> List['Triangle']:
+        # Annäherung: Stern als Polygon, dann von Mittelpunkt aus Dreiecke
+        pts = []
+        for i in range(self.points * 2):
+            angle = math.pi * i / self.points
+            r = self.radius if i % 2 == 0 else self.radius * 0.5
+            pts.append((self.x + r * math.cos(angle), self.y + r * math.sin(angle)))
+        tris = []
+        cx, cy = self.x, self.y
+        for i in range(len(pts)):
+            p0 = (cx, cy)
+            p1 = pts[i]
+            p2 = pts[(i+1) % len(pts)]
+            tris.append(Triangle(p0, p1, p2, self.fill_color, self.border_color, self.border_width))
+        return tris
+######
 
 class Scene:
     def __init__(self):
@@ -797,6 +922,20 @@ class Scene:
             if shape.selected:
                 return shape
         return None
+
+###### Aufgabe 2a: Hilfsfunktion zum Zeichnen von Dreiecken ######
+def draw_triangles(painter: QPainter, triangles: List[Triangle]):
+    for tri in triangles:
+        # Füllen
+        painter.setBrush(tri.fill_color)
+        painter.setPen(Qt.NoPen)
+        poly = QPolygonF([QPointF(tri.p0[0], tri.p0[1]), QPointF(tri.p1[0], tri.p1[1]), QPointF(tri.p2[0], tri.p2[1])])
+        painter.drawPolygon(poly)
+        # Rand
+        painter.setBrush(Qt.NoBrush)
+        painter.setPen(QPen(tri.border_color, tri.border_width))
+        painter.drawPolygon(poly)
+######
 
 def render_scene_to_painter(painter: QPainter, scene: Scene,    #Render scene to a painter with ^   
                             x_min: float, x_max: float,
