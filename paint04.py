@@ -6,11 +6,20 @@ from PySide6.QtGui import (QCloseEvent, QColor, QImage, QKeySequence, QMouseEven
                           QPainter, QPen, QPixmap, QAction, QPolygonF)
 from PySide6.QtWidgets import (QApplication, QColorDialog, QFileDialog, QLabel, QMainWindow, QMenuBar, 
                               QMessageBox, QSlider, QToolBar, QWidget, QPushButton, QDialog, 
-                              QFormLayout, QDialogButtonBox, QLineEdit, QSpinBox, QMenu)
+                              QFormLayout, QDialogButtonBox, QLineEdit, QSpinBox, QMenu, QHBoxLayout, QWidgetAction)
 
 ###### Aufgabe 2a: Erweiterung für Shape-Beschreibung mit Dreiecken ######
 from typing import List
 ######
+
+###### Aufgabe 2b: Subdivision und Deformation Parameter und UI ######
+SUBDIV_LEVEL = 0  # Default 0x Subdivision
+DEFORM_ON = True  # Standard: Deformation an/aus
+DEFORM_PARAMS = dict(a=20,  # Amplitude
+                     b=1/200,  # Frequenz (Breite)
+                     c=0)      # Phase
+######
+
 
 class MyPaintArea(QWidget):
     def __init__(self, parent: QWidget):
@@ -38,7 +47,7 @@ class MyPaintArea(QWidget):
         self.offset_y: float = 0.0 # Offset y
 
         # aktuelles tool
-        self.current_tool: str = "freehand"  # Andere Optionen: "rectangle", "circle", "select", "check_point"
+        self.current_tool: str = "freehand"  # Andere Optionen: "rectangle", "circle", "star", "select", "check_point"
         self.start_pos: tuple[float, float] | None = None  #startpos für Formen
         self.scene = Scene()  #speichert alle gezeichneten formen
         
@@ -51,7 +60,24 @@ class MyPaintArea(QWidget):
         self.drag_start_pos = None
         self.drag_mode = None  #move/scale
         self.scale_handle = None
-        
+
+        ###### Aufgabe 2b: UI für Subdivision & Deformation ######
+        self.subdiv_level = SUBDIV_LEVEL
+        self.deform_on = DEFORM_ON
+
+        # Die UI-Elemente werden jetzt in die Toolbar integriert, nicht als Overlays im Widget!
+        ######
+
+    ###### Aufgabe 2b: UI-Callbacks ######
+    def set_subdiv_level(self, value):
+        self.subdiv_level = value
+        self.update()
+    def toggle_deform(self):
+        self.deform_on = not self.deform_on
+        # Button-Text wird in MainWindow aktualisiert, da Button dort lebt!
+        self.update()
+    ######
+
     #aktuelle Werkzeug
     def setTool(self, tool: str):
         self.current_tool = tool
@@ -71,13 +97,27 @@ class MyPaintArea(QWidget):
     def updateShapeBorderWidth(self, width: int):
         self.shape_border_width = width
 
-#draws paint area
+    #draws paint area
     def paintEvent(self, event):
         painter: QPainter = QPainter(self) 
         painter.scale(self.zoom, self.zoom) # Skalierung des Malbereichs, Zoomfaktor wird berücksichtigt
         painter.translate(self.offset_x, self.offset_y) # Anschließende Verschiebung des Malbereichs
         painter.drawImage(0, 0, self.image) # Zeichne das Bild in den verschobenen Malbereich
-        self.scene.draw_all(painter)  # Zeichne alle Vektorformen aus der Szene (Rechtecke, Kreise, etc.)
+
+        ###### Aufgabe 2b: Triangle-Rendering statt draw_all ######
+        # 1. Alle Shapes als Dreiecksliste holen (mit Subdivision und Deformation)
+        triangles = []
+        for shape in self.scene.shapes:
+            tris = shape.describe_shape()
+            tris = subdivide_triangles(tris, self.subdiv_level)
+            if self.deform_on:
+                tris = deform_triangles(tris, DEFORM_PARAMS)
+            triangles.extend(tris)
+        draw_triangles(painter, triangles)
+        # 2. Auswahlrahmen für selektierte Shapes weiterzeichnen
+        for shape in self.scene.shapes:
+            shape.draw_selection(painter)
+        ######
         
     # verschiebt Ansicht
     def move_view(self, dx: float, dy: float):
@@ -150,7 +190,7 @@ class MyPaintArea(QWidget):
                 # Show msg
                 QMessageBox.information(self, "Point Check", message)
             
-            if self.current_tool in ("rectangle", "circle"):
+            if self.current_tool in ("rectangle", "circle", "star"):
                 self.start_pos = (x, y)
 
 
@@ -181,6 +221,17 @@ class MyPaintArea(QWidget):
 
                 circle = Circle(cx, cy, radius, self.shape_fill_color, self.shape_border_color, self.shape_border_width) #create &add
                 self.scene.add_shape(circle)
+                self.start_pos = None
+                self.update()
+            # star
+            elif self.current_tool == "star" and self.start_pos:
+                cx = (self.start_pos[0] + end_x) / 2 / self.zoom - self.offset_x
+                cy = (self.start_pos[1] + end_y) / 2 / self.zoom - self.offset_y
+                radius = max(abs(end_x - self.start_pos[0]), abs(end_y - self.start_pos[1])) / 2 / self.zoom
+                # fix sternspitzenzahl (zB 5)
+                points = 5
+                star = Star(cx, cy, radius, points, self.shape_fill_color, self.shape_border_color, self.shape_border_width)
+                self.scene.add_shape(star)
                 self.start_pos = None
                 self.update()
                 
@@ -464,6 +515,11 @@ class MyWindow(QMainWindow):
         # set a frame object (empty container) that fills the whole window
         self.paintArea = MyPaintArea(self)
 
+        # set initial window size a bit bigger
+        self.resize(1500, 800)
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(600)
+
         # a bit of housekeeping...
         self.initMenubar()
         self.initToolbar()
@@ -574,6 +630,11 @@ class MyWindow(QMainWindow):
         circle_btn.clicked.connect(lambda: self.paintArea.setTool("circle"))
         self.tools.addWidget(circle_btn)
 
+        star_btn = QPushButton("Stern")
+        star_btn.setToolTip("Stern zeichnen")
+        star_btn.clicked.connect(lambda: self.paintArea.setTool("star"))
+        self.tools.addWidget(star_btn)
+
         freehand_btn = QPushButton("Freihand")
         freehand_btn.setToolTip("Freihand zeichnen")
         freehand_btn.clicked.connect(lambda: self.paintArea.setTool("freehand"))
@@ -583,6 +644,43 @@ class MyWindow(QMainWindow):
         check_point_btn.setToolTip("Check if clicked point is inside any shape")
         check_point_btn.clicked.connect(lambda: self.paintArea.setTool("check_point"))
         self.tools.addWidget(check_point_btn)
+        self.tools.addSeparator()
+
+        # ----- SUBDIVISION SLIDER & DEFORM BUTTON als EINZEILIG -----
+        # Layout für Subdivisions-Slider + Label
+        subdiv_widget = QWidget()
+        subdiv_layout = QHBoxLayout()
+        subdiv_layout.setContentsMargins(0, 0, 0, 0)
+        subdiv_widget.setLayout(subdiv_layout)
+        subdiv_label = QLabel("Subdivision:")
+        subdiv_slider = QSlider(Qt.Orientation.Horizontal)
+        subdiv_slider.setMinimum(0)
+        subdiv_slider.setMaximum(3)
+        subdiv_slider.setValue(self.paintArea.subdiv_level)
+        subdiv_slider.setFixedWidth(40)
+        # direct update
+        subdiv_slider.valueChanged.connect(self.paintArea.set_subdiv_level)
+        # Updatetoolbar-Anzeige für Sliderwert
+        subdiv_value_label = QLabel(str(self.paintArea.subdiv_level))
+        subdiv_layout.addWidget(subdiv_label)
+        subdiv_layout.addWidget(subdiv_slider)
+        subdiv_layout.addWidget(subdiv_value_label)
+        subdiv_slider.valueChanged.connect(lambda val: subdiv_value_label.setText(str(val)))
+        # Toolbar-Einbindung
+        subdiv_action = QWidgetAction(self)
+        subdiv_action.setDefaultWidget(subdiv_widget)
+        self.tools.addAction(subdiv_action)
+
+        # Deform Button
+        deform_btn = QPushButton("Deform: ON" if self.paintArea.deform_on else "Deform: OFF")
+        def update_deform_btn():
+            deform_btn.setText("Deform: ON" if self.paintArea.deform_on else "Deform: OFF")
+        deform_btn.clicked.connect(lambda: (self.paintArea.toggle_deform(), update_deform_btn()))
+        # Toolbar-Einbindung
+        deform_action = QWidgetAction(self)
+        deform_action.setDefaultWidget(deform_btn)
+        self.tools.addAction(deform_action)
+
         self.tools.addSeparator()
 
         #export
@@ -610,7 +708,10 @@ class MyWindow(QMainWindow):
                 #render drawn scene to img
                 painter = QPainter(img)
                 render_scene_to_painter(
-                    painter, self.paintArea.scene, x_min, x_max, y_min, y_max, width, height
+                    painter, self.paintArea.scene, x_min, x_max, y_min, y_max, width, height,
+                    subdiv_level=self.paintArea.subdiv_level,
+                    deform_on=self.paintArea.deform_on,
+                    deform_params=DEFORM_PARAMS
                 )
                 painter.end()
                 #save it
@@ -624,10 +725,14 @@ class MyWindow(QMainWindow):
         
         # Roter Kreis
         circle = Circle(150, 150, 100, QColor(255, 255, 255), QColor(200, 0, 0), 2)
+
+        # Stern (gelb, mittig, 5 Zacken)
+        star = Star(300, 185, 70, 5, QColor(255, 255, 0), QColor(255, 180, 0), 2)
         
-        #add both to scene & update
+        #add all to scene & update
         scene.add_shape(rect)
         scene.add_shape(circle)
+        scene.add_shape(star)
         self.paintArea.scene = scene
         self.paintArea.update()
 
@@ -647,6 +752,9 @@ class MyWindow(QMainWindow):
         scene.add_shape(Circle(300, 60, r, QColor(200, 0, 0), QColor(200, 0, 0), 2))
         scene.add_shape(Circle(100, 260, r, QColor(200, 0, 0), QColor(200, 0, 0), 2))
         scene.add_shape(Circle(300, 260, r, QColor(200, 0, 0), QColor(200, 0, 0), 2))
+
+        # Stern in der Mitte
+        scene.add_shape(Star(200, 160, 60, 5, QColor(255, 255, 0), QColor(180, 180, 0), 2))
         
         self.paintArea.scene = scene
         self.paintArea.update()
@@ -660,6 +768,61 @@ class Triangle:
         self.fill_color = fill_color
         self.border_color = border_color
         self.border_width = border_width
+######
+
+###### Aufgabe 2b: Subdivision-Operation ######
+def subdivide_triangles(triangles: List[Triangle], n: int) -> List[Triangle]:
+    """
+    Teilt jede Dreieck n-mal per 1:4-Split (mittels Kantenhalbierung).
+    """
+    if n <= 0:
+        return triangles
+    result = triangles
+    for _ in range(n):
+        result = _subdivide_once(result)
+    return result
+
+def _midpoint(p1, p2):
+    return ((p1[0]+p2[0])/2, (p1[1]+p2[1])/2)
+
+def _subdivide_once(triangles: List[Triangle]) -> List[Triangle]:
+    new_tris = []
+    for tri in triangles:
+        a, b, c = tri.p0, tri.p1, tri.p2
+        ab = _midpoint(a, b)
+        bc = _midpoint(b, c)
+        ca = _midpoint(c, a)
+        col = tri.fill_color
+        bordcol = tri.border_color
+        bordw = tri.border_width
+        # Vier neue Dreiecke
+        new_tris.append(Triangle(a, ab, ca, col, bordcol, bordw))
+        new_tris.append(Triangle(ab, b, bc, col, bordcol, bordw))
+        new_tris.append(Triangle(ca, bc, c, col, bordcol, bordw))
+        new_tris.append(Triangle(ab, bc, ca, col, bordcol, bordw))
+    return new_tris
+######
+
+###### Aufgabe 2b: Deformation-Operation ######
+def deform_triangles(triangles: List[Triangle], params: dict) -> List[Triangle]:
+    """
+    Verschiebt alle Dreieckseckpunkte in y-Richtung entlang einer Sinuskurve.
+    f(x) = a * sin(2pi * b * x + c)
+    """
+    a = params.get("a", 20)
+    b = params.get("b", 1/200)
+    c = params.get("c", 0)
+    def deform_point(p):
+        x, y = p
+        y_new = y + a * math.sin(2 * math.pi * b * x + c)
+        return (x, y_new)
+    new_tris = []
+    for tri in triangles:
+        p0 = deform_point(tri.p0)
+        p1 = deform_point(tri.p1)
+        p2 = deform_point(tri.p2)
+        new_tris.append(Triangle(p0, p1, p2, tri.fill_color, tri.border_color, tri.border_width))
+    return new_tris
 ######
 
 #abstrct base class for all shapes
@@ -937,10 +1100,14 @@ def draw_triangles(painter: QPainter, triangles: List[Triangle]):
         painter.drawPolygon(poly)
 ######
 
+###### Aufgabe 2b: Render mit Subdivision/Deformation für Export ######
 def render_scene_to_painter(painter: QPainter, scene: Scene,    #Render scene to a painter with ^   
                             x_min: float, x_max: float,
                             y_min: float, y_max: float,
-                            pixel_width: int, pixel_height: int):
+                            pixel_width: int, pixel_height: int,
+                            subdiv_level: int = SUBDIV_LEVEL,
+                            deform_on: bool = DEFORM_ON,
+                            deform_params: dict = DEFORM_PARAMS):
    
     #white bg
     painter.save()
@@ -958,10 +1125,23 @@ def render_scene_to_painter(painter: QPainter, scene: Scene,    #Render scene to
     painter.scale(scale_x, -scale_y) #scale output size + flip y-achse 
     painter.translate(-x_min, -y_min) #Move origin to match the requested world coordinate bounds
 
-    #draw scene
-    scene.draw_all(painter)
+    #draw with triangles + subdiv + deform!
+    triangles = []
+    for shape in scene.shapes:
+        tris = shape.describe_shape()
+        tris = subdivide_triangles(tris, subdiv_level)
+        if deform_on:
+            tris = deform_triangles(tris, deform_params)
+        triangles.extend(tris)
+    draw_triangles(painter, triangles)
+
+    # Auswahlrahmen für selektierte Shapes weiterzeichnen (optional)
+    for shape in scene.shapes:
+        shape.draw_selection(painter)
+
     # reset painter
     painter.restore()
+######
 
 # our main program starts here, Python-style
 if __name__ == "__main__":
