@@ -30,7 +30,7 @@ class MyPaintArea(QWidget):
         self.setMinimumHeight(480)
         
         #Bildobjekt für Zeichenfläche aka weiß
-        self.image: QImage = QImage(640, 480, QImage.Format.Format_RGB32)
+        self.image: QImage = QImage(1080, 720, QImage.Format.Format_RGB32)
         self.image.fill(QColor(255, 255, 255))
 
         #default mouse 
@@ -385,7 +385,7 @@ class ShapePropertiesDialog(QDialog):
 class ExportDialog(QDialog):
     def __init__(self, x_min, x_max, y_min, y_max, width, height, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Szene exportieren")
+        self.setWindowTitle("PNG export")
 
         #default
         self.xmin_input = QLineEdit(str(x_min)) #L boundary
@@ -527,6 +527,7 @@ class MyWindow(QMainWindow):
         # make this the content of the main window
         self.setCentralWidget(self.paintArea)
 
+        self.showMaximized()
 
     def initMenubar(self):
         self.file_menu: QMenuBar = self.menuBar().addMenu("&File")
@@ -541,6 +542,15 @@ class MyWindow(QMainWindow):
         self.save_as_action.setIcon(QPixmap("imgs/saveas_26x26.png"))
         self.save_as_action.triggered.connect(self.save_img_as)
         # vis. seperator
+        self.file_menu.addSeparator()
+        #export triangles/text
+        self.export_tris_txt_action = self.file_menu.addAction(".txt export")
+        self.export_tris_txt_action.setToolTip("Exportiere Szene als Textdatei mit Dreieckskoordinaten")
+        self.export_tris_txt_action.triggered.connect(self.export_triangles_txt)
+        #export svg
+        self.export_svg_action = self.file_menu.addAction(".svg export...")
+        self.export_svg_action.setToolTip("Exportiere Szene als SVG-Datei")
+        self.export_svg_action.triggered.connect(self.export_svg)
         self.file_menu.addSeparator()
         #quit
         self.quit_action = self.file_menu.addAction("&Quit...")
@@ -565,8 +575,9 @@ class MyWindow(QMainWindow):
         self.info_action.triggered.connect(self.show_info)
 
     def initToolbar(self):
-        #toolbar actiosn
         self.tools: QToolBar = self.addToolBar("Basic Tools")
+
+        # -- 1. FILE/INFO/QUIT BUTTONS --
         self.tools.addAction(self.open_action)
         self.tools.addAction(self.save_as_action)
         self.tools.addSeparator()
@@ -575,15 +586,14 @@ class MyWindow(QMainWindow):
         self.tools.addAction(self.quit_action)
         self.tools.addSeparator()
 
-        #color pcik
-        self.color_btn = QAction(self)
-        self.color_btn.setToolTip("Pen Color")
-        self.color_btn.setIcon(QPixmap("imgs/colorpicker_32x32.png"))
-        self.color_btn.triggered.connect(self.show_color_dialog)
-        self.tools.addAction(self.color_btn)
+        # -- 2. PEN COLOR-BUTTON (sichtbarer Button, nicht unsichtbares Feld) --
+        self.pen_color_btn = QPushButton("Pen Color")
+        self.pen_color_btn.setStyleSheet(f"background-color: {self.paintArea.pen_color.name()}")
+        self.pen_color_btn.clicked.connect(self.show_pen_color_chooser)
+        self.tools.addWidget(self.pen_color_btn)
         self.tools.addSeparator()
 
-        #pen size
+        # -- 3. PEN SIZE SLIDER --
         self.pen_slider: QSlider = QSlider(Qt.Orientation.Horizontal)
         self.pen_slider_label: QLabel = QLabel(f"Pen Size: {self.paintArea.pen_size:>2}")
         self.pen_slider_label.setToolTip("Pen Size")
@@ -591,7 +601,7 @@ class MyWindow(QMainWindow):
 
         self.pen_slider.setRange(1, 10) #min/max
         self.pen_slider.setValue(self.paintArea.pen_size)
-        self.pen_slider.setPageStep(1) #step size
+        self.pen_slider.setPageStep(1)
         self.pen_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.pen_slider.setTickInterval(1)
         self.pen_slider.setToolTip("Pen Size")
@@ -600,26 +610,31 @@ class MyWindow(QMainWindow):
         self.pen_slider.valueChanged.connect(
             lambda value: self.pen_slider_label.setText(f"Pen Size: {value:>2}")
         )
-        #slider to tools
         self.tools.addWidget(self.pen_slider_label)
         self.tools.addSeparator()
         self.tools.addWidget(self.pen_slider)
         self.tools.addSeparator()
 
-        #Shape properties button
+        # -- 4. SHAPE PROPERTIES --
         self.shape_props_btn = QPushButton("Shape Properties")
         self.shape_props_btn.setToolTip("Set shape properties (fill, border, width)")
         self.shape_props_btn.clicked.connect(self.show_shape_properties_dialog)
         self.tools.addWidget(self.shape_props_btn)
-        
-        #Selection tool button
+
+        # -- 5. SELECTION/SHAPE DRAWING BUTTONS --
         select_btn = QPushButton("Select")
         select_btn.setToolTip("Select and transform shapes")
         select_btn.clicked.connect(lambda: self.paintArea.setTool("select"))
         self.tools.addWidget(select_btn)
-        self.tools.addSeparator()
 
-        #other tools select
+        # -- 6. DEFORM BUTTON (direkt nach Select, vor Rechteck) --
+        deform_btn = QPushButton("Deform: ON" if self.paintArea.deform_on else "Deform: OFF")
+        def update_deform_btn():
+            deform_btn.setText("Deform: ON" if self.paintArea.deform_on else "Deform: OFF")
+        deform_btn.clicked.connect(lambda: (self.paintArea.toggle_deform(), update_deform_btn()))
+        self.tools.addWidget(deform_btn)
+
+        # -- Restliche Shape Buttons --
         rect_btn = QPushButton("Rechteck")
         rect_btn.setToolTip("Rechteck zeichnen")
         rect_btn.clicked.connect(lambda: self.paintArea.setTool("rectangle"))
@@ -639,55 +654,65 @@ class MyWindow(QMainWindow):
         freehand_btn.setToolTip("Freihand zeichnen")
         freehand_btn.clicked.connect(lambda: self.paintArea.setTool("freehand"))
         self.tools.addWidget(freehand_btn)
-        
+
         check_point_btn = QPushButton("Check Point")
         check_point_btn.setToolTip("Check if clicked point is inside any shape")
         check_point_btn.clicked.connect(lambda: self.paintArea.setTool("check_point"))
         self.tools.addWidget(check_point_btn)
+
         self.tools.addSeparator()
 
-        # ----- SUBDIVISION SLIDER & DEFORM BUTTON als EINZEILIG -----
-        # Layout für Subdivisions-Slider + Label
-        subdiv_widget = QWidget()
-        subdiv_layout = QHBoxLayout()
-        subdiv_layout.setContentsMargins(0, 0, 0, 0)
-        subdiv_widget.setLayout(subdiv_layout)
+        # -- 7. SUBDIV, EXPORT als EINHEITLICHE REIHE --
+        right_widget = QWidget()
+        right_layout = QHBoxLayout()
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(4)
+        right_widget.setLayout(right_layout)
+
+        # Subdivisions-Slider + Label
         subdiv_label = QLabel("Subdivision:")
         subdiv_slider = QSlider(Qt.Orientation.Horizontal)
         subdiv_slider.setMinimum(0)
         subdiv_slider.setMaximum(3)
         subdiv_slider.setValue(self.paintArea.subdiv_level)
-        subdiv_slider.setFixedWidth(40)
-        # direct update
+        subdiv_slider.setFixedWidth(60)
         subdiv_slider.valueChanged.connect(self.paintArea.set_subdiv_level)
-        # Updatetoolbar-Anzeige für Sliderwert
         subdiv_value_label = QLabel(str(self.paintArea.subdiv_level))
-        subdiv_layout.addWidget(subdiv_label)
-        subdiv_layout.addWidget(subdiv_slider)
-        subdiv_layout.addWidget(subdiv_value_label)
         subdiv_slider.valueChanged.connect(lambda val: subdiv_value_label.setText(str(val)))
-        # Toolbar-Einbindung
-        subdiv_action = QWidgetAction(self)
-        subdiv_action.setDefaultWidget(subdiv_widget)
-        self.tools.addAction(subdiv_action)
+        right_layout.addWidget(subdiv_label)
+        right_layout.addWidget(subdiv_slider)
+        right_layout.addWidget(subdiv_value_label)
 
-        # Deform Button
-        deform_btn = QPushButton("Deform: ON" if self.paintArea.deform_on else "Deform: OFF")
-        def update_deform_btn():
-            deform_btn.setText("Deform: ON" if self.paintArea.deform_on else "Deform: OFF")
-        deform_btn.clicked.connect(lambda: (self.paintArea.toggle_deform(), update_deform_btn()))
-        # Toolbar-Einbindung
-        deform_action = QWidgetAction(self)
-        deform_action.setDefaultWidget(deform_btn)
-        self.tools.addAction(deform_action)
+        # Export PNG Button
+        export_btn = QPushButton(".png export")
+        export_btn.setToolTip("Szene als PNG exportieren")
+        export_btn.clicked.connect(self.export_scene)
+        right_layout.addWidget(export_btn)
 
+        # Export TXT Button
+        export_tris_txt_btn = QPushButton(".txt export")
+        export_tris_txt_btn.setToolTip("Exportiere Szene als Textdatei mit Dreieckskoordinaten")
+        export_tris_txt_btn.clicked.connect(self.export_triangles_txt)
+        right_layout.addWidget(export_tris_txt_btn)
+
+        # Export SVG Button
+        export_svg_btn = QPushButton(".svg export")
+        export_svg_btn.setToolTip("Exportiere Szene als SVG-Datei")
+        export_svg_btn.clicked.connect(self.export_svg)
+        right_layout.addWidget(export_svg_btn)
+
+        right_action = QWidgetAction(self)
+        right_action.setDefaultWidget(right_widget)
         self.tools.addSeparator()
+        self.tools.addAction(right_action)
 
-        #export
-        export_action = QAction("Szene exportieren", self)
-        export_action.setToolTip("Szene als PNG exportieren")
-        export_action.triggered.connect(self.export_scene)
-        self.tools.addAction(export_action)
+    # -- PEN COLOR BUTTON HANDLER --
+    def show_pen_color_chooser(self):
+        color: QColor = QColorDialog.getColor(self.paintArea.pen_color, self)
+        if color.isValid():
+            self.paintArea.updatePenColor(color)
+            # Button-Background anpassen:
+            self.pen_color_btn.setStyleSheet(f"background-color: {color.name()}")
 
     def export_scene(self):
         x_min, x_max, y_min, y_max = self.paintArea.scene.bounding_box() ##get current scene dimns
@@ -716,6 +741,79 @@ class MyWindow(QMainWindow):
                 painter.end()
                 #save it
                 img.save(file_name)
+
+    def export_triangles_txt(self):
+        file_name, _ = QFileDialog.getSaveFileName(
+            self, "Export Dreiecke als Text...", ".", "Textdateien (*.txt)"
+        )
+        if not file_name:
+            return
+        if not file_name.endswith('.txt'):
+            file_name += '.txt'
+        # Dreiecksliste erzeugen (wie im Rendering)
+        triangles = []
+        for shape in self.paintArea.scene.shapes:
+            tris = shape.describe_shape()
+            tris = subdivide_triangles(tris, self.paintArea.subdiv_level)
+            if self.paintArea.deform_on:
+                tris = deform_triangles(tris, DEFORM_PARAMS)
+            triangles.extend(tris)
+        # Schreibe als Text: jede Zeile: x0 y0 x1 y1 x2 y2 (Farben ignoriert)
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write("# Dreiecksliste (jedes Dreieck: x0 y0 x1 y1 x2 y2)\n")
+            for tri in triangles:
+                line = f"{tri.p0[0]} {tri.p0[1]} {tri.p1[0]} {tri.p1[1]} {tri.p2[0]} {tri.p2[1]}\n"
+                f.write(line)
+
+    def export_svg(self):
+        file_name, _ = QFileDialog.getSaveFileName(
+            self, "Export SVG...", ".", "SVG Dateien (*.svg)"
+        )
+        if not file_name:
+            return
+        if not file_name.endswith('.svg'):
+            file_name += '.svg'
+        # SVG-Größe und BoundingBox bestimmen
+        x_min, x_max, y_min, y_max = self.paintArea.scene.bounding_box()
+        width, height = 1000, 1000
+        svg_w = width
+        svg_h = height
+        # Welt zu SVG-Koordinaten
+        scale_x = svg_w / (x_max - x_min) if (x_max - x_min) != 0 else 1
+        scale_y = svg_h / (y_max - y_min) if (y_max - y_min) != 0 else 1
+
+        triangles = []
+        for shape in self.paintArea.scene.shapes:
+            tris = shape.describe_shape()
+            tris = subdivide_triangles(tris, self.paintArea.subdiv_level)
+            if self.paintArea.deform_on:
+                tris = deform_triangles(tris, DEFORM_PARAMS)
+            triangles.extend(tris)
+        # Schreibe SVG
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
+            f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_w}" height="{svg_h}" version="1.1">\n')
+            f.write(f'<g>\n')
+            for tri in triangles:
+                # Koordinaten transformieren
+                def tx(p):
+                    # SVG y-Achse ist nach unten, wie hier!
+                    x = (p[0] - x_min) * scale_x
+                    y = (p[1] - y_min) * scale_y
+                    return x, y
+                p0x, p0y = tx(tri.p0)
+                p1x, p1y = tx(tri.p1)
+                p2x, p2y = tx(tri.p2)
+                # Farben umrechnen
+                fill = tri.fill_color.name() if hasattr(tri.fill_color, "name") else "#ffffff"
+                stroke = tri.border_color.name() if hasattr(tri.border_color, "name") else "#000000"
+                stroke_width = tri.border_width if hasattr(tri, "border_width") else 1
+                # SVG Dreieck
+                f.write(
+                    f'<polygon points="{p0x},{p0y} {p1x},{p1y} {p2x},{p2y}" '
+                    f'style="fill:{fill};stroke:{stroke};stroke-width:{stroke_width};"/>\n'
+                )
+            f.write('</g>\n</svg>\n')
 
     def make_testscene1(self): #Rechteck + Kreis (überlappend)
         scene = Scene()
@@ -979,7 +1077,7 @@ class Circle(Shape):
         """
         Approximiert den Kreis als Vieleck und zerlegt ihn in Dreiecke (Fächer-Triangulierung).
         """
-        # Umfang = 2 * pi * r, daraus wie viele Ecken für etwa max_edge_length?
+        # Umfang = 2 * math.pi * r, daraus wie viele Ecken für etwa max_edge_length?
         circumference = 2 * math.pi * self.radius
         n_segments = max(6, int(math.ceil(circumference / max_edge_length)))
         tris = []
