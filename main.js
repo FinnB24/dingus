@@ -1,56 +1,85 @@
 // 3D Scene Setup
 const container = document.getElementById('three-canvas');
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias:true });
-renderer.setClearColor(0x181b24);
+renderer.setClearColor(0x89c4f4); // top sky color
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-// Car (cube) setup
-const car = new THREE.Mesh(
-  new THREE.BoxGeometry(1.5,0.6,3),
-  new THREE.MeshPhongMaterial({ color: 0xef8354 })
-);
-car.position.set(0,0.3,5);
-scene.add(car);
+// Sky gradient (fake by big sphere)
+const skyGeo = new THREE.SphereGeometry(80,32,32);
+const skyMat = new THREE.MeshBasicMaterial({ color:0x89c4f4, side:THREE.BackSide });
+const sky = new THREE.Mesh(skyGeo,skyMat);
+scene.add(sky);
 
-// "Wheels" (visual only)
-for(let dx of [-0.6,0.6]){
+// Sun (just a glowing disc)
+const sunGeo = new THREE.CircleGeometry(3,32);
+const sunMat = new THREE.MeshBasicMaterial({ color:0xfff0b1, transparent:true, opacity:0.8 });
+const sun = new THREE.Mesh(sunGeo,sunMat);
+sun.position.set(12,16,-40);
+scene.add(sun);
+
+// Grid helper for ground
+const grid = new THREE.GridHelper(44, 22, 0x9be7ff, 0x3d4262);
+grid.position.y = 0.01;
+scene.add(grid);
+
+// Car (cube with stylized color and wheels)
+const carGroup = new THREE.Group();
+const carBody = new THREE.Mesh(
+  new THREE.BoxGeometry(1.7,0.6,3),
+  new THREE.MeshPhongMaterial({ color: 0x6ce1ff, shininess: 60 })
+);
+carBody.castShadow = true;
+carBody.receiveShadow = true;
+carGroup.add(carBody);
+// "Wheels"
+for(let dx of [-0.7,0.7]){
   for(let dz of [-1.2,1.2]){
     const wheel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.27,0.27,0.22,16),
-      new THREE.MeshPhongMaterial({color:0x23263b})
+      new THREE.CylinderGeometry(0.28,0.28,0.24,20),
+      new THREE.MeshStandardMaterial({color:0x181b24, metalness:0.7, roughness:0.3})
     );
     wheel.rotation.z = Math.PI/2;
-    wheel.position.set(dx,-0.21,dz);
-    car.add(wheel);
+    wheel.position.set(dx,-0.25,dz);
+    wheel.castShadow = true;
+    carGroup.add(wheel);
   }
 }
+carGroup.position.set(0,0.3,5);
+scene.add(carGroup);
 
 // Floor
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(50,50),
-  new THREE.MeshPhongMaterial({ color:0x23263b, shininess: 10 })
+  new THREE.MeshPhongMaterial({ color:0x3d4262, shininess: 10 })
 );
 floor.rotation.x = -Math.PI/2; floor.position.y = 0;
+floor.receiveShadow = true;
 scene.add(floor);
 
-// Portals (sections)
+// Portals (sections) with glowing animation
 const portals = [
   { name:"2d",    pos:[-8,0.8,-4], color:0x48e0e4, label:"2D ART" },
   { name:"3d",    pos:[ 8,0.8,-4], color:0x7d40e7, label:"3D ART" },
   { name:"about", pos:[-8,0.8,-13], color:0xfcdc58, label:"ABOUT" },
   { name:"contact",pos:[ 8,0.8,-13], color:0x00e38d, label:"CONTACT" },
 ];
+const portalMeshes = [];
 for (const p of portals) {
   const portal = new THREE.Mesh(
     new THREE.BoxGeometry(2.8,2,0.5),
-    new THREE.MeshPhongMaterial({ color:p.color, emissive:p.color, emissiveIntensity:0.28 })
+    new THREE.MeshPhongMaterial({ color:p.color, emissive:p.color, emissiveIntensity:0.25 })
   );
   portal.position.set(...p.pos);
+  portal.castShadow = true;
+  portal.receiveShadow = true;
   portal.userData = { target:p.name };
   scene.add(portal);
+  portalMeshes.push(portal);
   // Floating text label above
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 64;
@@ -58,6 +87,8 @@ for (const p of portals) {
   ctx.font = "bold 36px Montserrat";
   ctx.fillStyle="#fff";
   ctx.textAlign="center";
+  ctx.shadowColor = "#000";
+  ctx.shadowBlur = 4;
   ctx.fillText(p.label,128,48);
   const tex = new THREE.Texture(canvas); tex.needsUpdate = true;
   const textMesh = new THREE.Mesh(
@@ -69,13 +100,20 @@ for (const p of portals) {
 }
 
 // Lighting
-const amb = new THREE.AmbientLight(0xffffff,0.7); scene.add(amb);
-const dir = new THREE.DirectionalLight(0xffffff,0.7); dir.position.set(10,8,4); scene.add(dir);
+const amb = new THREE.AmbientLight(0xffffff,0.4); scene.add(amb);
+const dir = new THREE.DirectionalLight(0xfff0b1,0.7); dir.position.set(10,14,4);
+dir.castShadow = true;
+dir.shadow.camera.near = 1;
+dir.shadow.camera.far = 50;
+dir.shadow.mapSize.set(1024,1024);
+scene.add(dir);
 
-let cameraTarget = new THREE.Vector3(0,0,0);
-camera.position.set(0,6,16);
-camera.lookAt(0,0,0);
+// Camera start position
+let cameraTarget = new THREE.Vector3();
+camera.position.set(0,5,13);
+camera.lookAt(carGroup.position);
 
+// Responsive
 window.addEventListener('resize',()=>{
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
@@ -93,41 +131,35 @@ function moveCar(dt) {
   if(keys['s']||keys['arrowdown']) velocity -= 7*dt;
   // Friction
   velocity *= 0.96;
-  // Clamp
   if(velocity>7) velocity=7;
   if(velocity<-4) velocity=-4;
   // Steering
   steer = 0;
-  if(keys['a']||keys['arrowleft']) steer = 1.2;
-  if(keys['d']||keys['arrowright']) steer = -1.2;
-  angle += steer * velocity * dt * 0.6;
+  if(keys['a']||keys['arrowleft']) steer = 1.4;
+  if(keys['d']||keys['arrowright']) steer = -1.4;
+  angle += steer * velocity * dt * 0.55;
   // Move car
-  car.rotation.y = angle;
-  car.position.x += Math.sin(angle) * velocity * dt;
-  car.position.z += Math.cos(angle) * velocity * dt;
-  // Clamp to world
-  car.position.x = Math.max(Math.min(car.position.x,23),-23);
-  car.position.z = Math.max(Math.min(car.position.z,23),-18);
+  carGroup.rotation.y = angle;
+  carGroup.position.x += Math.sin(angle) * velocity * dt;
+  carGroup.position.z += Math.cos(angle) * velocity * dt;
+  carGroup.position.x = Math.max(Math.min(carGroup.position.x,23),-23);
+  carGroup.position.z = Math.max(Math.min(carGroup.position.z,23),-18);
 }
 
-// CAMERA FOLLOW LOGIC (Bruno Simon style)
+// Camera follow: smooth chase from behind, like bruno-simon.com
 function updateCamera() {
-  // Desired camera position is behind and above the car
-  const behindDistance = 9;
-  const height = 5.2;
-  const lookAtOffset = new THREE.Vector3(0,0.6,0);
-
-  // Compute target position
-  const target = new THREE.Vector3(
-    car.position.x - Math.sin(angle) * behindDistance,
-    car.position.y + height,
-    car.position.z - Math.cos(angle) * behindDistance + 2.5
+  // Offset behind the car, slightly above
+  const camDist = 10, camHeight = 4.2;
+  const dir = angle;
+  cameraTarget.set(
+    carGroup.position.x - Math.sin(dir)*camDist,
+    carGroup.position.y + camHeight,
+    carGroup.position.z - Math.cos(dir)*camDist
   );
-  // Smoothly interpolate (lerp) camera position
-  camera.position.lerp(target, 0.17);
-  // Camera looks at the car (with a little vertical offset)
-  const lookAt = car.position.clone().add(lookAtOffset);
-  camera.lookAt(lookAt);
+  camera.position.lerp(cameraTarget, 0.12);
+  camera.lookAt(
+    carGroup.position.x, carGroup.position.y+0.6, carGroup.position.z
+  );
 }
 
 // Overlay logic
@@ -138,6 +170,7 @@ function openOverlay(name) {
 function closeOverlay(name) {
   document.getElementById('overlay-'+name).classList.remove('visible');
 }
+// Allow Enter key to close the home overlay
 document.addEventListener('keydown',e=>{
   if(document.getElementById('overlay-home').classList.contains('visible') && (e.key==='Enter'||e.key===' ')) {
     closeOverlay('home');
@@ -146,16 +179,27 @@ document.addEventListener('keydown',e=>{
 
 // Portal collision detection
 function checkPortals() {
-  for(const p of portals) {
-    const dx = car.position.x - p.pos[0];
-    const dz = car.position.z - p.pos[2];
+  for(const [i,p] of portals.entries()) {
+    const dx = carGroup.position.x - p.pos[0];
+    const dz = carGroup.position.z - p.pos[2];
     if(Math.abs(dx)<2.1 && Math.abs(dz)<2.1) {
       openOverlay(p.name);
-      car.position.set(0,0.3,5);
+      // Reset car position so it's not stuck in the portal
+      carGroup.position.set(0,0.3,5);
       velocity = 0;
       angle = 0;
       break;
     }
+  }
+}
+
+// Animate portals (glow, bounce)
+let portalAnimTime = 0;
+function animatePortals(dt) {
+  portalAnimTime += dt;
+  for(let i=0; i<portalMeshes.length; ++i) {
+    portalMeshes[i].material.emissiveIntensity = 0.25 + 0.16*Math.abs(Math.sin(portalAnimTime*1.6+i));
+    portalMeshes[i].position.y = portals[i].pos[1] + 0.20*Math.sin(portalAnimTime*1.2+i);
   }
 }
 
@@ -169,6 +213,7 @@ function animate() {
     moveCar(dt);
     checkPortals();
   }
+  animatePortals(dt);
   updateCamera();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
