@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>FinnB24 – Interactive 3D Portfolio</title>
+  <title>FinnB24 – Magic Forest Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
@@ -11,28 +11,28 @@
   <div id="three-canvas"></div>
   <!-- Overlay UI -->
   <div id="overlay-home" class="overlay visible">
-    <h1><span class="brand">FinnB24</span> Playground</h1>
+    <h1><span class="brand">Magic Forest</span> Explorer</h1>
     <p>
-      Use <kbd>WASD</kbd> or <kbd>Arrow</kbd> keys to drive.<br>
-      Bump into a glowing portal to open a section.<br>
+      Use <kbd>WASD</kbd> or <kbd>Arrow</kbd> keys to hop around.<br>
+      Find and touch a glowing magic ring to open a section.<br>
       <small>(Inspired by <a href="https://bruno-simon.com/" target="_blank">bruno-simon.com</a>)</small>
     </p>
-    <button onclick="closeOverlay('home')">Start Driving</button>
+    <button onclick="closeOverlay('home')">Start Exploring</button>
   </div>
   <div id="overlay-2d" class="overlay">
     <button class="close" onclick="closeOverlay('2d')">&times;</button>
-    <h2>2D Art</h2>
-    <p>My 2D digital & traditional artworks.<br><br>Replace this with your real gallery!</p>
+    <h2>Enchanted Sketches</h2>
+    <p>My 2D magical illustrations & traditional artworks.<br><br>Replace this with your real gallery!</p>
   </div>
   <div id="overlay-3d" class="overlay">
     <button class="close" onclick="closeOverlay('3d')">&times;</button>
-    <h2>3D Art</h2>
-    <p>3D models, renders, and experiments.</p>
+    <h2>Mystical Models</h2>
+    <p>3D magical models, renders, and experiments.</p>
   </div>
   <div id="overlay-about" class="overlay">
     <button class="close" onclick="closeOverlay('about')">&times;</button>
     <h2>About</h2>
-    <p>Hi, I'm FinnB24. Welcome to my interactive 3D portfolio playground.</p>
+    <p>Welcome, explorer! I'm FinnB24.<br>This is my interactive magic forest portfolio playground.</p>
   </div>
   <div id="overlay-contact" class="overlay">
     <button class="close" onclick="closeOverlay('contact')">&times;</button>
