@@ -1,5 +1,5 @@
 // 3D Scene Setup
-const container = document.getElementById('three-container');
+const container = document.getElementById('three-canvas');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias:true });
