@@ -1,8 +1,9 @@
 body {
   margin: 0;
   overflow: hidden;
-  font-family: 'Montserrat', Arial, sans-serif;
-  background: linear-gradient(to bottom, #b6e4c6 0%, #485b3d 100%);
+  font-family: 'VT323', 'Courier New', monospace;
+  background: radial-gradient(ellipse at 60% 10%, #d2aaff 0%, #664aff 80%, #232335 100%);
+  color: #fff;
 }
 #three-canvas {
   position: fixed;
@@ -16,65 +17,81 @@ body {
   left: 50%; top: 50%;
   transform: translate(-50%,-50%);
   min-width: 320px;
-  max-width: 95vw;
-  background: rgba(46, 61, 49, 0.97);
-  color: #e7ffe6;
-  box-shadow: 0 8px 32px #000a;
+  max-width: 96vw;
+  background: rgba(32, 20, 50, 0.98);
+  color: #fff;
+  box-shadow: 0 12px 40px #000c;
   border-radius: 22px;
-  padding: 2.5em 2em 2em 2em;
+  padding: 2.8em 2em 2em 2em;
   z-index: 10;
   display: none;
   text-align: center;
-  animation: fadeIn 0.6s;
-  border: 2px solid #97ed81;
-  font-size: 1.13rem;
-  backdrop-filter: blur(9px);
+  animation: fadeIn 0.7s;
+  border: 3px solid #cba7ff;
+  font-size: 1.30rem;
+  font-family: 'VT323', 'Courier New', monospace;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px #fff1, 0 2px 10px #a6fffa22;
+  backdrop-filter: blur(7px);
 }
 .overlay.visible { display: block; }
 .overlay .close {
   position: absolute;
   top: 1em; right: 1.2em;
-  background: #23471b;
+  background: #232335aa;
   border: none;
   color: #fff;
-  font-size: 2em;
+  font-size: 2.2em;
   cursor: pointer;
   border-radius: 50%;
-  width: 1.5em; height: 1.5em;
-  line-height: 1.5em;
+  width: 1.6em; height: 1.6em;
+  line-height: 1.6em;
 }
 .overlay h1, .overlay h2 {
   margin-top: 0;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  font-size: 2.1em;
 }
 .overlay .brand {
-  color: #97ed81;
-  letter-spacing: 3px;
+  color: #ffb4fa;
+  letter-spacing: 4px;
   font-weight: 700;
-  text-shadow: 0 2px 6px #203a1c88;
+  text-shadow: 0 0 8px #fff6, 0 2px 10px #a6fffa44;
 }
-.overlay kbd {
-  background: #3c553a;
-  color: #f0fff4;
-  border-radius: 5px;
-  padding: 3px 7px;
-  font-family: monospace;
-  font-size: 1em;
-  margin: 0 2px;
-  border: 1px solid #97ed81;
+.overlay .emoji {
+  font-size: 1.1em;
+  letter-spacing: 0.2em;
+  display: block;
+  margin-top: 0.5em;
 }
 .overlay button, .overlay .close {
   transition: background 0.2s, color 0.2s;
+  font-family: inherit;
 }
 .overlay button:hover, .overlay .close:hover {
-  background: #97ed81;
-  color: #244b27;
+  background: #ffb4fa;
+  color: #222;
 }
-a { color: #97ed81; }
+a { color: #6ce1ff; }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%,-58%) scale(0.95);}
+  from { opacity: 0; transform: translate(-50%,-60%) scale(0.93);}
   to   { opacity: 1; transform: translate(-50%,-50%) scale(1);}
 }
+.scanlines {
+  pointer-events: none;
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 100;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.07) 0px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.15) 4px,
+    transparent 8px
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.32;
+}
 @media (max-width:500px) {
-  .overlay { padding: 1em 0.5em; min-width: unset;}
+  .overlay { padding: 1em 0.2em; min-width: unset;}
 }
