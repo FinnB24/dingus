@@ -1,243 +1,130 @@
-/*
-	Phantom by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
-*/
+// 3D Scene Setup
+const container = document.getElementById('three-container');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setClearColor(0x181b24);
+renderer.setSize(window.innerWidth, window.innerHeight);
+container.appendChild(renderer.domElement);
 
-(function($) {
+// Main player: a colored cube
+const cubeGeo = new THREE.BoxGeometry(1,1,1);
+const cubeMat = new THREE.MeshPhongMaterial({ color: 0xef8354 });
+const player = new THREE.Mesh(cubeGeo, cubeMat);
+player.position.set(0,0.5,5);
+scene.add(player);
 
-	var	$window = $(window),
-		$body = $('body');
+// Floor
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(40,40),
+  new THREE.MeshPhongMaterial({ color:0x23263b, shininess: 10 })
+);
+floor.rotation.x = -Math.PI/2; floor.position.y = 0;
+scene.add(floor);
 
-		
-	// Breakpoints.
-		breakpoints({
-			xlarge:   [ '1281px',  '1680px' ],
-			large:    [ '981px',   '1280px' ],
-			medium:   [ '737px',   '980px'  ],
-			small:    [ '481px',   '736px'  ],
-			xsmall:   [ '361px',   '480px'  ],
-			xxsmall:  [ null,      '360px'  ]
-		});
-
-	// Play initial animations on page load.
-		$window.on('load', function() {
-			window.setTimeout(function() {
-				$body.removeClass('is-preload');
-			}, 100);
-		});
-
-	// Touch?
-		if (browser.mobile)
-			$body.addClass('is-touch');
-
-	// Forms.
-		var $form = $('form');
-
-		// Auto-resizing textareas.
-			$form.find('textarea').each(function() {
-
-				var $this = $(this),
-					$wrapper = $('<div class="textarea-wrapper"></div>'),
-					$submits = $this.find('input[type="submit"]');
-
-				$this
-					.wrap($wrapper)
-					.attr('rows', 1)
-					.css('overflow', 'hidden')
-					.css('resize', 'none')
-					.on('keydown', function(event) {
-
-						if (event.keyCode == 13
-						&&	event.ctrlKey) {
-
-							event.preventDefault();
-							event.stopPropagation();
-
-							$(this).blur();
-
-						}
-
-					})
-					.on('blur focus', function() {
-						$this.val($.trim($this.val()));
-					})
-					.on('input blur focus --init', function() {
-
-						$wrapper
-							.css('height', $this.height());
-
-						$this
-							.css('height', 'auto')
-							.css('height', $this.prop('scrollHeight') + 'px');
-
-					})
-					.on('keyup', function(event) {
-
-						if (event.keyCode == 9)
-							$this
-								.select();
-
-					})
-					.triggerHandler('--init');
-
-				// Fix.
-					if (browser.name == 'ie'
-					||	browser.mobile)
-						$this
-							.css('max-height', '10em')
-							.css('overflow-y', 'auto');
-
-			});
-
-	// Menu.
-		var $menu = $('#menu');
-
-		$menu.wrapInner('<div class="inner"></div>');
-
-		$menu._locked = false;
-
-		$menu._lock = function() {
-
-			if ($menu._locked)
-				return false;
-
-			$menu._locked = true;
-
-			window.setTimeout(function() {
-				$menu._locked = false;
-			}, 350);
-
-			return true;
-
-		};
-
-		$menu._show = function() {
-
-			if ($menu._lock())
-				$body.addClass('is-menu-visible');
-
-		};
-
-		$menu._hide = function() {
-
-			if ($menu._lock())
-				$body.removeClass('is-menu-visible');
-
-		};
-
-		$menu._toggle = function() {
-
-			if ($menu._lock())
-				$body.toggleClass('is-menu-visible');
-
-		};
-
-		$menu
-			.appendTo($body)
-			.on('click', function(event) {
-				event.stopPropagation();
-			})
-			.on('click', 'a', function(event) {
-
-				var href = $(this).attr('href');
-
-				event.preventDefault();
-				event.stopPropagation();
-
-				// Hide.
-					$menu._hide();
-
-				// Redirect.
-					if (href == '#menu')
-						return;
-
-					window.setTimeout(function() {
-						window.location.href = href;
-					}, 350);
-
-			})
-			.append('<a class="close" href="#menu">Close</a>');
-
-		$body
-			.on('click', 'a[href="#menu"]', function(event) {
-
-				event.stopPropagation();
-				event.preventDefault();
-
-				// Toggle.
-					$menu._toggle();
-
-			})
-			.on('click', function(event) {
-
-				// Hide.
-					$menu._hide();
-
-			})
-			.on('keydown', function(event) {
-
-				// Hide on escape.
-					if (event.keyCode == 27)
-						$menu._hide();
-
-			});
-
-// Theme Toggle Functionality
-$(document).ready(function() {
-    const themeToggle = $('#themeToggle');
-    const body = $('body');
-
-    // Check for saved theme preference
-    const currentTheme = localStorage.getItem('theme');
-
-    // Apply the saved theme or default to dark if no preference
-    if (currentTheme === 'light') {
-        body.addClass('light-theme');
-        if (themeToggle.length) { // Only if toggle exists on this page
-            themeToggle.prop('checked', false);
-        }
-    } else {
-        // Default to dark theme
-        body.removeClass('light-theme');
-        if (themeToggle.length) { // Only if toggle exists on this page
-            themeToggle.prop('checked', true);
-        }
-    }
-    
-    // Only set up toggle event if toggle exists on this page
-    if (themeToggle.length) {
-        themeToggle.on('change', function() {
-            if ($(this).is(':checked')) {
-                body.removeClass('light-theme');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                body.addClass('light-theme');
-                localStorage.setItem('theme', 'light');
-            }
-        });
-    }
-});
-
-
-// Font Toggle
-const fontToggle = $('#fontToggle');
-const currentFont = localStorage.getItem('font');
-
-if (currentFont === 'font2') {
-    $('body').addClass('font2');
-    fontToggle.prop('checked', true);
+// Portals (sections)
+const portals = [
+  { name:"2d",    pos:[-6,0.5,-2], color:0x48e0e4, label:"2D ART" },
+  { name:"3d",    pos:[ 6,0.5,-2], color:0x7d40e7, label:"3D ART" },
+  { name:"about", pos:[-4,0.5,-12], color:0xfcdc58, label:"ABOUT" },
+  { name:"contact",pos:[ 4,0.5,-12], color:0x00e38d, label:"CONTACT" },
+];
+for (const p of portals) {
+  const portal = new THREE.Mesh(
+    new THREE.BoxGeometry(2,2,0.6),
+    new THREE.MeshPhongMaterial({ color:p.color, emissive:p.color, emissiveIntensity:0.3 })
+  );
+  portal.position.set(...p.pos);
+  portal.userData = { target:p.name };
+  scene.add(portal);
+  // Add floating text label above
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.font = "bold 36px Montserrat";
+  ctx.fillStyle="#fff";
+  ctx.textAlign="center";
+  ctx.fillText(p.label,128,48);
+  const tex = new THREE.Texture(canvas); tex.needsUpdate = true;
+  const textMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.2,0.55),
+    new THREE.MeshBasicMaterial({ map:tex, transparent:true })
+  );
+  textMesh.position.set(p.pos[0],p.pos[1]+1.5,p.pos[2]);
+  scene.add(textMesh);
 }
 
-fontToggle.on('change', function() {
-    if ($(this).is(':checked')) {
-        $('body').addClass('font2');
-        localStorage.setItem('font', 'font2');
-    } else {
-        $('body').removeClass('font2');
-        localStorage.setItem('font', 'font1');
-    }
+// Lighting
+const amb = new THREE.AmbientLight(0xffffff,0.7); scene.add(amb);
+const dir = new THREE.DirectionalLight(0xffffff,0.7); dir.position.set(10,8,4); scene.add(dir);
+
+camera.position.set(0,4,12);
+camera.lookAt(0,1,0);
+
+window.addEventListener('resize',()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+},false);
+
+// Movement Controls (WASD / arrows)
+const keys = {};
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;});
+window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+
+function movePlayer(dt) {
+  let speed = 5 * dt;
+  let dx=0, dz=0;
+  if(keys['w']||keys['arrowup']) dz -= speed;
+  if(keys['s']||keys['arrowdown']) dz += speed;
+  if(keys['a']||keys['arrowleft']) dx -= speed;
+  if(keys['d']||keys['arrowright']) dx += speed;
+  player.position.x += dx;
+  player.position.z += dz;
+  player.position.x = Math.max(Math.min(player.position.x,18),-18);
+  player.position.z = Math.max(Math.min(player.position.z,18),-18);
+}
+
+// Overlay logic
+function openOverlay(name) {
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('visible'));
+  document.getElementById('overlay-'+name).classList.add('visible');
+}
+function closeOverlay(name) {
+  document.getElementById('overlay-'+name).classList.remove('visible');
+}
+// Allow Enter key to close the home overlay
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('overlay-home').classList.contains('visible') && (e.key==='Enter'||e.key===' ')) {
+    closeOverlay('home');
+  }
 });
 
-})(jQuery);
+// Portal collision detection
+function checkPortals() {
+  for(const p of portals) {
+    const dx = player.position.x - p.pos[0];
+    const dz = player.position.z - p.pos[2];
+    if(Math.abs(dx)<1.3 && Math.abs(dz)<1.3) {
+      openOverlay(p.name);
+      // Reset player position so it's not stuck in the portal
+      player.position.set(0,0.5,5);
+      break;
+    }
+  }
+}
 
+// Main render loop
+let lastTime = performance.now();
+function animate() {
+  let now = performance.now(), dt = (now-lastTime)/1000;
+  lastTime = now;
+  // Move player
+  if(!document.getElementById('overlay-home').classList.contains('visible')) {
+    movePlayer(dt);
+    checkPortals();
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+animate();
