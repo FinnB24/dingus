@@ -72,6 +72,7 @@ for (const p of portals) {
 const amb = new THREE.AmbientLight(0xffffff,0.7); scene.add(amb);
 const dir = new THREE.DirectionalLight(0xffffff,0.7); dir.position.set(10,8,4); scene.add(dir);
 
+let cameraTarget = new THREE.Vector3(0,0,0);
 camera.position.set(0,6,16);
 camera.lookAt(0,0,0);
 
@@ -109,13 +110,24 @@ function moveCar(dt) {
   car.position.z = Math.max(Math.min(car.position.z,23),-18);
 }
 
-// Camera follow
+// CAMERA FOLLOW LOGIC (Bruno Simon style)
 function updateCamera() {
-  let cx = car.position.x - Math.sin(angle)*9;
-  let cz = car.position.z - Math.cos(angle)*9 + 2.5;
-  let cy = car.position.y + 5.2;
-  camera.position.lerp(new THREE.Vector3(cx,cy,cz), 0.17);
-  camera.lookAt(car.position.x,car.position.y+0.3,car.position.z);
+  // Desired camera position is behind and above the car
+  const behindDistance = 9;
+  const height = 5.2;
+  const lookAtOffset = new THREE.Vector3(0,0.6,0);
+
+  // Compute target position
+  const target = new THREE.Vector3(
+    car.position.x - Math.sin(angle) * behindDistance,
+    car.position.y + height,
+    car.position.z - Math.cos(angle) * behindDistance + 2.5
+  );
+  // Smoothly interpolate (lerp) camera position
+  camera.position.lerp(target, 0.17);
+  // Camera looks at the car (with a little vertical offset)
+  const lookAt = car.position.clone().add(lookAtOffset);
+  camera.lookAt(lookAt);
 }
 
 // Overlay logic
@@ -126,7 +138,6 @@ function openOverlay(name) {
 function closeOverlay(name) {
   document.getElementById('overlay-'+name).classList.remove('visible');
 }
-// Allow Enter key to close the home overlay
 document.addEventListener('keydown',e=>{
   if(document.getElementById('overlay-home').classList.contains('visible') && (e.key==='Enter'||e.key===' ')) {
     closeOverlay('home');
@@ -140,7 +151,6 @@ function checkPortals() {
     const dz = car.position.z - p.pos[2];
     if(Math.abs(dx)<2.1 && Math.abs(dz)<2.1) {
       openOverlay(p.name);
-      // Reset car position so it's not stuck in the portal
       car.position.set(0,0.3,5);
       velocity = 0;
       angle = 0;
