@@ -28,6 +28,7 @@ body {
   animation: fadeIn 0.6s;
   border: 2px solid #9be7ff;
   font-size: 1.13rem;
+  backdrop-filter: blur(10px);
 }
 .overlay.visible { display: block; }
 .overlay .close {
@@ -50,6 +51,7 @@ body {
   color: #6ce1ff;
   letter-spacing: 3px;
   font-weight: 700;
+  text-shadow: 0 2px 6px #2226;
 }
 .overlay kbd {
   background: #272c41;
