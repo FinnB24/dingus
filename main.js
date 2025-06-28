@@ -1,4 +1,4 @@
-// Retro Dreamcore - FinnB24 Webroom with Jump, Sprint, Scene Switch, FPS/Third-Person Camera Toggle, and Mouse Look
+// Retro Dreamcore - FinnB24 Webroom with Jump, Sprint, Scene Switch, FPS/Third-Person Camera Toggle, and Enhanced FPS Controls (with Smiley hidden in FPS!)
 
 const container = document.getElementById('three-canvas');
 
@@ -98,7 +98,7 @@ function initMainScene() {
   const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.42,0.08,0.04), new THREE.MeshBasicMaterial({ color:0x222 }));
   mouth.position.set(0, -0.16, 0.56);
   playerGroup.add(mouth);
-  // Glow ring
+  // Glow ring (always visible)
   ring = new THREE.Mesh(new THREE.TorusGeometry(0.78,0.07,8,30), new THREE.MeshBasicMaterial({color:0xcba7ff, transparent:true, opacity:0.32}));
   ring.rotation.x = Math.PI/2;
   ring.position.y = -0.46;
@@ -186,6 +186,16 @@ function initMainScene() {
   // Set up
   camera.lookAt(playerGroup.position);
   window.addEventListener('resize', onWindowResize, false);
+
+  setSmileyVisible(!isFirstPerson); // Set correct visibility at start
+}
+
+function setSmileyVisible(isVisible) {
+  // Hide all children EXCEPT the ring (always visible)
+  playerGroup.children.forEach(child => {
+    if (child === ring) return;
+    child.visible = isVisible;
+  });
 }
 
 function movePlayer(dt) {
@@ -193,76 +203,65 @@ function movePlayer(dt) {
   let moveSpeed = 11.0;
   if (keys['shift'] || keys['shiftleft']) moveSpeed = 19.0;
 
-  // Forward/reverse
-  if(keys['w']||keys['arrowup']) velocity += moveSpeed*dt;
-  if(keys['s']||keys['arrowdown']) velocity -= moveSpeed*dt;
-  // Friction
-  velocity *= 0.95;
-  if(velocity>10) velocity=10;
-  if(velocity<-7) velocity=-7;
+  // W/S: Forward/back. A/D: Strafe. (in FPS only)
+  let moveForward = 0, moveRight = 0;
+  if (keys['w'] || keys['arrowup']) moveForward += 1;
+  if (keys['s'] || keys['arrowdown']) moveForward -= 1;
+  if (keys['a'] || keys['arrowleft']) moveRight -= 1;
+  if (keys['d'] || keys['arrowright']) moveRight += 1;
 
-  // Mouse or keys for angle
-  // In first person, angle comes from mouse (yaw)
-  // In third person, keep using angle from keys (for fun)
-  if (isFirstPerson) {
-    angle = yaw;
-  } else {
-    steer = 0;
-    if(keys['a']||keys['arrowleft']) steer = 1.6;
-    if(keys['d']||keys['arrowright']) steer = -1.6;
-    angle += steer * Math.sign(velocity) * dt * (1.2 - Math.abs(velocity)/15);
-    yaw = angle; // keep FPS in sync with car angle if you switch back and forth
+  // Normalize movement for diagonals
+  if (moveForward && moveRight) {
+    moveForward *= Math.SQRT1_2;
+    moveRight   *= Math.SQRT1_2;
   }
 
   // Jump
   if ((keys[' '] || keys['space']) && isGrounded) {
-    jumpVel = 8.7; // jump impulse
+    jumpVel = 8.7;
     isGrounded = false;
   }
 
   // Apply jump/gravity
   if (!isGrounded) {
-    jumpVel -= 18.8 * dt; // gravity
+    jumpVel -= 18.8 * dt;
     playerGroup.position.y += jumpVel * dt;
-    if (playerGroup.position.y <= 0.7) { // landed
+    if (playerGroup.position.y <= 0.7) {
       playerGroup.position.y = 0.7;
       isGrounded = true;
       jumpVel = 0;
     }
   } else {
-    // Floating bob only in 3rd person
-    playerGroup.position.y = isFirstPerson ? 0.7 : 0.7 + 0.13*Math.sin(performance.now()/520);
+    playerGroup.position.y = isFirstPerson ? 0.7 : 0.7 + 0.13 * Math.sin(performance.now() / 520);
   }
 
-  // Move
-  playerGroup.rotation.y = angle;
-  // In FPS, move relative to camera (W = forward, S = backward, etc)
-  let moveX = 0, moveZ = 0;
+  // FPS/Third-person logic
   if (isFirstPerson) {
-    let forward = 0, right = 0;
-    if(keys['w']||keys['arrowup']) forward += 1;
-    if(keys['s']||keys['arrowdown']) forward -= 1;
-    if(keys['a']||keys['arrowleft']) right -= 1;
-    if(keys['d']||keys['arrowright']) right += 1;
-    // Normalize diagonal
-    if (forward && right) {
-      forward *= Math.SQRT1_2;
-      right   *= Math.SQRT1_2;
-    }
-    // Calculate direction from yaw
+    setSmileyVisible(false);
+    angle = yaw;
+    // Move relative to look direction (W/S = forward/back, A/D = strafe)
     const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
-    moveX = (sinY * forward + cosY * right) * velocity * dt;
-    moveZ = (cosY * forward - sinY * right) * velocity * dt;
+    playerGroup.position.x += (sinY * moveForward + cosY * moveRight) * moveSpeed * dt;
+    playerGroup.position.z += (cosY * moveForward - sinY * moveRight) * moveSpeed * dt;
   } else {
-    moveX = Math.sin(angle) * velocity * dt;
-    moveZ = Math.cos(angle) * velocity * dt;
+    setSmileyVisible(true);
+    // Classic car controls: rotation from A/D, forward/back from W/S
+    steer = 0;
+    if (keys['a'] || keys['arrowleft']) steer = 1.6;
+    if (keys['d'] || keys['arrowright']) steer = -1.6;
+    angle += steer * dt * 1.2;
+    // Move forward/back
+    playerGroup.position.x += Math.sin(angle) * moveForward * moveSpeed * dt;
+    playerGroup.position.z += Math.cos(angle) * moveForward * moveSpeed * dt;
+    yaw = angle; // sync FPS with third person rotation
   }
-  playerGroup.position.x += moveX;
-  playerGroup.position.z += moveZ;
-  playerGroup.position.x = Math.max(Math.min(playerGroup.position.x,21),-21);
-  playerGroup.position.z = Math.max(Math.min(playerGroup.position.z,21),-17);
 
-  ring.rotation.z += dt*1.2;
+  // Clamp positions
+  playerGroup.position.x = Math.max(Math.min(playerGroup.position.x, 21), -21);
+  playerGroup.position.z = Math.max(Math.min(playerGroup.position.z, 21), -17);
+
+  // Animate ring
+  ring.rotation.z += dt * 1.2;
 }
 
 function updateCamera() {
@@ -270,31 +269,27 @@ function updateCamera() {
     // FPS: camera at "forehead" of smiley, looking in yaw/pitch
     const camOffset = new THREE.Vector3(0, 0.31, 0);
     const eye = playerGroup.position.clone().add(camOffset);
-    // Apply rotation for look direction
-    // Calculate forward vector from yaw and pitch
     const forward = new THREE.Vector3(
       Math.sin(yaw) * Math.cos(pitch),
       Math.sin(pitch),
       Math.cos(yaw) * Math.cos(pitch)
     );
-    camera.position.lerp(eye, 0.63);
+    camera.position.copy(eye);
     camera.lookAt(eye.clone().add(forward));
   } else {
     // Third person: offset behind, slightly above
     const camDist = 9.3, camHeight = 3.7;
-    const playerDir = angle;
     const desiredPos = new THREE.Vector3(
-      playerGroup.position.x - Math.sin(playerDir)*camDist,
+      playerGroup.position.x - Math.sin(angle) * camDist,
       playerGroup.position.y + camHeight,
-      playerGroup.position.z - Math.cos(playerDir)*camDist
+      playerGroup.position.z - Math.cos(angle) * camDist
     );
     camera.position.lerp(desiredPos, 0.15);
-    const lookAtTarget = new THREE.Vector3(
+    camera.lookAt(
       playerGroup.position.x,
       playerGroup.position.y + 0.27,
       playerGroup.position.z
     );
-    camera.lookAt(lookAtTarget);
   }
 }
 
@@ -463,10 +458,9 @@ window.addEventListener('keydown',e=>{
   keys[e.key.toLowerCase()] = true;
   if (e.key.toLowerCase() === 'c') {
     isFirstPerson = !isFirstPerson;
-    // Enable pointer lock if switching to FPS
     if(isFirstPerson && !pointerLocked) requestPointerLock();
-    // Exit pointer lock if switching to 3rd person
     if(!isFirstPerson && pointerLocked) document.exitPointerLock();
+    setSmileyVisible(!isFirstPerson);
   }
 });
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
@@ -484,14 +478,12 @@ function onPointerLockChange() {
                    document.mozPointerLockElement === renderer.domElement);
 }
 
-// Mouse move: yaw and pitch
 function onMouseMove(event) {
   if (isFirstPerson && pointerLocked) {
     const movementX = event.movementX || event.mozMovementX || 0;
     const movementY = event.movementY || event.mozMovementY || 0;
     yaw -= movementX * 0.0022;
     pitch -= movementY * 0.0015;
-    // Clamp pitch (look up/down)
     pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch));
   }
 }
@@ -500,13 +492,10 @@ function onMouseMove(event) {
 
 function switchToArtScene() {
   sceneState = "art";
-  // Remove overlays, reset keys
   document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('visible'));
   keys = {};
-  // Unlock pointer on scene switch
   if(pointerLocked) document.exitPointerLock();
   pointerLocked = false;
-  // Initialize art scene
   initArtScene();
 }
 
