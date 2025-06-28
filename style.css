@@ -4,9 +4,10 @@ body {
   font-family: 'Montserrat', Arial, sans-serif;
   background: #181b24;
 }
-#three-container {
+#three-canvas {
   position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
   z-index: 1;
   background: #181b24;
 }
@@ -16,7 +17,7 @@ body {
   transform: translate(-50%,-50%);
   min-width: 320px;
   max-width: 95vw;
-  background: rgba(22, 26, 36, 0.95);
+  background: rgba(22, 26, 36, 0.97);
   color: #fff;
   box-shadow: 0 8px 32px #0007;
   border-radius: 18px;
@@ -48,11 +49,11 @@ body {
 .overlay button:hover, .overlay .close:hover {
   background: #ef8354;
 }
+a { color: #ef8354; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translate(-50%,-55%) scale(0.97);}
   to   { opacity: 1; transform: translate(-50%,-50%) scale(1);}
 }
-a { color: #ef8354; }
 @media (max-width:500px) {
   .overlay { padding: 1em 0.5em; min-width: unset;}
 }
