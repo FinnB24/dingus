@@ -7,16 +7,30 @@ renderer.setClearColor(0x181b24);
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
 
-// Main player: a colored cube
-const cubeGeo = new THREE.BoxGeometry(1,1,1);
-const cubeMat = new THREE.MeshPhongMaterial({ color: 0xef8354 });
-const player = new THREE.Mesh(cubeGeo, cubeMat);
-player.position.set(0,0.5,5);
-scene.add(player);
+// Car (cube) setup
+const car = new THREE.Mesh(
+  new THREE.BoxGeometry(1.5,0.6,3),
+  new THREE.MeshPhongMaterial({ color: 0xef8354 })
+);
+car.position.set(0,0.3,5);
+scene.add(car);
+
+// "Wheels" (visual only)
+for(let dx of [-0.6,0.6]){
+  for(let dz of [-1.2,1.2]){
+    const wheel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.27,0.27,0.22,16),
+      new THREE.MeshPhongMaterial({color:0x23263b})
+    );
+    wheel.rotation.z = Math.PI/2;
+    wheel.position.set(dx,-0.21,dz);
+    car.add(wheel);
+  }
+}
 
 // Floor
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(40,40),
+  new THREE.PlaneGeometry(50,50),
   new THREE.MeshPhongMaterial({ color:0x23263b, shininess: 10 })
 );
 floor.rotation.x = -Math.PI/2; floor.position.y = 0;
@@ -24,20 +38,20 @@ scene.add(floor);
 
 // Portals (sections)
 const portals = [
-  { name:"2d",    pos:[-6,0.5,-2], color:0x48e0e4, label:"2D ART" },
-  { name:"3d",    pos:[ 6,0.5,-2], color:0x7d40e7, label:"3D ART" },
-  { name:"about", pos:[-4,0.5,-12], color:0xfcdc58, label:"ABOUT" },
-  { name:"contact",pos:[ 4,0.5,-12], color:0x00e38d, label:"CONTACT" },
+  { name:"2d",    pos:[-8,0.8,-4], color:0x48e0e4, label:"2D ART" },
+  { name:"3d",    pos:[ 8,0.8,-4], color:0x7d40e7, label:"3D ART" },
+  { name:"about", pos:[-8,0.8,-13], color:0xfcdc58, label:"ABOUT" },
+  { name:"contact",pos:[ 8,0.8,-13], color:0x00e38d, label:"CONTACT" },
 ];
 for (const p of portals) {
   const portal = new THREE.Mesh(
-    new THREE.BoxGeometry(2,2,0.6),
-    new THREE.MeshPhongMaterial({ color:p.color, emissive:p.color, emissiveIntensity:0.3 })
+    new THREE.BoxGeometry(2.8,2,0.5),
+    new THREE.MeshPhongMaterial({ color:p.color, emissive:p.color, emissiveIntensity:0.28 })
   );
   portal.position.set(...p.pos);
   portal.userData = { target:p.name };
   scene.add(portal);
-  // Add floating text label above
+  // Floating text label above
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 64;
   const ctx = canvas.getContext('2d');
@@ -47,7 +61,7 @@ for (const p of portals) {
   ctx.fillText(p.label,128,48);
   const tex = new THREE.Texture(canvas); tex.needsUpdate = true;
   const textMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.2,0.55),
+    new THREE.PlaneGeometry(2.6,0.55),
     new THREE.MeshBasicMaterial({ map:tex, transparent:true })
   );
   textMesh.position.set(p.pos[0],p.pos[1]+1.5,p.pos[2]);
@@ -58,8 +72,8 @@ for (const p of portals) {
 const amb = new THREE.AmbientLight(0xffffff,0.7); scene.add(amb);
 const dir = new THREE.DirectionalLight(0xffffff,0.7); dir.position.set(10,8,4); scene.add(dir);
 
-camera.position.set(0,4,12);
-camera.lookAt(0,1,0);
+camera.position.set(0,6,16);
+camera.lookAt(0,0,0);
 
 window.addEventListener('resize',()=>{
   camera.aspect = window.innerWidth/window.innerHeight;
@@ -67,22 +81,41 @@ window.addEventListener('resize',()=>{
   renderer.setSize(window.innerWidth,window.innerHeight);
 },false);
 
-// Movement Controls (WASD / arrows)
+// Movement/physics
 const keys = {};
 window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;});
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+let velocity = 0, angle = 0, steer = 0;
+function moveCar(dt) {
+  // Forward/reverse
+  if(keys['w']||keys['arrowup']) velocity += 7*dt;
+  if(keys['s']||keys['arrowdown']) velocity -= 7*dt;
+  // Friction
+  velocity *= 0.96;
+  // Clamp
+  if(velocity>7) velocity=7;
+  if(velocity<-4) velocity=-4;
+  // Steering
+  steer = 0;
+  if(keys['a']||keys['arrowleft']) steer = 1.2;
+  if(keys['d']||keys['arrowright']) steer = -1.2;
+  angle += steer * velocity * dt * 0.6;
+  // Move car
+  car.rotation.y = angle;
+  car.position.x += Math.sin(angle) * velocity * dt;
+  car.position.z += Math.cos(angle) * velocity * dt;
+  // Clamp to world
+  car.position.x = Math.max(Math.min(car.position.x,23),-23);
+  car.position.z = Math.max(Math.min(car.position.z,23),-18);
+}
 
-function movePlayer(dt) {
-  let speed = 5 * dt;
-  let dx=0, dz=0;
-  if(keys['w']||keys['arrowup']) dz -= speed;
-  if(keys['s']||keys['arrowdown']) dz += speed;
-  if(keys['a']||keys['arrowleft']) dx -= speed;
-  if(keys['d']||keys['arrowright']) dx += speed;
-  player.position.x += dx;
-  player.position.z += dz;
-  player.position.x = Math.max(Math.min(player.position.x,18),-18);
-  player.position.z = Math.max(Math.min(player.position.z,18),-18);
+// Camera follow
+function updateCamera() {
+  let cx = car.position.x - Math.sin(angle)*9;
+  let cz = car.position.z - Math.cos(angle)*9 + 2.5;
+  let cy = car.position.y + 5.2;
+  camera.position.lerp(new THREE.Vector3(cx,cy,cz), 0.17);
+  camera.lookAt(car.position.x,car.position.y+0.3,car.position.z);
 }
 
 // Overlay logic
@@ -103,12 +136,14 @@ document.addEventListener('keydown',e=>{
 // Portal collision detection
 function checkPortals() {
   for(const p of portals) {
-    const dx = player.position.x - p.pos[0];
-    const dz = player.position.z - p.pos[2];
-    if(Math.abs(dx)<1.3 && Math.abs(dz)<1.3) {
+    const dx = car.position.x - p.pos[0];
+    const dz = car.position.z - p.pos[2];
+    if(Math.abs(dx)<2.1 && Math.abs(dz)<2.1) {
       openOverlay(p.name);
-      // Reset player position so it's not stuck in the portal
-      player.position.set(0,0.5,5);
+      // Reset car position so it's not stuck in the portal
+      car.position.set(0,0.3,5);
+      velocity = 0;
+      angle = 0;
       break;
     }
   }
@@ -119,11 +154,12 @@ let lastTime = performance.now();
 function animate() {
   let now = performance.now(), dt = (now-lastTime)/1000;
   lastTime = now;
-  // Move player
+  // Move car
   if(!document.getElementById('overlay-home').classList.contains('visible')) {
-    movePlayer(dt);
+    moveCar(dt);
     checkPortals();
   }
+  updateCamera();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
