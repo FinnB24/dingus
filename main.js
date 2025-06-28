@@ -100,15 +100,15 @@ for (const p of portals) {
 }
 
 // Lighting
-const amb = new THREE.AmbientLight(0xffffff,0.4); scene.add(amb);
-const dir = new THREE.DirectionalLight(0xfff0b1,0.7); dir.position.set(10,14,4);
-dir.castShadow = true;
-dir.shadow.camera.near = 1;
-dir.shadow.camera.far = 50;
-dir.shadow.mapSize.set(1024,1024);
-scene.add(dir);
+const ambLight = new THREE.AmbientLight(0xffffff,0.4); scene.add(ambLight);
+const dirLight = new THREE.DirectionalLight(0xfff0b1,0.7); dirLight.position.set(10,14,4);
+dirLight.castShadow = true;
+dirLight.shadow.camera.near = 1;
+dirLight.shadow.camera.far = 50;
+dirLight.shadow.mapSize.set(1024,1024);
+scene.add(dirLight);
 
-// Camera start position
+// Camera start position and follow logic
 let cameraTarget = new THREE.Vector3();
 camera.position.set(0,5,13);
 camera.lookAt(carGroup.position);
@@ -147,19 +147,23 @@ function moveCar(dt) {
 }
 
 // Camera follow: smooth chase from behind, like bruno-simon.com
+let camLerpAlpha = 0.13; // smoothness
 function updateCamera() {
   // Offset behind the car, slightly above
   const camDist = 10, camHeight = 4.2;
-  const dir = angle;
-  cameraTarget.set(
-    carGroup.position.x - Math.sin(dir)*camDist,
+  const carDir = angle;
+  const desiredPos = new THREE.Vector3(
+    carGroup.position.x - Math.sin(carDir)*camDist,
     carGroup.position.y + camHeight,
-    carGroup.position.z - Math.cos(dir)*camDist
+    carGroup.position.z - Math.cos(carDir)*camDist
   );
-  camera.position.lerp(cameraTarget, 0.12);
-  camera.lookAt(
-    carGroup.position.x, carGroup.position.y+0.6, carGroup.position.z
+  camera.position.lerp(desiredPos, camLerpAlpha);
+  const lookAtTarget = new THREE.Vector3(
+    carGroup.position.x,
+    carGroup.position.y + 0.6,
+    carGroup.position.z
   );
+  camera.lookAt(lookAtTarget);
 }
 
 // Overlay logic
