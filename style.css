@@ -1,9 +1,10 @@
 body {
   margin: 0;
   overflow: hidden;
-  font-family: 'Cardo', 'Montserrat', Arial, serif;
-  background: linear-gradient(to bottom, #1b1b1b 0%, #2c2517 100%);
-  color: #ede6c9;
+  font-family: 'Montserrat', Arial, sans-serif;
+  background: #18120a;
+  /* Fade to black at bottom, golden at top */
+  background: linear-gradient(to bottom, #201a0e 0%, #18120a 60%, #0c0a07 100%);
 }
 #three-canvas {
   position: fixed;
@@ -18,86 +19,113 @@ body {
   transform: translate(-50%,-50%);
   min-width: 320px;
   max-width: 95vw;
-  background: rgba(26, 19, 11, 0.97);
-  color: #ede6c9;
-  box-shadow: 0 10px 38px #000b;
-  border-radius: 18px;
+  background: rgba(28, 22, 11, 0.98);
+  color: #f5c96a;
+  box-shadow: 0 12px 48px #000c, 0 0 0 4px #bba15f66;
+  border-radius: 22px;
   padding: 2.5em 2em 2em 2em;
   z-index: 10;
   display: none;
   text-align: center;
   animation: fadeIn 0.6s;
-  border: 2.5px solid #cbb46b;
-  font-size: 1.15rem;
-  font-family: 'Cardo', serif;
-  letter-spacing: 0.5px;
-  backdrop-filter: blur(2px);
+  border: 2.5px solid #ba973c;
+  font-size: 1.13rem;
+  font-family: 'UnifrakturCook', 'Montserrat', Arial, serif;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 6px #000b;
 }
 .overlay.visible { display: block; }
 .overlay .close {
   position: absolute;
   top: 1em; right: 1.2em;
-  background: #3a2d15f0;
+  background: #3c2a12bb;
   border: none;
-  color: #cbb46b;
+  color: #f5c96a;
   font-size: 2em;
   cursor: pointer;
   border-radius: 50%;
   width: 1.5em; height: 1.5em;
   line-height: 1.5em;
-  box-shadow: 0 2px 8px #000b;
 }
 .overlay h1, .overlay h2 {
   margin-top: 0;
-  letter-spacing: 1px;
-  font-family: 'Cardo', serif;
+  font-family: 'UnifrakturCook', cursive, serif;
+  letter-spacing: 1.5px;
 }
 .overlay .brand {
-  color: #cbb46b;
-  letter-spacing: 4px;
+  color: #e4c97f;
+  letter-spacing: 5px;
   font-weight: 700;
-  font-size: 1.05em;
-  font-family: 'Cardo', serif;
-  text-shadow: 0 0 8px #cbb46b88, 0 0 40px #cbb46b22;
+  font-family: 'UnifrakturCook', cursive, serif;
+  font-size: 2em;
+  text-shadow: 0 0 12px #f5e7bd88;
 }
 .overlay kbd {
-  background: #302920;
-  color: #ede6c9;
-  border-radius: 6px;
-  padding: 3px 9px;
+  background: #33291a;
+  color: #f9e499;
+  border-radius: 5px;
+  padding: 3px 7px;
   font-family: monospace;
   font-size: 1em;
   margin: 0 2px;
-  box-shadow: 0 1px 3px #0006;
-  border: 1.2px solid #cbb46b;
+  border: 1px solid #ba973c99;
 }
 .overlay button, .overlay .close {
-  transition: background 0.2s, color 0.2s, border 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 .overlay button {
-  background: #cbb46b;
-  color: #231b0e;
-  border: none;
-  border-radius: 7px;
-  font-family: 'Cardo', serif;
+  background: #ba973c;
+  color: #18120a;
+  font-family: inherit;
   font-size: 1.1em;
-  padding: 0.7em 2.1em;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7em 2em;
   margin-top: 1.5em;
-  font-weight: bold;
-  box-shadow: 0 2px 16px #0009;
+  box-shadow: 0 3px 16px #0004;
   cursor: pointer;
+  font-weight: 700;
 }
 .overlay button:hover, .overlay .close:hover {
-  background: #ede6c9;
-  color: #7f6a2e;
-  border: 2px solid #cbb46b;
+  background: #e4c97f;
+  color: #3c2a12;
 }
-a { color: #cbb46b; }
-a:hover { color: #ede6c9; text-shadow: 0 0 2px #cbb46b; }
+a { color: #e4c97f; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translate(-50%,-58%) scale(0.95);}
   to   { opacity: 1; transform: translate(-50%,-50%) scale(1);}
 }
 @media (max-width:500px) {
-  .overlay { padding: 1.1em 0.5em; min-width: unset;}
+  .overlay { padding: 1em 0.5em; min-width: unset;}
+}
+#elden-ui {
+  position: fixed;
+  left: 50%; bottom: 2.5em;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: 330px;
+  height: 28px;
+  pointer-events: none;
+}
+#elden-stamina {
+  width: 300px;
+  height: 12px;
+  margin: 0 auto;
+  background: linear-gradient(90deg, #84844b 0%, #e4d773 100%);
+  border-radius: 8px;
+  border: 2px solid #bba15f;
+  box-shadow: 0 1px 12px #000a;
+  position: absolute;
+  left: 15px; top: 8px;
+  overflow: hidden;
+  transition: width 0.2s;
+}
+#elden-stamina:after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 0 8px #f9e49955 inset;
+  pointer-events: none;
 }
