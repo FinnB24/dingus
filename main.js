@@ -20,9 +20,28 @@ let buildingData = [
 // === Overlay helpers ===
 function openOverlay(name) {
   document.getElementById('overlay-'+name).classList.add('visible');
+  updateCrosshair();
 }
 function closeOverlay(name) {
   document.getElementById('overlay-'+name).classList.remove('visible');
+  updateCrosshair();
+}
+function updateCrosshair() {
+  const crosshair = document.getElementById('crosshair');
+  const overlayOpen = !!document.querySelector('.overlay.visible');
+  if(mode === "walk" && !overlayOpen && pointerLocked) {
+    crosshair.style.display = "block";
+    if(!crosshair.querySelector('.crosshair-dot')) {
+      let dot = document.createElement('div');
+      dot.className = "crosshair-dot";
+      crosshair.appendChild(dot);
+    }
+  } else {
+    crosshair.style.display = "none";
+    if(crosshair.querySelector('.crosshair-dot')) {
+      crosshair.innerHTML = "";
+    }
+  }
 }
 
 // === Scene setup ===
@@ -80,7 +99,10 @@ function initScene() {
 
   // Warthog (detailed blocky)
   warthog = makeWarthog();
-  warthog.position.set(0,0.39,12);
+  // Place in middle, facing south (toward buildings)
+  warthog.position.set(0,0.39,-2.5);
+  hogAngle = Math.PI; // face toward positive z (toward the doors)
+  warthog.rotation.y = hogAngle;
   scene.add(warthog);
 
   // Walker (person)
@@ -99,7 +121,7 @@ function initScene() {
   }
 
   // Camera start position
-  camera.position.set(0,7,20);
+  camera.position.set(0,7,11);
   camera.lookAt(warthog.position);
 
   // Input
@@ -109,7 +131,7 @@ function initScene() {
 
   // Pointer lock for mouse look
   renderer.domElement.addEventListener('click', function() {
-    if (mode === "walk" && !pointerLocked) {
+    if (mode === "walk" && !pointerLocked && !document.querySelector('.overlay.visible')) {
       renderer.domElement.requestPointerLock();
     }
   }, false);
@@ -287,6 +309,7 @@ function onKeyUp(e) {
 // === Pointer lock ===
 function onPointerLockChange() {
   pointerLocked = !!(document.pointerLockElement === renderer.domElement);
+  updateCrosshair();
 }
 function onMouseMove(e) {
   if (mode === "walk" && pointerLocked) {
@@ -314,6 +337,7 @@ function tryToggleMode() {
       walkYaw = hogAngle;
       walkPitch = 0;
       mode = "walk";
+      updateCrosshair();
     }
   } else if (mode === "walk") {
     let dist = walker.position.distanceTo(warthog.position);
@@ -321,6 +345,7 @@ function tryToggleMode() {
       mode = "drive";
       walker.visible = false;
       if (pointerLocked) document.exitPointerLock();
+      updateCrosshair();
     }
   }
 }
@@ -360,17 +385,19 @@ function moveWarthog(dt) {
   warthog.position.z = Math.max(Math.min(warthog.position.z,32),-32);
 }
 
-// === Walker logic (WASD + MOUSE LOOK) ===
+// === Walker logic (WASD + MOUSE LOOK, correct orientation) ===
 function moveWalker(dt) {
   // Only move if a key is pressed
   let moveX = 0, moveZ = 0, speed = 4.2;
-  if(wasd['w']||wasd['arrowup']) moveZ -= 1;
-  if(wasd['s']||wasd['arrowdown']) moveZ += 1;
+  if(wasd['w']||wasd['arrowup']) moveZ += 1;
+  if(wasd['s']||wasd['arrowdown']) moveZ -= 1;
   if(wasd['a']||wasd['arrowleft']) moveX -= 1;
   if(wasd['d']||wasd['arrowright']) moveX += 1;
   let len = Math.hypot(moveX,moveZ);
   if (len>0) {
     moveX/=len; moveZ/=len;
+    // FORWARD is positive Z (W), BACK is negative Z (S)
+    // So W = moveZ +1
     // Direction: based on yaw (mouse look)
     let forward = new THREE.Vector3(Math.sin(walkYaw),0,Math.cos(walkYaw));
     let right = new THREE.Vector3(Math.sin(walkYaw+Math.PI/2),0,Math.cos(walkYaw+Math.PI/2));
@@ -454,4 +481,5 @@ document.querySelector('.overlay#overlay-inroom .close').onclick = function() {
 // === Help overlay close ===
 document.querySelector('#overlay-help button').onclick = function() {
   closeOverlay('help');
+  updateCrosshair();
 }
