@@ -1,210 +1,124 @@
-// Basic Three.js + Cannon-es WASD FPS Controls, Elden Ring Style
-
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
-import { PointerLockControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/PointerLockControls.js';
-import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
-
-// === SETUP ===
-const canvas = document.getElementById('webgl');
-const renderer = new THREE.WebGLRenderer({ canvas });
-renderer.setClearColor(0x181410);
-renderer.setSize(window.innerWidth, window.innerHeight);
-
+// ---- Three.js basic scene setup ----
+const container = document.getElementById('three-canvas');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x181410);
+scene.background = new THREE.Color(0x22232b);
+scene.fog = new THREE.Fog(0x22232b, 40, 200);
 
-// Elden Ring-like fog
-scene.fog = new THREE.FogExp2(0x181410, 0.04);
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 6, 14);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-camera.position.set(0, 2, 5);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
 
-const controls = new PointerLockControls(camera, document.body);
-
-// Lighting - moody and golden
-const ambient = new THREE.AmbientLight(0xd1ad5b, 0.45);
+// ---- Lighting ----
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambient);
-
-const dirLight = new THREE.DirectionalLight(0xffe7b6, 1.2);
-dirLight.position.set(-5, 18, -10);
+const dirLight = new THREE.DirectionalLight(0xfff0c0, 1.1);
+dirLight.position.set(10, 22, 8);
+dirLight.castShadow = true;
+dirLight.shadow.camera.near = 1;
+dirLight.shadow.camera.far = 80;
+dirLight.shadow.mapSize.set(1024,1024);
 scene.add(dirLight);
 
-// === PHYSICS ===
-const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -24, 0) });
-
-// Floor
-const floorMaterial = new CANNON.Material('floor');
-const floorBody = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane(),
-  material: floorMaterial
-});
-floorBody.quaternion.setFromEuler(-Math.PI/2, 0, 0); // make it horizontal
-world.addBody(floorBody);
-
-// Floor visual
-const floorGeo = new THREE.PlaneGeometry(100, 100, 40, 40);
-const floorMat = new THREE.MeshStandardMaterial({ 
-  color: 0x29251c, 
-  roughness: 0.7, 
-  metalness: 0.2,
-  side: THREE.DoubleSide,
-  wireframe: false
-});
-const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-floorMesh.rotation.x = -Math.PI/2;
-scene.add(floorMesh);
-
-// === PLAYER ===
-const playerRadius = 0.45;
-const playerBody = new CANNON.Body({
-  mass: 80,
-  shape: new CANNON.Sphere(playerRadius),
-  position: new CANNON.Vec3(0, 2, 0),
-  material: new CANNON.Material('player')
-});
-playerBody.linearDamping = 0.99;
-world.addBody(playerBody);
-
-// Golden glowing "aura" for player
-const playerAura = new THREE.Mesh(
-  new THREE.SphereGeometry(playerRadius, 32, 32),
-  new THREE.MeshStandardMaterial({
-    color: 0xf3d77e,
-    emissive: 0xc1a045,
-    transparent: true,
-    opacity: 0.35
-  })
+// ---- Ground ----
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(120, 120),
+  new THREE.MeshPhongMaterial({ color: 0x444d5c, shininess: 12 })
 );
-scene.add(playerAura);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = 0;
+ground.receiveShadow = true;
+scene.add(ground);
 
-// === Elden Ring Ruins/Props Example ===
-const ruinsGeo = new THREE.BoxGeometry(2, 3, 2);
-const ruinsMat = new THREE.MeshStandardMaterial({
-  color: 0x7a6951, roughness: 0.8, metalness: 0.15
-});
-const ruins = new THREE.Mesh(ruinsGeo, ruinsMat);
-ruins.position.set(4, 1.5, -5);
-scene.add(ruins);
+// ---- GLTFLoader: Load your church ----
+const loader = new THREE.GLTFLoader();
+// Path to your .glb file (change this if needed)
+let churchPath = "church.glb"; // <-- put your actual filename here
 
-// Physics for ruins (static)
-const ruinsBody = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Box(new CANNON.Vec3(1, 1.5, 1)),
-  position: new CANNON.Vec3(4, 1.5, -5)
-});
-world.addBody(ruinsBody);
-
-// === CONTROLS ===
-const keys = {};
-let canJump = false;
-let velocity = playerBody.velocity;
-let moveSpeed = 7; // walking
-let sprintSpeed = 15;
-let isSprinting = false;
-
-document.addEventListener('keydown', e => {
-  keys[e.code] = true;
-  if(e.code === 'ShiftLeft') isSprinting = true;
-});
-document.addEventListener('keyup', e => {
-  keys[e.code] = false;
-  if(e.code === 'ShiftLeft') isSprinting = false;
-});
-
-function getForwardVector() {
-  const v = new THREE.Vector3(0,0,-1);
-  v.applyQuaternion(camera.quaternion);
-  v.y = 0;
-  v.normalize();
-  return v;
-}
-function getRightVector() {
-  const v = new THREE.Vector3(-1,0,0);
-  v.applyQuaternion(camera.quaternion);
-  v.y = 0;
-  v.normalize();
-  return v;
+let churchModel;
+function loadChurch(path) {
+  loader.load(
+    path,
+    function(gltf) {
+      if (churchModel) scene.remove(churchModel); // Remove old if reloaded
+      churchModel = gltf.scene;
+      // Center, scale, and orient the model as needed
+      churchModel.traverse(obj => { if(obj.isMesh){ obj.castShadow = obj.receiveShadow = true; }});
+      churchModel.position.set(0, 0, 0);
+      // Optional: scale church to fit scene (adjust as needed)
+      let scale = 1.0;
+      let bbox = new THREE.Box3().setFromObject(churchModel);
+      let size = bbox.getSize(new THREE.Vector3());
+      if (size.y > 20) scale = 12/size.y;
+      churchModel.scale.setScalar(scale);
+      scene.add(churchModel);
+      fitCameraToObject(churchModel, camera, 1.1, new THREE.Vector3(0, 4, 20));
+      showMessage("Church model loaded.");
+    },
+    function(xhr) {
+      showMessage(`Loading: ${Math.round(xhr.loaded/xhr.total*100)}%`);
+    },
+    function(err) {
+      showMessage("Error loading model: "+err.message);
+    }
+  );
 }
 
-// Mouse lock
-const instructions = document.getElementById('instructions');
-instructions.addEventListener('click', () => {
-  controls.lock();
-});
-controls.addEventListener('lock', () => {
-  instructions.style.display = 'none';
-});
-controls.addEventListener('unlock', () => {
-  instructions.style.display = '';
-});
+// ---- Camera auto-fit helper ----
+function fitCameraToObject(obj, cam, offset=1.2, lookPos=null) {
+  let box = new THREE.Box3().setFromObject(obj);
+  let size = box.getSize(new THREE.Vector3());
+  let center = box.getCenter(new THREE.Vector3());
+  let maxDim = Math.max(size.x, size.y, size.z);
+  let fov = cam.fov * (Math.PI / 180);
+  let camZ = Math.abs(maxDim / 2 * Math.tan(fov * 0.5)) * offset;
+  cam.position.set(center.x, center.y + maxDim*0.2, center.z + camZ);
+  if (lookPos) cam.lookAt(lookPos);
+  else         cam.lookAt(center);
+}
 
-// Jumping
-document.addEventListener('keydown', e => {
-  if(e.code === 'Space' && canJump) {
-    playerBody.velocity.y = 10.4; // Elden Ring jump
-    canJump = false;
+// ---- Overlay logic ----
+function closeOverlay() {
+  document.getElementById('ui-overlay').classList.remove('visible');
+}
+function showMessage(msg) {
+  let ov = document.getElementById('ui-overlay');
+  if(ov) { ov.querySelector('p').innerHTML = msg; ov.classList.add('visible'); }
+}
+
+// ---- Drag-and-drop file support ----
+window.addEventListener('dragover', e => { e.preventDefault(); document.body.style.opacity = 0.93; });
+window.addEventListener('dragleave', e => { e.preventDefault(); document.body.style.opacity = 1; });
+window.addEventListener('drop', function(e){
+  e.preventDefault(); document.body.style.opacity = 1;
+  if(e.dataTransfer.files.length){
+    let file = e.dataTransfer.files[0];
+    if(file.name.toLowerCase().endsWith(".glb") || file.name.toLowerCase().endsWith(".gltf")){
+      let url = URL.createObjectURL(file);
+      loadChurch(url);
+    } else {
+      showMessage("Only .glb/.gltf files are supported in this demo.<br>For .fbx or .usdz, use Three.js FBXLoader/USDZLoader.");
+    }
   }
 });
 
-// === RENDER LOOP ===
-let lastTime;
-function animate(time) {
-  requestAnimationFrame(animate);
-
-  // Delta time
-  if(!lastTime) lastTime = time;
-  const dt = Math.min((time - lastTime) / 1000, 0.08);
-  lastTime = time;
-
-  // Movement
-  let inputVelocity = new THREE.Vector3();
-  let speed = isSprinting ? sprintSpeed : moveSpeed;
-  if(keys['KeyW']) inputVelocity.add(getForwardVector());
-  if(keys['KeyS']) inputVelocity.add(getForwardVector().negate());
-  if(keys['KeyA']) inputVelocity.add(getRightVector());
-  if(keys['KeyD']) inputVelocity.add(getRightVector().negate());
-  inputVelocity.normalize().multiplyScalar(speed);
-
-  // Apply movement in XZ plane
-  playerBody.velocity.x += (inputVelocity.x - playerBody.velocity.x) * 0.22;
-  playerBody.velocity.z += (inputVelocity.z - playerBody.velocity.z) * 0.22;
-
-  // Step physics
-  world.step(1/60, dt, 3);
-
-  // Camera follows player
-  camera.position.set(
-    playerBody.position.x,
-    playerBody.position.y + 0.8,
-    playerBody.position.z
-  );
-  controls.target.set(
-    playerBody.position.x,
-    playerBody.position.y + 0.8,
-    playerBody.position.z
-  );
-  controls.update();
-
-  // Player aura follows
-  playerAura.position.copy(playerBody.position);
-
-  // Ray test to check if on ground
-  const ray = new CANNON.Ray(playerBody.position, new CANNON.Vec3(0, -1, 0));
-  ray._updateDirection();
-  ray.length = playerRadius + 0.15;
-  const result = new CANNON.RaycastResult();
-  ray.intersectBodies([floorBody, ruinsBody], result);
-  canJump = result.hasHit && Math.abs(playerBody.velocity.y) < 1.5;
-
-  renderer.render(scene, camera);
-}
-
-animate();
-
-// === HANDLE RESIZE ===
-window.addEventListener('resize', () => {
+// ---- Responsive ----
+window.addEventListener('resize',()=>{
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  renderer.setSize(window.innerWidth,window.innerHeight);
+},false);
+
+// ---- Main loop ----
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+
+// ---- Load the church model on startup ----
+loadChurch(churchPath);
