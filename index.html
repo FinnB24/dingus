@@ -1,51 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>FinnB24 – Elden Ring 3D Portfolio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/controls/PointerLockControls.js"></script>
+  <meta charset="UTF-8"/>
+  <title>Elden Ring Portfolio</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <div id="three-canvas"></div>
-  <!-- Overlay UI -->
-  <div id="overlay-home" class="overlay visible">
-    <h1><span class="brand">FinnB24</span> Lands Between</h1>
+  <canvas id="webgl"></canvas>
+  <div id="instructions">
+    <h1>Elden Ring Portfolio</h1>
     <p>
-      <strong>WASD</strong> to move, <strong>Space</strong> to jump, <strong>Shift</strong> to sprint.<br>
-      Move mouse to look around.<br>
-      Enter the glowing fog to visit sections.<br>
-      <small>(Inspired by <a href="https://bruno-simon.com/" target="_blank">bruno-simon.com</a> &amp; <span style="font-family:'UnifrakturCook',cursive;font-size:1.2em;">Elden Ring</span>)</small>
+      WASD = Move<br/>
+      Mouse = Look<br/>
+      Space = Jump<br/>
+      Shift = Sprint<br/>
+      Click to start
     </p>
-    <button onclick="closeOverlay('home')">Enter The Lands Between</button>
   </div>
-  <div id="overlay-2d" class="overlay">
-    <button class="close" onclick="closeOverlay('2d')">&times;</button>
-    <h2>2D Art</h2>
-    <p>My 2D digital & traditional artworks.<br><br>Replace this with your real gallery!</p>
-  </div>
-  <div id="overlay-3d" class="overlay">
-    <button class="close" onclick="closeOverlay('3d')">&times;</button>
-    <h2>3D Art</h2>
-    <p>3D models, renders, and experiments.</p>
-  </div>
-  <div id="overlay-about" class="overlay">
-    <button class="close" onclick="closeOverlay('about')">&times;</button>
-    <h2>About</h2>
-    <p>Hi, I'm FinnB24. Welcome to my interactive Elden Ring-inspired 3D portfolio.</p>
-  </div>
-  <div id="overlay-contact" class="overlay">
-    <button class="close" onclick="closeOverlay('contact')">&times;</button>
-    <h2>Contact</h2>
-    <p>Email: <a href="mailto:your@email.com">your@email.com</a></p>
-    <p>GitHub: <a href="https://github.com/FinnB24" target="_blank">FinnB24</a></p>
-  </div>
-  <div id="elden-ui">
-    <div id="elden-stamina"></div>
-  </div>
-  <script src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
