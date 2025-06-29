@@ -1,7 +1,7 @@
 // === State & Constants ===
 let scene, camera, renderer, clock, container;
 let mode = "drive"; // "drive" or "walk"
-let wasd = {w:false,a:false,s:false,d:false,arrowup:false,arrowdown:false,arrowleft:false,arrowright:false};
+let wasd = {w:false,a:false,s:false,d:false,arrowup:false,arrowdown:false,arrowleft:false,arrowright:false,' ':false,shift:false};
 let keys = {};
 let warthog, hogAngle=0, hogVel=0, hogSteer=0;
 let walker, walkVel=0, walkYaw=0, walkPitch=0;
@@ -16,6 +16,10 @@ let buildingData = [
   {pos:[-10,0.8,-18],size:[5,3,5],name:'About',text:'About me: I am FinnB24.<br>This is a Halo-inspired portfolio.'},
   {pos:[10,0.8,-18],size:[5,3,5],name:'Contact',text:'Contact: <a href="mailto:your@email.com">your@email.com</a><br>GitHub: <a href="https://github.com/FinnB24" target="_blank">FinnB24</a>'}
 ];
+
+// Jump/sprint vars
+let walkerY = 0.43, walkerVY = 0, walkerOnGround = true;
+let sprinting = false;
 
 // === Overlay helpers ===
 function openOverlay(name) {
@@ -109,6 +113,7 @@ function initScene() {
   walker = makeWalker();
   walker.position.set(warthog.position.x+1.5,0.43,warthog.position.z+0.4);
   walker.visible = false;
+  walkerY = 0.43; walkerVY = 0; walkerOnGround = true;
   scene.add(walker);
 
   // Buildings
@@ -297,13 +302,16 @@ function onResize() {
 function onKeyDown(e) {
   keys[e.key.toLowerCase()] = true;
   wasd[e.key.toLowerCase()] = true;
+  if (e.key === ' ') wasd[' '] = true;
+  if (e.key === 'shift') wasd['shift'] = true;
   if (e.key === 'e' || e.key === 'E') tryToggleMode();
-  // Inside building, E closes overlay
   if (inRoom && (e.key==='e'||e.key==='E')) closeOverlay('inroom');
 }
 function onKeyUp(e) {
   keys[e.key.toLowerCase()] = false;
   wasd[e.key.toLowerCase()] = false;
+  if (e.key === ' ') wasd[' '] = false;
+  if (e.key === 'shift') wasd['shift'] = false;
 }
 
 // === Pointer lock ===
@@ -329,7 +337,7 @@ function tryToggleMode() {
     if (Math.abs(hogVel)<1.5) {
       walker.position.set(
         warthog.position.x+Math.sin(hogAngle+Math.PI/2)*1.1,
-        0.43,
+        walkerY,
         warthog.position.z+Math.cos(hogAngle+Math.PI/2)*1.1
       );
       walker.visible = true;
@@ -369,7 +377,6 @@ function animate() {
 
 // === Warthog drive logic ===
 function moveWarthog(dt) {
-  // Controls
   hogSteer = 0;
   if(keys['w']||keys['arrowup']) hogVel += 17*dt;
   if(keys['s']||keys['arrowdown']) hogVel -= 17*dt;
@@ -385,10 +392,12 @@ function moveWarthog(dt) {
   warthog.position.z = Math.max(Math.min(warthog.position.z,32),-32);
 }
 
-// === Walker logic (WASD + MOUSE LOOK, correct orientation) ===
+// === Walker logic (WASD + MOUSE LOOK, correct orientation, sprint, jump) ===
 function moveWalker(dt) {
-  // Only move if a key is pressed
-  let moveX = 0, moveZ = 0, speed = 4.2;
+  let moveX = 0, moveZ = 0;
+  let speed = 4.2;
+  sprinting = wasd['shift'];
+  if (sprinting) speed = 8.5;
   if(wasd['w']||wasd['arrowup']) moveZ += 1;
   if(wasd['s']||wasd['arrowdown']) moveZ -= 1;
   if(wasd['a']||wasd['arrowleft']) moveX -= 1;
@@ -396,9 +405,9 @@ function moveWalker(dt) {
   let len = Math.hypot(moveX,moveZ);
   if (len>0) {
     moveX/=len; moveZ/=len;
-    // FPS-style: W = forward (look), S = back, A = left, D = right
+    // Standard FPS: forward = yaw, right = yaw - Math.PI/2
     let forward = new THREE.Vector3(Math.sin(walkYaw),0,Math.cos(walkYaw));
-    let right = new THREE.Vector3(Math.sin(walkYaw + Math.PI/2),0,Math.cos(walkYaw + Math.PI/2));
+    let right = new THREE.Vector3(Math.sin(walkYaw - Math.PI/2),0,Math.cos(walkYaw - Math.PI/2));
     let move = forward.multiplyScalar(moveZ).add(right.multiplyScalar(moveX));
     walker.position.x += move.x * speed * dt;
     walker.position.z += move.z * speed * dt;
@@ -406,7 +415,21 @@ function moveWalker(dt) {
     walker.position.z = Math.max(Math.min(walker.position.z,32),-32);
     walker.rotation.y = walkYaw;
   }
-  walker.position.y = 0.43 + 0.03*Math.abs(Math.sin(performance.now()/320));
+
+  // --- JUMP and GRAVITY ---
+  // Space to jump if on ground
+  if (wasd[' '] && walkerOnGround) {
+    walkerVY = 7.3;
+    walkerOnGround = false;
+  }
+  walkerVY -= 17 * dt; // gravity
+  walkerY += walkerVY * dt;
+  if (walkerY <= 0.43) {
+    walkerY = 0.43;
+    walkerVY = 0;
+    walkerOnGround = true;
+  }
+  walker.position.y = walkerY + 0.03*Math.abs(Math.sin(performance.now()/320));
 }
 
 // === Camera follow logic ===
