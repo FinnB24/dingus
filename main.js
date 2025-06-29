@@ -396,11 +396,9 @@ function moveWalker(dt) {
   let len = Math.hypot(moveX,moveZ);
   if (len>0) {
     moveX/=len; moveZ/=len;
-    // FORWARD is positive Z (W), BACK is negative Z (S)
-    // So W = moveZ +1
-    // Direction: based on yaw (mouse look)
+    // FPS-style: W = forward (look), S = back, A = left, D = right
     let forward = new THREE.Vector3(Math.sin(walkYaw),0,Math.cos(walkYaw));
-    let right = new THREE.Vector3(Math.sin(walkYaw+Math.PI/2),0,Math.cos(walkYaw+Math.PI/2));
+    let right = new THREE.Vector3(Math.sin(walkYaw + Math.PI/2),0,Math.cos(walkYaw + Math.PI/2));
     let move = forward.multiplyScalar(moveZ).add(right.multiplyScalar(moveX));
     walker.position.x += move.x * speed * dt;
     walker.position.z += move.z * speed * dt;
