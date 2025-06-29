@@ -1,11 +1,10 @@
 // === State & Constants ===
 let scene, camera, renderer, clock, container;
 let mode = "drive"; // "drive" or "walk"
-let wasd = {w:false,a:false,s:false,d:false,arrowup:false,arrowdown:false,arrowleft:false,arrowright:false, shift:false, ' ':false};
+let wasd = {w:false,a:false,s:false,d:false,arrowup:false,arrowdown:false,arrowleft:false,arrowright:false};
 let keys = {};
 let warthog, hogAngle=0, hogVel=0, hogSteer=0;
 let walker, walkVel=0, walkYaw=0, walkPitch=0;
-let walkY = 0.43, walkYVel = 0, walkOnGround = true;
 let camLerpAlpha = 0.16;
 let buildings = [];
 let inRoom = null;
@@ -21,28 +20,9 @@ let buildingData = [
 // === Overlay helpers ===
 function openOverlay(name) {
   document.getElementById('overlay-'+name).classList.add('visible');
-  updateCrosshair();
 }
 function closeOverlay(name) {
   document.getElementById('overlay-'+name).classList.remove('visible');
-  updateCrosshair();
-}
-function updateCrosshair() {
-  const crosshair = document.getElementById('crosshair');
-  const overlayOpen = !!document.querySelector('.overlay.visible');
-  if(mode === "walk" && !overlayOpen && pointerLocked) {
-    crosshair.style.display = "block";
-    if(!crosshair.querySelector('.crosshair-dot')) {
-      let dot = document.createElement('div');
-      dot.className = "crosshair-dot";
-      crosshair.appendChild(dot);
-    }
-  } else {
-    crosshair.style.display = "none";
-    if(crosshair.querySelector('.crosshair-dot')) {
-      crosshair.innerHTML = "";
-    }
-  }
 }
 
 // === Scene setup ===
@@ -98,17 +78,16 @@ function initScene() {
   dirLight.castShadow = true; dirLight.shadow.camera.near = 1; dirLight.shadow.camera.far = 80;
   dirLight.shadow.mapSize.set(1600,1600); scene.add(dirLight);
 
-  // Warthog (detailed blocky)
+  // Warthog (detailed blocky) - spawn in the middle of the houses, facing -Z
   warthog = makeWarthog();
-  // Place in middle, facing south (toward buildings)
-  warthog.position.set(0,0.39,-2.5);
-  hogAngle = Math.PI; // face toward positive z (toward the doors)
+  warthog.position.set(0,0.39,-12);
+  hogAngle = 0; // Facing down -Z (world forward)
   warthog.rotation.y = hogAngle;
   scene.add(warthog);
 
   // Walker (person)
   walker = makeWalker();
-  walker.position.set(warthog.position.x+1.5,walkY,warthog.position.z+0.4);
+  walker.position.set(warthog.position.x+1.5,0.43,warthog.position.z+0.4);
   walker.visible = false;
   scene.add(walker);
 
@@ -122,7 +101,7 @@ function initScene() {
   }
 
   // Camera start position
-  camera.position.set(0,7,11);
+  camera.position.set(0,7,0);
   camera.lookAt(warthog.position);
 
   // Input
@@ -132,7 +111,7 @@ function initScene() {
 
   // Pointer lock for mouse look
   renderer.domElement.addEventListener('click', function() {
-    if (mode === "walk" && !pointerLocked && !document.querySelector('.overlay.visible')) {
+    if (mode === "walk" && !pointerLocked) {
       renderer.domElement.requestPointerLock();
     }
   }, false);
@@ -161,7 +140,133 @@ function makeSkybox() {
   scene.add(mesh);
 }
 
-// ... Warthog, Walker, Building code unchanged ...
+// === Warthog model ===
+function makeWarthog() {
+  let hog = new THREE.Group();
+  // Main body
+  let body = new THREE.Mesh(
+    new THREE.BoxGeometry(2.25, 0.58, 3.5),
+    new THREE.MeshPhongMaterial({ color: 0x328e94, shininess: 130 })
+  );
+  body.castShadow = true; body.receiveShadow = true; hog.add(body);
+  // Hood
+  let hood = new THREE.Mesh(
+    new THREE.BoxGeometry(1.12, 0.29, 0.9),
+    new THREE.MeshPhongMaterial({ color: 0x1b3554, shininess: 70 })
+  );
+  hood.position.set(0, 0.28, 1.36); hog.add(hood);
+  // Rollbar
+  let rollbar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.10, 0.10, 1.55, 14),
+    new THREE.MeshPhongMaterial({ color: 0x71f7ff, shininess: 160 })
+  );
+  rollbar.rotation.z = Math.PI / 2; rollbar.position.set(0, 0.46, -0.32); hog.add(rollbar);
+  // Windshield
+  let windshield = new THREE.Mesh(
+    new THREE.BoxGeometry(1.3, 0.14, 0.13),
+    new THREE.MeshPhongMaterial({ color: 0x71f7ff, transparent: true, opacity: 0.59 })
+  );
+  windshield.position.set(0, 0.36, 0.92); hog.add(windshield);
+  // Wheels
+  for(let dx of [-0.93,0.93]){
+    for(let dz of [-1.48,1.48]){
+      let wheel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.44,0.5,0.37,18),
+        new THREE.MeshStandardMaterial({color:0x0a161d, metalness:0.78, roughness:0.21})
+      );
+      wheel.rotation.z = Math.PI/2; wheel.position.set(dx,-0.29,dz); wheel.castShadow = true; hog.add(wheel);
+    }
+  }
+  // Antenna
+  let antenna = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.023, 0.023, 1.22, 8),
+    new THREE.MeshPhongMaterial({ color: 0x71f7ff })
+  );
+  antenna.position.set(-0.77, 0.93, -1.4); antenna.rotation.x = -0.09; hog.add(antenna);
+  // Gun
+  let gunbase = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.13, 0.18, 10),
+    new THREE.MeshPhongMaterial({ color: 0x1b3554 })
+  );
+  gunbase.position.set(0,0.42,-1.46); hog.add(gunbase);
+  let gunbarrel = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08,0.08,0.63,10),
+    new THREE.MeshPhongMaterial({ color: 0x71f7ff })
+  );
+  gunbarrel.position.set(0,0.57,-1.46); gunbarrel.rotation.x = Math.PI/2.6; hog.add(gunbarrel);
+  // Shadow
+  let hogShadowGeo = new THREE.PlaneGeometry(2.1,3.5);
+  let hogShadowMat = new THREE.MeshBasicMaterial({color:0x0a0a1a, transparent:true, opacity:0.14});
+  let hogShadow = new THREE.Mesh(hogShadowGeo, hogShadowMat);
+  hogShadow.rotation.x = -Math.PI/2; hogShadow.position.y = 0.02; hog.add(hogShadow);
+  return hog;
+}
+
+// === Walker (small person) ===
+function makeWalker() {
+  let walker = new THREE.Group();
+  // Body
+  let body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.19,0.21,0.36,12),
+    new THREE.MeshPhongMaterial({color:0x42d7f5,shininess:60})
+  );
+  body.position.y = 0.19; walker.add(body);
+  // Head
+  let head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.13,14,14),
+    new THREE.MeshPhongMaterial({color:0xaeefff})
+  );
+  head.position.y = 0.43; walker.add(head);
+  // Feet
+  for (let dx of [-0.09,0.09]) {
+    let foot = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06,0.07,0.13),
+      new THREE.MeshPhongMaterial({color:0x0a161d})
+    );
+    foot.position.set(dx,0.01,0.08); walker.add(foot);
+  }
+  // Backpack
+  let pack = new THREE.Mesh(
+    new THREE.BoxGeometry(0.10,0.13,0.08),
+    new THREE.MeshPhongMaterial({color:0x3aefff})
+  );
+  pack.position.set(0,0.19,-0.17); walker.add(pack);
+  return walker;
+}
+
+// === Building ("portal" as building) ===
+function makeBuilding(size, name, text) {
+  let [w,h,d] = size;
+  let group = new THREE.Group();
+  // Main cube
+  let box = new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshPhongMaterial({color:0x233a4d, shininess: 80, reflectivity:0.12})
+  );
+  box.castShadow = true; box.receiveShadow = true; group.add(box);
+  // Doorway
+  let doorGeo = new THREE.BoxGeometry(w*0.32,h*0.5,0.49);
+  let doorMat = new THREE.MeshPhongMaterial({color:0x71f7ff, transparent:true, opacity:0.33});
+  let door = new THREE.Mesh(doorGeo, doorMat);
+  door.position.set(0,-h*0.09,d/2+0.01);
+  group.add(door);
+  // Wall text (glowing)
+  let canvas = document.createElement('canvas'); canvas.width=256; canvas.height=64;
+  let ctx = canvas.getContext('2d');
+  ctx.font = "bold 30px Orbitron"; ctx.fillStyle="#71f7ff"; ctx.textAlign="center";
+  ctx.shadowColor = "#71f7ff"; ctx.shadowBlur = 18; ctx.fillText(name,128,46);
+  let tex = new THREE.Texture(canvas); tex.needsUpdate = true;
+  let textMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(w*0.68,0.6),
+    new THREE.MeshBasicMaterial({ map:tex, transparent:true })
+  );
+  textMesh.position.set(0,h/2-0.7,-d/2-0.04);
+  group.add(textMesh);
+
+  // Save info for detection
+  group.userData = {name, text, size, textMesh};
+  return group;
+}
 
 // === Input Handlers ===
 function onResize() {
@@ -172,25 +277,24 @@ function onResize() {
 function onKeyDown(e) {
   keys[e.key.toLowerCase()] = true;
   wasd[e.key.toLowerCase()] = true;
-  if(e.key === "Shift") wasd.shift = true;
-  if(e.key === " ") wasd[" "] = true;
   if (e.key === 'e' || e.key === 'E') tryToggleMode();
+  // Inside building, E closes overlay
   if (inRoom && (e.key==='e'||e.key==='E')) closeOverlay('inroom');
 }
 function onKeyUp(e) {
   keys[e.key.toLowerCase()] = false;
   wasd[e.key.toLowerCase()] = false;
-  if(e.key === "Shift") wasd.shift = false;
-  if(e.key === " ") wasd[" "] = false;
 }
 
 // === Pointer lock ===
 function onPointerLockChange() {
   pointerLocked = !!(document.pointerLockElement === renderer.domElement);
-  updateCrosshair();
+  // Show/hide crosshair
+  document.getElementById('crosshair').style.display = (pointerLocked && mode==="walk") ? "block" : "none";
 }
 function onMouseMove(e) {
   if (mode === "walk" && pointerLocked) {
+    // Sensitivity
     const sensitivity = 0.0022;
     walkYaw -= e.movementX * sensitivity;
     walkPitch -= e.movementY * sensitivity;
@@ -201,19 +305,19 @@ function onMouseMove(e) {
 // === Toggle between drive/walk ===
 function tryToggleMode() {
   if (mode === "drive") {
+    // Only exit if slow and on ground
+    let dist = walker.position.distanceTo(warthog.position);
     if (Math.abs(hogVel)<1.5) {
       walker.position.set(
         warthog.position.x+Math.sin(hogAngle+Math.PI/2)*1.1,
-        walkY,
+        0.43,
         warthog.position.z+Math.cos(hogAngle+Math.PI/2)*1.1
       );
       walker.visible = true;
+      // Inherit direction: face same way as vehicle
       walkYaw = hogAngle;
       walkPitch = 0;
-      walkYVel = 0;
-      walkOnGround = true;
       mode = "walk";
-      updateCrosshair();
     }
   } else if (mode === "walk") {
     let dist = walker.position.distanceTo(warthog.position);
@@ -221,7 +325,7 @@ function tryToggleMode() {
       mode = "drive";
       walker.visible = false;
       if (pointerLocked) document.exitPointerLock();
-      updateCrosshair();
+      document.getElementById('crosshair').style.display = "none";
     }
   }
 }
@@ -261,34 +365,18 @@ function moveWarthog(dt) {
   warthog.position.z = Math.max(Math.min(warthog.position.z,32),-32);
 }
 
-// === Walker logic (WASD + Mouse Look, with Sprint and Jump) ===
+// === Walker logic (WASD + MOUSE LOOK) ===
 function moveWalker(dt) {
-  // Movement input
-  let moveX = 0, moveZ = 0;
+  // Only move if a key is pressed
+  let moveX = 0, moveZ = 0, speed = 4.2;
   if(wasd['w']||wasd['arrowup']) moveZ += 1;
   if(wasd['s']||wasd['arrowdown']) moveZ -= 1;
   if(wasd['a']||wasd['arrowleft']) moveX -= 1;
   if(wasd['d']||wasd['arrowright']) moveX += 1;
-  let sprint = wasd['shift'] ? 2.1 : 1;
-  let speed = 4.2 * sprint;
-  // Jump
-  if ((wasd[' '] || wasd['space']) && walkOnGround) {
-    walkYVel = 6.3;
-    walkOnGround = false;
-  }
-  // Gravity
-  walkYVel -= 18 * dt;
-  walkY += walkYVel * dt;
-  if (walkY <= 0.43) {
-    walkY = 0.43;
-    walkYVel = 0;
-    walkOnGround = true;
-  }
-  // Combine movement with camera yaw
   let len = Math.hypot(moveX,moveZ);
   if (len>0) {
     moveX/=len; moveZ/=len;
-    // Forward = camera yaw, Right = camera yaw + PI/2
+    // Direction: based on yaw (mouse look)
     let forward = new THREE.Vector3(Math.sin(walkYaw),0,Math.cos(walkYaw));
     let right = new THREE.Vector3(Math.sin(walkYaw+Math.PI/2),0,Math.cos(walkYaw+Math.PI/2));
     let move = forward.multiplyScalar(moveZ).add(right.multiplyScalar(moveX));
@@ -298,10 +386,7 @@ function moveWalker(dt) {
     walker.position.z = Math.max(Math.min(walker.position.z,32),-32);
     walker.rotation.y = walkYaw;
   }
-  walker.position.y = walkY;
-
-  // Subtle up/down bob if running
-  if (len>0) walker.position.y += 0.03*Math.abs(Math.sin(performance.now()/140));
+  walker.position.y = 0.43 + 0.03*Math.abs(Math.sin(performance.now()/320));
 }
 
 // === Camera follow logic ===
@@ -374,5 +459,4 @@ document.querySelector('.overlay#overlay-inroom .close').onclick = function() {
 // === Help overlay close ===
 document.querySelector('#overlay-help button').onclick = function() {
   closeOverlay('help');
-  updateCrosshair();
 }
