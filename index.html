@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Elden Ring Portfolio</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="UTF-8" />
+  <title>Church Import – Three.js GLB Example</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-  <canvas id="webgl"></canvas>
-  <div id="instructions">
-    <h1>Elden Ring Portfolio</h1>
+  <div id="three-canvas"></div>
+  <div id="ui-overlay" class="overlay visible">
+    <h1><span class="brand">Church 3D Scene</span></h1>
     <p>
-      WASD = Move<br/>
-      Mouse = Look<br/>
-      Space = Jump<br/>
-      Shift = Sprint<br/>
-      Click to start
+      <strong>Drag and drop your <kbd>.glb</kbd> file anywhere to load it!</strong><br>
+      — or —<br>
+      Edit <code>churchPath</code> in <code>main.js</code> to set your own path.<br>
+      <small>Supports .glb, .gltf by default. For FBX/USDZ, you need extra loaders.</small>
     </p>
+    <button onclick="closeOverlay()">OK</button>
   </div>
-  <script type="module" src="main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
