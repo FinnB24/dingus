@@ -2,50 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>FinnB24 – Retro Dreamcore 3D Portfolio</title>
+  <title>FinnB24 – Halo Interactive Portfolio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
 </head>
 <body>
   <div id="three-canvas"></div>
-  <!-- Overlay UI -->
-  <div id="overlay-home" class="overlay visible">
-    <h1>
-      <span class="brand">FinnB24</span> Retro Webroom
-      <br><span class="emoji">🌈😎💾🕹️</span>
-    </h1>
+  <div id="overlay-inroom" class="overlay">
+    <button class="close" onclick="closeOverlay('inroom')">&times;</button>
+    <h2 id="room-title">Building</h2>
+    <p id="room-content"></p>
+  </div>
+  <div id="overlay-help" class="overlay visible">
+    <h1><span class="brand">FinnB24</span> – Halo Portfolio</h1>
     <p>
-      Arrow keys / WASD to move. <br>
-      <b>Space</b> to jump. <b>Shift</b> to sprint.<br>
-      Bump into a glowing CRT to open a section.<br>
-      <small>(Dreamcore / Vaporwave / 2010s Internet vibes)</small>
+      <b>Drive:</b> <kbd>WASD</kbd> or <kbd>Arrows</kbd><br>
+      <b>Exit/Enter Warthog:</b> <kbd>E</kbd><br>
+      <b>Walk in buildings:</b> Use <kbd>WASD</kbd> (First person, Mouse to look)<br>
+      <b>Read wall:</b> Approach glowing wall text, or press <kbd>E</kbd> inside.<br>
+      <b>Mouse look:</b> Click the scene once in walk mode, move mouse to look.<br>
+      <b>Release mouse:</b> Press <kbd>Esc</kbd>
     </p>
-    <button onclick="closeOverlay('home')">ENTER</button>
+    <button onclick="closeOverlay('help')">Start</button>
   </div>
-  <div id="overlay-art" class="overlay">
-    <button class="close" onclick="closeOverlay('art')">&times;</button>
-    <h2>Art Gallery</h2>
-    <p>Pixel art, vaporwave edits, and more.<br>Replace with your gallery!</p>
-  </div>
-  <div id="overlay-music" class="overlay">
-    <button class="close" onclick="closeOverlay('music')">&times;</button>
-    <h2>Music & Sounds</h2>
-    <p>Chiptunes, synths, and 8-bit jams.</p>
-  </div>
-  <div id="overlay-about" class="overlay">
-    <button class="close" onclick="closeOverlay('about')">&times;</button>
-    <h2>About</h2>
-    <p>Welcome to my retro webroom!<br>Inspired by the early internet, vaporwave, and dreamcore aesthetics.</p>
-  </div>
-  <div id="overlay-contact" class="overlay">
-    <button class="close" onclick="closeOverlay('contact')">&times;</button>
-    <h2>Contact</h2>
-    <p>Email: <a href="mailto:your@email.com">your@email.com</a></p>
-    <p>GitHub: <a href="https://github.com/FinnB24" target="_blank">FinnB24</a></p>
-  </div>
-  <div class="scanlines"></div>
   <script src="main.js"></script>
 </body>
 </html>
