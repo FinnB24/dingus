@@ -7,19 +7,17 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css?family=Cardo:700|Montserrat:400,700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/controls/PointerLockControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/controls/PointerLockControls.min.js"></script>
 </head>
 <body>
   <div id="three-canvas"></div>
-  <!-- Overlay UI -->
+  <!-- Overlays here (unchanged) -->
   <div id="overlay-home" class="overlay visible">
     <h1><span class="brand">FinnB24</span> Lands Between</h1>
     <p>
-      <span style="font-size:1.2em;">
-        Use <kbd>WASD</kbd> to move, <kbd>Space</kbd> to jump, <kbd>Shift</kbd> to sprint.<br>
-        Move your <b>mouse</b> to look around.<br>
-        Bump into a glowing portal to open a section.
-      </span><br>
+      Use <kbd>WASD</kbd> to move, <kbd>Space</kbd> to jump, <kbd>Shift</kbd> to sprint.<br>
+      Move your <b>mouse</b> to look around.<br>
+      Bump into a glowing portal to open a section.<br>
       <small>(Inspired by <a href="https://bruno-simon.com/" target="_blank">bruno-simon.com</a> & <b>Elden Ring</b>)</small>
     </p>
     <button onclick="closeOverlay('home')">Enter the Lands Between</button>
