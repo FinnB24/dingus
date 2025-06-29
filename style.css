@@ -13,39 +13,28 @@ body {
   outline: none;
 }
 #crosshair {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  width: 20px;
-  height: 20px;
-  transform: translate(-50%, -50%);
-  z-index: 9;
-  pointer-events: none;
   display: none;
+  position: fixed;
+  z-index: 20;
+  left: 50%; top: 50%;
+  width: 32px; height: 32px;
+  pointer-events: none;
+  transform: translate(-50%,-50%);
 }
-#crosshair::before, #crosshair::after {
+#crosshair:after {
   content: "";
+  display: block;
   position: absolute;
-  background: #81e3ff;
-  border-radius: 1.5px;
-}
-#crosshair::before {
-  left: 9px; top: 4px;
-  width: 2px; height: 12px;
-  opacity: 0.75;
-}
-#crosshair::after {
-  left: 4px; top: 9px;
-  width: 12px; height: 2px;
-  opacity: 0.75;
-}
-.crosshair-dot {
-  position: absolute;
-  left: 9px; top: 9px;
-  width: 2px; height: 2px;
-  background: #fff;
-  border-radius: 50%;
-  opacity: 0.85;
+  left: 50%; top: 50%;
+  width: 18px; height: 18px;
+  transform: translate(-50%,-50%);
+  border-top: 2px solid #aeefffcc;
+  border-left: 2px solid #aeefffcc;
+  border-right: 2px solid #aeefffcc;
+  border-bottom: 2px solid #aeefffcc;
+  border-radius: 2px;
+  opacity: 0.7;
+  box-shadow: 0 0 3px #71f7ff99;
 }
 .overlay {
   position: fixed;
