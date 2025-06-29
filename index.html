@@ -2,23 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Church Import – Three.js GLB Example</title>
+  <title>Tarnished Journey – Elden Ring Tribute</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css" />
+  <!-- Three.js core -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- GLTFLoader -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/loaders/GLTFLoader.min.js"></script>
 </head>
 <body>
   <div id="three-canvas"></div>
-  <div id="ui-overlay" class="overlay visible">
-    <h1><span class="brand">Church 3D Scene</span></h1>
+  <!-- Overlay UI (same as before, omitted for brevity) -->
+  <div id="overlay-home" class="overlay visible">
+    <h1><span class="brand">Tarnished</span><br>Journey</h1>
     <p>
-      <strong>Drag and drop your <kbd>.glb</kbd> file anywhere to load it!</strong><br>
-      — or —<br>
-      Edit <code>churchPath</code> in <code>main.js</code> to set your own path.<br>
-      <small>Supports .glb, .gltf by default. For FBX/USDZ, you need extra loaders.</small>
+      Ride with <kbd>WASD</kbd> or <kbd>Arrow</kbd> keys.<br>
+      Approach a glowing Site of Grace to open a section.<br>
+      <small>(Inspired by <a href="https://eldenring.wiki.fextralife.com/Sites+of+Grace" target="_blank">Elden Ring</a>)</small>
     </p>
-    <button onclick="closeOverlay()">OK</button>
+    <button onclick="closeOverlay('home')">Begin Journey</button>
+  </div>
+  <div id="overlay-gear" class="overlay">
+    <button class="close" onclick="closeOverlay('gear')">&times;</button>
+    <h2>Weapons & Gear</h2>
+    <p>The armaments and armor of the Tarnished.<br><br><em>(Replace with your own content!)</em></p>
+  </div>
+  <div id="overlay-ashes" class="overlay">
+    <button class="close" onclick="closeOverlay('ashes')">&times;</button>
+    <h2>Spirit Ashes</h2>
+    <p>Faithful companions for battle.<br><br><em>(Replace with your own content!)</em></p>
+  </div>
+  <div id="overlay-about" class="overlay">
+    <button class="close" onclick="closeOverlay('about')">&times;</button>
+    <h2>About the Tarnished</h2>
+    <p>An explorer in the Lands Between, on a journey of fate.</p>
+  </div>
+  <div id="overlay-contact" class="overlay">
+    <button class="close" onclick="closeOverlay('contact')">&times;</button>
+    <h2>Contact the Developer</h2>
+    <p>Email: <a href="mailto:your@email.com">your@email.com</a></p>
+    <p>GitHub: <a href="https://github.com/FinnB24" target="_blank">FinnB24</a></p>
   </div>
   <script src="main.js"></script>
 </body>
