@@ -12,6 +12,41 @@ body {
   background: transparent;
   outline: none;
 }
+#crosshair {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  z-index: 9;
+  pointer-events: none;
+  display: none;
+}
+#crosshair::before, #crosshair::after {
+  content: "";
+  position: absolute;
+  background: #81e3ff;
+  border-radius: 1.5px;
+}
+#crosshair::before {
+  left: 9px; top: 4px;
+  width: 2px; height: 12px;
+  opacity: 0.75;
+}
+#crosshair::after {
+  left: 4px; top: 9px;
+  width: 12px; height: 2px;
+  opacity: 0.75;
+}
+.crosshair-dot {
+  position: absolute;
+  left: 9px; top: 9px;
+  width: 2px; height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0.85;
+}
 .overlay {
   position: fixed;
   left: 50%; top: 50%;
