@@ -1,9 +1,8 @@
 body {
   margin: 0;
   overflow: hidden;
-  font-family: 'Garamond', 'Georgia', serif;
-  background: linear-gradient(to bottom, #2f2b20 0%, #6a5130 100%);
-  letter-spacing: 0.02em;
+  font-family: 'Montserrat', Arial, sans-serif;
+  background: linear-gradient(to bottom, #89c4f4 0%, #3d4262 100%);
 }
 #three-canvas {
   position: fixed;
@@ -18,19 +17,17 @@ body {
   transform: translate(-50%,-50%);
   min-width: 320px;
   max-width: 95vw;
-  background: rgba(36, 36, 24, 0.98);
-  color: #f6edc3;
-  box-shadow: 0 8px 32px #000c;
+  background: rgba(36, 41, 59, 0.99);
+  color: #fff;
+  box-shadow: 0 8px 32px #0007;
   border-radius: 22px;
   padding: 2.5em 2em 2em 2em;
   z-index: 10;
   display: none;
   text-align: center;
   animation: fadeIn 0.6s;
-  border: 2px solid #cfc488;
+  border: 2px solid #9be7ff;
   font-size: 1.13rem;
-  font-family: 'Garamond', 'Georgia', serif;
-  backdrop-filter: blur(10px);
 }
 .overlay.visible { display: block; }
 .overlay .close {
@@ -38,7 +35,7 @@ body {
   top: 1em; right: 1.2em;
   background: #333a;
   border: none;
-  color: #f6edc3;
+  color: #fff;
   font-size: 2em;
   cursor: pointer;
   border-radius: 50%;
@@ -48,15 +45,11 @@ body {
 .overlay h1, .overlay h2 {
   margin-top: 0;
   letter-spacing: 1px;
-  font-family: 'Garamond', 'Georgia', serif;
-  font-weight: 700;
 }
 .overlay .brand {
-  color: #ffd900;
-  letter-spacing: 2px;
+  color: #6ce1ff;
+  letter-spacing: 3px;
   font-weight: 700;
-  text-shadow: 0 2px 10px #ffd90066;
-  font-size: 1.4em;
 }
 .overlay kbd {
   background: #272c41;
@@ -71,10 +64,10 @@ body {
   transition: background 0.2s, color 0.2s;
 }
 .overlay button:hover, .overlay .close:hover {
-  background: #ffd900;
+  background: #6ce1ff;
   color: #222;
 }
-a { color: #ffd900; }
+a { color: #6ce1ff; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translate(-50%,-58%) scale(0.95);}
   to   { opacity: 1; transform: translate(-50%,-50%) scale(1);}
