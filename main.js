@@ -6,8 +6,6 @@
 // --- SCENE SETUP ---
 const container = document.getElementById('three-canvas');
 const scene = new THREE.Scene();
-
-// Elden Ring "golden fog" atmosphere/fog
 scene.fog = new THREE.FogExp2(0x20180f, 0.045);
 
 // Camera & controls
@@ -16,31 +14,36 @@ camera.position.set(0, 2.2, 5);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setClearColor(0x20180f, 1); // deep brown-black
+renderer.setClearColor(0x20180f, 1);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-// --- PointerLockControls for player camera ---
-const controls = new THREE.PointerLockControls(camera, renderer.domElement);
+// -- PointerLockControls --
+let controls;
+if (THREE.PointerLockControls) {
+  controls = new THREE.PointerLockControls(camera, renderer.domElement);
+} else {
+  alert("PointerLockControls did not load! Check your script tag and CORS.");
+}
 let controlsEnabled = false;
 
-// --- Sky: Elden Ring style (dark, golden, foggy) ---
+// --- Sky ---
 const skyGeo = new THREE.SphereGeometry(160, 40, 40);
 const skyMat = new THREE.MeshBasicMaterial({ color: 0x59421a, side: THREE.BackSide });
 const sky = new THREE.Mesh(skyGeo, skyMat);
 sky.position.y = -30;
 scene.add(sky);
 
-// --- Sun/Moon (faint gold disc) ---
+// --- Sun ---
 const sunGeo = new THREE.CircleGeometry(6, 42);
 const sunMat = new THREE.MeshBasicMaterial({ color: 0xf4da8e, transparent: true, opacity: 0.22 });
 const sun = new THREE.Mesh(sunGeo, sunMat);
 sun.position.set(18, 35, -65);
 scene.add(sun);
 
-// Floor: Ruined stone
+// Floor
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(65, 65),
   new THREE.MeshPhongMaterial({
@@ -55,7 +58,7 @@ floor.position.y = 0;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// Faint gold rune patterns (fake with mesh overlays)
+// Gold runes
 for (let i = 0; i < 4; ++i) {
   const rune = new THREE.Mesh(
     new THREE.RingGeometry(2.5 + i * 2.3, 2.7 + i * 2.3, 55),
@@ -66,7 +69,7 @@ for (let i = 0; i < 4; ++i) {
   scene.add(rune);
 }
 
-// --- Lighting (Elden Ring: gold + faint blue fill) ---
+// Lighting
 const amb = new THREE.AmbientLight(0xcbb46b, 0.24); scene.add(amb);
 const blueFill = new THREE.HemisphereLight(0x6ca6c1, 0x2c2517, 0.22);
 scene.add(blueFill);
@@ -78,7 +81,7 @@ dir.shadow.camera.far = 90;
 dir.shadow.mapSize.set(1024, 1024);
 scene.add(dir);
 
-// --- Player (Elden Ring style 'Tarnished' sphere) ---
+// Player
 const playerGroup = new THREE.Group();
 const body = new THREE.Mesh(
   new THREE.SphereGeometry(0.45, 22, 18),
@@ -93,14 +96,14 @@ const body = new THREE.Mesh(
 body.castShadow = true;
 body.receiveShadow = true;
 playerGroup.add(body);
-// "Cape" (flat black plane behind)
+// Cape
 const cape = new THREE.Mesh(
   new THREE.PlaneGeometry(0.48, 1.19),
   new THREE.MeshBasicMaterial({ color: 0x16120c, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })
 );
 cape.position.set(0, -0.12, -0.50);
 playerGroup.add(cape);
-// "Glow" (golden bloom, fake with transparent sphere)
+// Glow aura
 const aura = new THREE.Mesh(
   new THREE.SphereGeometry(0.53, 18, 10),
   new THREE.MeshBasicMaterial({ color: 0xcbb46b, transparent: true, opacity: 0.16 })
@@ -109,7 +112,7 @@ playerGroup.add(aura);
 playerGroup.position.set(0, 0.5, 7);
 scene.add(playerGroup);
 
-// --- Portals (sections), like Sites of Grace ---
+// Portals
 const portals = [
   { name: "2d", pos: [-8, 0.8, -4], color: 0x48e0e4, label: "2D ART" },
   { name: "3d", pos: [8, 0.8, -4], color: 0x7d40e7, label: "3D ART" },
@@ -118,7 +121,6 @@ const portals = [
 ];
 const portalMeshes = [];
 for (const p of portals) {
-  // Portal: glowing vertical ring (like a Site of Grace)
   const portal = new THREE.Mesh(
     new THREE.TorusGeometry(1.25, 0.22, 28, 64),
     new THREE.MeshPhongMaterial({
@@ -137,7 +139,7 @@ for (const p of portals) {
   scene.add(portal);
   portalMeshes.push(portal);
 
-  // Floating text label (gold)
+  // Label
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 68;
   const ctx = canvas.getContext('2d');
@@ -156,25 +158,24 @@ for (const p of portals) {
   scene.add(textMesh);
 }
 
-// --- Responsive ---
+// Responsive
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }, false);
 
-// --- Player movement state ---
+// Movement state
 const keys = {};
 window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
-let move = { x: 0, z: 0, y: 0 };
 let velocity = { x: 0, y: 0, z: 0 };
 let canJump = false, isSprinting = false;
 let playerOnGround = false;
 const walkSpeed = 4.07, sprintSpeed = 8.7, jumpStrength = 7.4, gravity = 19.5;
 
-// --- Camera Mouse Controls ---
+// --- PointerLockControls events ---
 function enableControls() {
   controls.lock();
   controlsEnabled = true;
@@ -203,7 +204,6 @@ function closeOverlay(name) {
   document.getElementById('overlay-' + name).classList.remove('visible');
   if (name === "home") setTimeout(enableControls, 120);
 }
-// Allow Enter/Space to close the home overlay
 document.addEventListener('keydown', e => {
   if (document.getElementById('overlay-home').classList.contains('visible') &&
     (e.key === 'Enter' || e.key === ' ')) {
@@ -211,28 +211,22 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// --- WASD+Jump+Sprint Movement ("Elden Ring" style) ---
+// WASD+Jump+Sprint
 function movePlayer(dt) {
-  // Direction
   let input = { x: 0, z: 0 };
   if (keys['w']) input.z -= 1;
   if (keys['s']) input.z += 1;
   if (keys['a']) input.x -= 1;
   if (keys['d']) input.x += 1;
 
-  // Sprint
   isSprinting = keys['shift'] || keys['shiftleft'];
-
-  // Normalize input vector (no speed boost diagonally)
   let len = Math.hypot(input.x, input.z);
   if (len > 0) {
     input.x /= len;
     input.z /= len;
   }
 
-  // Get camera facing direction (XZ plane)
   let yaw = controls.getObject().rotation.y;
-  // Move direction relative to camera
   let moveX = input.x * Math.cos(yaw) - input.z * Math.sin(yaw);
   let moveZ = input.x * Math.sin(yaw) + input.z * Math.cos(yaw);
 
@@ -252,16 +246,15 @@ function movePlayer(dt) {
   }
   if (!(keys[' '] || keys['space'])) canJump = true;
 
-  // Apply movement
+  // Apply
   playerGroup.position.x += velocity.x * dt;
   playerGroup.position.y += velocity.y * dt;
   playerGroup.position.z += velocity.z * dt;
 
-  // Clamp within floor bounds
   playerGroup.position.x = Math.max(Math.min(playerGroup.position.x, 30), -30);
   playerGroup.position.z = Math.max(Math.min(playerGroup.position.z, 30), -18);
 
-  // Simple ground collision
+  // Ground
   if (playerGroup.position.y <= 0.5) {
     playerGroup.position.y = 0.5;
     velocity.y = 0;
@@ -271,19 +264,18 @@ function movePlayer(dt) {
   }
 }
 
-// --- Camera follows player ---
+// Camera follows player
 function updateCamera() {
   controls.getObject().position.copy(playerGroup.position).add(new THREE.Vector3(0, 0.6, 0));
 }
 
-// --- Portal collision detection ---
+// Portal collision
 function checkPortals() {
   for (const [i, p] of portals.entries()) {
     const dx = playerGroup.position.x - p.pos[0];
     const dz = playerGroup.position.z - p.pos[2];
     if (Math.abs(dx) < 1.6 && Math.abs(dz) < 1.6 && playerGroup.position.y < 2.2) {
       openOverlay(p.name);
-      // Reset player position
       playerGroup.position.set(0, 0.5, 7);
       velocity = { x: 0, y: 0, z: 0 };
       break;
@@ -291,7 +283,7 @@ function checkPortals() {
   }
 }
 
-// --- Animate portals (glow, float) ---
+// Animate portals
 let portalAnimTime = 0;
 function animatePortals(dt) {
   portalAnimTime += dt;
@@ -302,7 +294,7 @@ function animatePortals(dt) {
   }
 }
 
-// --- Main render loop ---
+// Main render loop
 let lastTime = performance.now();
 function animate() {
   let now = performance.now(), dt = (now - lastTime) / 1000;
