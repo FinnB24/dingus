@@ -58,18 +58,19 @@ function showHomeOverlay() {
     homeOverlay.style.display = 'block';
     homeOverlay.classList.add('visible');
     
-    // Add device selection buttons to the home overlay
-    addDeviceSelectionToHomeOverlay();
+    // Replace existing buttons with device selection
+    replaceHomeOverlayButtons();
   }
 }
 
-// Add device selection buttons to home overlay
-function addDeviceSelectionToHomeOverlay() {
+// Replace the home overlay buttons with device selection
+function replaceHomeOverlayButtons() {
   const homeOverlay = document.getElementById('overlay-home');
   if (!homeOverlay) return;
   
-  // Check if device selection already exists
-  if (homeOverlay.querySelector('.device-selection')) return;
+  // Remove existing buttons
+  const existingButtons = homeOverlay.querySelectorAll('button');
+  existingButtons.forEach(btn => btn.remove());
   
   // Create device selection container
   const deviceSelection = document.createElement('div');
@@ -83,15 +84,15 @@ function addDeviceSelectionToHomeOverlay() {
   deviceTitle.textContent = 'Select your device:';
   deviceTitle.style.cssText = `
     color: #00ffff;
-    font-size: 14px;
-    margin-bottom: 15px;
+    font-size: 16px;
+    margin-bottom: 20px;
     font-weight: bold;
   `;
   
   const deviceButtons = document.createElement('div');
   deviceButtons.style.cssText = `
     display: flex;
-    gap: 15px;
+    gap: 20px;
     justify-content: center;
     flex-wrap: wrap;
   `;
@@ -100,16 +101,16 @@ function addDeviceSelectionToHomeOverlay() {
   const pcButton = document.createElement('button');
   pcButton.innerHTML = '🖥️ PC/Desktop';
   pcButton.style.cssText = `
-    padding: 12px 20px;
+    padding: 15px 25px;
     background: rgba(0, 255, 255, 0.1);
     border: 2px solid #00ffff;
     border-radius: 8px;
     color: white;
     font-family: 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 120px;
+    min-width: 140px;
   `;
   
   pcButton.onmouseover = () => {
@@ -122,26 +123,23 @@ function addDeviceSelectionToHomeOverlay() {
   };
   
   pcButton.onclick = () => {
-    isMobile = false;
-    console.log('PC mode selected');
-    setupControls();
-    hideDeviceSelection();
+    startGame('pc');
   };
   
   // Mobile Button
   const mobileButton = document.createElement('button');
   mobileButton.innerHTML = '📱 Mobile/Touch';
   mobileButton.style.cssText = `
-    padding: 12px 20px;
+    padding: 15px 25px;
     background: rgba(255, 165, 0, 0.1);
     border: 2px solid #ffa500;
     border-radius: 8px;
     color: white;
     font-family: 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 120px;
+    min-width: 140px;
   `;
   
   mobileButton.onmouseover = () => {
@@ -154,10 +152,7 @@ function addDeviceSelectionToHomeOverlay() {
   };
   
   mobileButton.onclick = () => {
-    isMobile = true;
-    console.log('Mobile mode selected');
-    setupControls();
-    hideDeviceSelection();
+    startGame('mobile');
   };
   
   deviceButtons.appendChild(pcButton);
@@ -165,22 +160,37 @@ function addDeviceSelectionToHomeOverlay() {
   deviceSelection.appendChild(deviceTitle);
   deviceSelection.appendChild(deviceButtons);
   
-  // Insert device selection before the start walking button
-  const startButton = homeOverlay.querySelector('button');
-  if (startButton) {
-    homeOverlay.insertBefore(deviceSelection, startButton);
-  } else {
-    homeOverlay.appendChild(deviceSelection);
-  }
+  homeOverlay.appendChild(deviceSelection);
 }
 
-// Hide device selection after choice is made
-function hideDeviceSelection() {
-  const deviceSelection = document.querySelector('.device-selection');
-  if (deviceSelection) {
-    deviceSelection.style.opacity = '0.5';
-    deviceSelection.style.pointerEvents = 'none';
+// Start game with selected device type
+function startGame(deviceType) {
+  isMobile = deviceType === 'mobile';
+  console.log(`${deviceType} mode selected`);
+  
+  // Initialize controls for selected device
+  if (isMobile) {
+    createMobileControls();
   }
+  
+  // Close overlay and start game
+  const homeOverlay = document.getElementById('overlay-home');
+  if (homeOverlay) {
+    homeOverlay.classList.remove('visible');
+    homeOverlay.style.display = 'none';
+  }
+  
+  gameStarted = true;
+  
+  // Request pointer lock only for PC
+  if (!isMobile) {
+    const container = document.getElementById('three-canvas');
+    if (container && !document.pointerLockElement) {
+      container.requestPointerLock();
+    }
+  }
+  
+  updateControlsDisplay();
 }
 
 // Create mobile controls
@@ -188,14 +198,9 @@ let mobileControls = null;
 let joystick = null;
 let lookPad = null;
 
-function setupControls() {
-  if (isMobile && !mobileControls) {
-    createMobileControls();
-  }
-  updateControlsDisplay();
-}
-
 function createMobileControls() {
+  if (mobileControls) return; // Already created
+  
   // Create mobile control container
   mobileControls = document.createElement('div');
   mobileControls.id = 'mobile-controls';
@@ -366,6 +371,9 @@ function createMobileControls() {
   mobileControls.appendChild(actionButtons);
   mobileControls.appendChild(returnButton);
   document.body.appendChild(mobileControls);
+
+  // Setup mobile touch events immediately after creating controls
+  setupMobileControls();
 }
 
 // Update loading progress
@@ -405,15 +413,6 @@ window.closeOverlay = function(name) {
   if (overlay) {
     overlay.classList.remove('visible');
     overlay.style.display = 'none';
-    
-    // Only start the game when clicking the start button for home overlay AND models are loaded
-    if (name === 'home' && allModelsLoaded) {
-      gameStarted = true;
-      const container = document.getElementById('three-canvas');
-      if (container && !isMobile && !document.pointerLockElement) {
-        container.requestPointerLock();
-      }
-    }
   }
 };
 
@@ -1194,18 +1193,23 @@ try {
   function setupMobileControls() {
     if (!isMobile || !mobileControls) return;
 
+    console.log('Setting up mobile controls...');
+
     // Joystick touch handling (Bruno Simon style)
     joystick.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       joystickActive = true;
       const rect = joystick.getBoundingClientRect();
       joystickCenter.x = rect.left + rect.width / 2;
       joystickCenter.y = rect.top + rect.height / 2;
+      console.log('Joystick touch start');
     });
 
     joystick.addEventListener('touchmove', (e) => {
       if (!joystickActive) return;
       e.preventDefault();
+      e.stopPropagation();
       
       const touch = e.touches[0];
       const deltaX = touch.clientX - joystickCenter.x;
@@ -1225,29 +1229,36 @@ try {
       const clampedX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
       const clampedY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
       knob.style.transform = `translate(-50%, -50%) translate(${clampedX}px, ${clampedY}px)`;
+      
+      console.log('Joystick input:', joystickInput);
     });
 
     joystick.addEventListener('touchend', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       joystickActive = false;
       joystickInput.x = 0;
       joystickInput.y = 0;
       const knob = document.getElementById('joystick-knob');
       knob.style.transform = 'translate(-50%, -50%)';
+      console.log('Joystick touch end');
     });
 
     // Look pad touch handling (Bruno Simon style - entire right side)
     lookPad.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       lookPadActive = true;
       const touch = e.touches[0];
       lastTouchPosition.x = touch.clientX;
       lastTouchPosition.y = touch.clientY;
+      console.log('Look pad touch start');
     });
 
     lookPad.addEventListener('touchmove', (e) => {
       if (!lookPadActive || !gameStarted) return;
       e.preventDefault();
+      e.stopPropagation();
       
       const touch = e.touches[0];
       const deltaX = touch.clientX - lastTouchPosition.x;
@@ -1268,57 +1279,90 @@ try {
       
       lastTouchPosition.x = touch.clientX;
       lastTouchPosition.y = touch.clientY;
+      
+      console.log('Look pad move:', deltaX, deltaY);
     });
 
     lookPad.addEventListener('touchend', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       lookPadActive = false;
+      console.log('Look pad touch end');
     });
 
     // Button event handlers
-    document.getElementById('jump-btn').addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      mobileButtons.jump = true;
-      keys[' '] = true;
-    });
+    const jumpBtn = document.getElementById('jump-btn');
+    const actionBtn = document.getElementById('action-btn');
+    const sprintBtn = document.getElementById('sprint-btn');
+    const returnBtn = document.getElementById('return-btn');
 
-    document.getElementById('jump-btn').addEventListener('touchend', (e) => {
-      e.preventDefault();
-      mobileButtons.jump = false;
-      keys[' '] = false;
-    });
+    if (jumpBtn) {
+      jumpBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        mobileButtons.jump = true;
+        keys[' '] = true;
+        console.log('Jump button pressed');
+      });
 
-    document.getElementById('action-btn').addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      mobileButtons.action = true;
-      keys['e'] = true;
-    });
+      jumpBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        mobileButtons.jump = false;
+        keys[' '] = false;
+        console.log('Jump button released');
+      });
+    }
 
-    document.getElementById('action-btn').addEventListener('touchend', (e) => {
-      e.preventDefault();
-      mobileButtons.action = false;
-      keys['e'] = false;
-    });
+    if (actionBtn) {
+      actionBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        mobileButtons.action = true;
+        keys['e'] = true;
+        console.log('Action button pressed');
+      });
 
-    document.getElementById('sprint-btn').addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      mobileButtons.sprint = true;
-      keys['shift'] = true;
-    });
+      actionBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        mobileButtons.action = false;
+        keys['e'] = false;
+        console.log('Action button released');
+      });
+    }
 
-    document.getElementById('sprint-btn').addEventListener('touchend', (e) => {
-      e.preventDefault();
-      mobileButtons.sprint = false;
-      keys['shift'] = false;
-    });
+    if (sprintBtn) {
+      sprintBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        mobileButtons.sprint = true;
+        keys['shift'] = true;
+        console.log('Sprint button pressed');
+      });
+
+      sprintBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        mobileButtons.sprint = false;
+        keys['shift'] = false;
+        console.log('Sprint button released');
+      });
+    }
 
     // Return button for spectator mode
-    document.getElementById('return-btn').addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (spectatorMode && currentScene.startsWith('model-')) {
-        returnToGallery();
-      }
-    });
+    if (returnBtn) {
+      returnBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (spectatorMode && currentScene.startsWith('model-')) {
+          returnToGallery();
+          console.log('Return button pressed');
+        }
+      });
+    }
+
+    console.log('Mobile controls setup complete');
   }
   
   let velocity = new THREE.Vector3();
@@ -1450,7 +1494,7 @@ try {
           }
         });
       });
-    } else if (currentScene === 'gallery') {
+          } else if (currentScene === 'gallery') {
       // Check return portal and gallery frames
       if (returnPortalModel) {
         returnPortalModel.traverse((child) => {
@@ -1485,7 +1529,7 @@ try {
       }
     }
 
-        if (targetObject) {
+    if (targetObject) {
       // Show portal info window
       portalInfoWindow.style.display = 'block';
       currentPortalInView = targetObject;
@@ -1790,7 +1834,7 @@ try {
 
   // Pointer lock exit handler
   document.addEventListener('pointerlockchange', () => {
-    if (!document.pointerLockElement && gameStarted) {
+    if (!document.pointerLockElement && gameStarted && !isMobile) {
       openOverlay('home');
       gameStarted = false;
       portalInfoWindow.style.display = 'none';
@@ -1800,7 +1844,7 @@ try {
 
   // ESC key handler
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && gameStarted && document.pointerLockElement) {
+    if (e.key === 'Escape' && gameStarted && !isMobile && document.pointerLockElement) {
       document.exitPointerLock();
     }
     
@@ -1809,22 +1853,6 @@ try {
       closeOverlay('home');
     }
   });
-
-  // Initialize mobile controls when device is selected
-  function initializeControls() {
-    if (isMobile) {
-      setupMobileControls();
-      console.log('Mobile controls initialized');
-    }
-  }
-
-  // Call this when device selection is made
-  window.selectDevice = function(deviceType) {
-    isMobile = deviceType === 'mobile';
-    initializeControls();
-    hideDeviceSelection();
-    updateControlsDisplay();
-  };
 
   // Optimized render loop with performance monitoring
   let lastTime = performance.now();
