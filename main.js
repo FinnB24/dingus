@@ -8,10 +8,21 @@ let currentScene = 'main'; // Track which scene we're in
 let spectatorMode = false; // Track if in spectator mode
 let allModelsLoaded = false; // Track if all models are loaded
 
-// Mobile detection
+// Device detection
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                 ('ontouchstart' in window) || 
-                 (navigator.maxTouchPoints > 0);
+                  ('ontouchstart' in window) || 
+                  (navigator.maxTouchPoints > 0);
+
+console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
+
+// Mobile controls state
+let touchControls = {
+  moveJoystick: { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 },
+  lookTouch: { active: false, startX: 0, startY: 0, deltaX: 0, deltaY: 0 },
+  jumpPressed: false,
+  sprintPressed: false,
+  usePressed: false
+};
 
 // Loading manager for better performance
 const loadingManager = new THREE.LoadingManager();
@@ -100,19 +111,22 @@ window.closeOverlay = function(name) {
   const overlay = document.getElementById('overlay-'+name);
   if (overlay) {
     overlay.classList.remove('visible');
+    overlay.style.display = 'none'; // Also hide the element completely
     
     // Only start the game when clicking the start button for home overlay AND models are loaded
     if (name === 'home' && allModelsLoaded) {
       gameStarted = true;
       
-      if (!isMobile) {
+      if (isMobile) {
+        // On mobile, just start the game directly
+        setupMobileControls();
+        console.log('Game started on mobile device');
+      } else {
+        // On desktop, request pointer lock
         const container = document.getElementById('three-canvas');
         if (container && !document.pointerLockElement) {
           container.requestPointerLock();
         }
-      } else {
-        // On mobile, just start the game without pointer lock
-        createMobileControls();
       }
     }
   }
@@ -122,50 +136,47 @@ window.openOverlay = function(name) {
   // Only allow overlay opening if models are loaded
   if (!allModelsLoaded) return;
   
-  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('visible'));
+  document.querySelectorAll('.overlay').forEach(o=>{
+    o.classList.remove('visible');
+    o.style.display = 'none';
+  });
+  
   const targetOverlay = document.getElementById('overlay-'+name);
   if (targetOverlay) {
+    targetOverlay.style.display = 'block';
     targetOverlay.classList.add('visible');
   }
   
   // Stop game when opening overlay
   if (name === 'home') {
     gameStarted = false;
-    hideMobileControls();
+    if (isMobile) {
+      hideMobileControls();
+    }
   }
 };
 
-// Hide overlays initially until models are loaded
-hideAllOverlays();
-
-// Mobile controls variables
-let mobileControls = null;
-let joystickActive = false;
-let joystickCenter = { x: 0, y: 0 };
-let joystickPosition = { x: 0, y: 0 };
-let lookSensitivity = 0.003;
-let touchStartPos = { x: 0, y: 0 };
-let lastTouchPos = { x: 0, y: 0 };
-
-// Create mobile controls
-function createMobileControls() {
-  if (!isMobile || mobileControls) return;
-
-  mobileControls = document.createElement('div');
-  mobileControls.id = 'mobile-controls';
-  mobileControls.style.cssText = `
+// Mobile controls setup
+function setupMobileControls() {
+  if (!isMobile) return;
+  
+  // Create mobile UI container
+  const mobileUI = document.createElement('div');
+  mobileUI.id = 'mobile-ui';
+  mobileUI.style.cssText = `
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 500;
     pointer-events: none;
+    z-index: 1000;
   `;
-
-  // Movement joystick (left side)
-  const joystick = document.createElement('div');
-  joystick.style.cssText = `
+  
+  // Movement joystick
+  const joystickContainer = document.createElement('div');
+  joystickContainer.id = 'joystick-container';
+  joystickContainer.style.cssText = `
     position: absolute;
     bottom: 30px;
     left: 30px;
@@ -177,25 +188,125 @@ function createMobileControls() {
     pointer-events: auto;
     touch-action: none;
   `;
-
+  
   const joystickKnob = document.createElement('div');
+  joystickKnob.id = 'joystick-knob';
   joystickKnob.style.cssText = `
     position: absolute;
     top: 50%;
     left: 50%;
     width: 40px;
     height: 40px;
-    background: rgba(255, 255, 255, 0.4);
-    border: 2px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.6);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     transition: all 0.1s ease;
   `;
-
-  joystick.appendChild(joystickKnob);
-
-  // Look area (right side)
+  
+  joystickContainer.appendChild(joystickKnob);
+  mobileUI.appendChild(joystickContainer);
+  
+  // Action buttons container
+  const actionsContainer = document.createElement('div');
+  actionsContainer.style.cssText = `
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: auto;
+  `;
+  
+  // Jump button
+  const jumpButton = document.createElement('div');
+  jumpButton.id = 'jump-button';
+  jumpButton.innerHTML = '↑';
+  jumpButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 0, 0.3);
+    border: 2px solid rgba(255, 255, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    user-select: none;
+    touch-action: none;
+  `;
+  
+  // Sprint button
+  const sprintButton = document.createElement('div');
+  sprintButton.id = 'sprint-button';
+  sprintButton.innerHTML = '⚡';
+  sprintButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 255, 0, 0.3);
+    border: 2px solid rgba(0, 255, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    user-select: none;
+    touch-action: none;
+  `;
+  
+  // Use/Interact button
+  const useButton = document.createElement('div');
+  useButton.id = 'use-button';
+  useButton.innerHTML = 'E';
+  useButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 255, 255, 0.3);
+    border: 2px solid rgba(0, 255, 255, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    user-select: none;
+    touch-action: none;
+  `;
+  
+  // Spectator mode return button (hidden by default)
+  const returnButton = document.createElement('div');
+  returnButton.id = 'return-button';
+  returnButton.innerHTML = 'Q';
+  returnButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 0, 255, 0.3);
+    border: 2px solid rgba(255, 0, 255, 0.6);
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    user-select: none;
+    touch-action: none;
+  `;
+  
+  actionsContainer.appendChild(jumpButton);
+  actionsContainer.appendChild(sprintButton);
+  actionsContainer.appendChild(useButton);
+  actionsContainer.appendChild(returnButton);
+  mobileUI.appendChild(actionsContainer);
+  
+  // Look area (right side of screen)
   const lookArea = document.createElement('div');
+  lookArea.id = 'look-area';
   lookArea.style.cssText = `
     position: absolute;
     top: 0;
@@ -204,273 +315,155 @@ function createMobileControls() {
     height: 100%;
     pointer-events: auto;
     touch-action: none;
-    background: transparent;
   `;
-
-  // Action buttons (right side)
-  const actionButtons = document.createElement('div');
-  actionButtons.style.cssText = `
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
-    pointer-events: auto;
-  `;
-
-  // Jump button
-  const jumpButton = document.createElement('div');
-  jumpButton.innerHTML = '⬆';
-  jumpButton.style.cssText = `
-    width: 60px;
-    height: 60px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: white;
-    margin-bottom: 10px;
-    touch-action: none;
-    user-select: none;
-  `;
-
-  // Action button (E key equivalent)
-  const actionButton = document.createElement('div');
-  actionButton.innerHTML = 'E';
-  actionButton.style.cssText = `
-    width: 60px;
-    height: 60px;
-    background: rgba(0, 255, 255, 0.1);
-    border: 2px solid rgba(0, 255, 255, 0.3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #00ffff;
-    touch-action: none;
-    user-select: none;
-  `;
-
-  // Sprint button (bottom right)
-  const sprintButton = document.createElement('div');
-  sprintButton.innerHTML = '🏃';
-  sprintButton.style.cssText = `
-    position: absolute;
-    bottom: 30px;
-    right: 110px;
-    width: 50px;
-    height: 50px;
-    background: rgba(255, 255, 0, 0.1);
-    border: 2px solid rgba(255, 255, 0, 0.3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    color: yellow;
-    touch-action: none;
-    user-select: none;
-    pointer-events: auto;
-  `;
-
-  // Q button for spectator mode (top right)
-  const qButton = document.createElement('div');
-  qButton.innerHTML = 'Q';
-  qButton.style.cssText = `
-    position: absolute;
-    top: 30px;
-    right: 30px;
-    width: 50px;
-    height: 50px;
-    background: rgba(255, 0, 255, 0.1);
-    border: 2px solid rgba(255, 0, 255, 0.3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    color: #ff00ff;
-    touch-action: none;
-    user-select: none;
-    pointer-events: auto;
-  `;
-
-  actionButtons.appendChild(jumpButton);
-  actionButtons.appendChild(actionButton);
-
-  mobileControls.appendChild(joystick);
-  mobileControls.appendChild(lookArea);
-  mobileControls.appendChild(actionButtons);
-  mobileControls.appendChild(sprintButton);
-  mobileControls.appendChild(qButton);
-
-  document.body.appendChild(mobileControls);
-
+  mobileUI.appendChild(lookArea);
+  
+  document.body.appendChild(mobileUI);
+  
   // Joystick event handlers
   function handleJoystickStart(e) {
     e.preventDefault();
-    const rect = joystick.getBoundingClientRect();
-    joystickCenter.x = rect.left + rect.width / 2;
-    joystickCenter.y = rect.top + rect.height / 2;
-    joystickActive = true;
+    const rect = joystickContainer.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    touchControls.moveJoystick.active = true;
+    touchControls.moveJoystick.startX = centerX;
+    touchControls.moveJoystick.startY = centerY;
     
     const touch = e.touches ? e.touches[0] : e;
-    updateJoystick(touch.clientX, touch.clientY);
+    touchControls.moveJoystick.currentX = touch.clientX;
+    touchControls.moveJoystick.currentY = touch.clientY;
+    
+    updateJoystickPosition();
   }
-
+  
   function handleJoystickMove(e) {
-    if (!joystickActive) return;
+    if (!touchControls.moveJoystick.active) return;
     e.preventDefault();
+    
     const touch = e.touches ? e.touches[0] : e;
-    updateJoystick(touch.clientX, touch.clientY);
+    touchControls.moveJoystick.currentX = touch.clientX;
+    touchControls.moveJoystick.currentY = touch.clientY;
+    
+    updateJoystickPosition();
   }
-
+  
   function handleJoystickEnd(e) {
     e.preventDefault();
-    joystickActive = false;
-    joystickPosition.x = 0;
-    joystickPosition.y = 0;
+    touchControls.moveJoystick.active = false;
+    
+    // Reset joystick position
     joystickKnob.style.transform = 'translate(-50%, -50%)';
-    keys['w'] = false;
-    keys['a'] = false;
-    keys['s'] = false;
-    keys['d'] = false;
   }
-
-  function updateJoystick(x, y) {
-    const deltaX = x - joystickCenter.x;
-    const deltaY = y - joystickCenter.y;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const maxDistance = 40; // Half of joystick radius
-
-    if (distance > maxDistance) {
-      const angle = Math.atan2(deltaY, deltaX);
-      joystickPosition.x = Math.cos(angle) * maxDistance;
-      joystickPosition.y = Math.sin(angle) * maxDistance;
-    } else {
-      joystickPosition.x = deltaX;
-      joystickPosition.y = deltaY;
-    }
-
-    joystickKnob.style.transform = `translate(${-50 + (joystickPosition.x / maxDistance) * 50}%, ${-50 + (joystickPosition.y / maxDistance) * 50}%)`;
-
-    // Update movement keys based on joystick position
-    const threshold = 10;
-    keys['w'] = joystickPosition.y < -threshold;
-    keys['s'] = joystickPosition.y > threshold;
-    keys['a'] = joystickPosition.x < -threshold;
-    keys['d'] = joystickPosition.x > threshold;
+  
+  function updateJoystickPosition() {
+    const deltaX = touchControls.moveJoystick.currentX - touchControls.moveJoystick.startX;
+    const deltaY = touchControls.moveJoystick.currentY - touchControls.moveJoystick.startY;
+    
+    const maxDistance = 40; // Maximum distance from center
+    const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), maxDistance);
+    const angle = Math.atan2(deltaY, deltaX);
+    
+    const x = Math.cos(angle) * distance;
+    const y = Math.sin(angle) * distance;
+    
+    joystickKnob.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
   }
-
+  
   // Look area event handlers
   function handleLookStart(e) {
     e.preventDefault();
     const touch = e.touches ? e.touches[0] : e;
-    touchStartPos.x = touch.clientX;
-    touchStartPos.y = touch.clientY;
-    lastTouchPos.x = touch.clientX;
-    lastTouchPos.y = touch.clientY;
+    touchControls.lookTouch.active = true;
+    touchControls.lookTouch.startX = touch.clientX;
+    touchControls.lookTouch.startY = touch.clientY;
   }
-
+  
   function handleLookMove(e) {
-    if (!gameStarted) return;
+    if (!touchControls.lookTouch.active) return;
     e.preventDefault();
-    const touch = e.touches ? e.touches[0] : e;
     
-    const deltaX = touch.clientX - lastTouchPos.x;
-    const deltaY = touch.clientY - lastTouchPos.y;
-
-    targetRotationY -= deltaX * lookSensitivity;
-    currentRotationX -= deltaY * lookSensitivity;
-
-    // Limit vertical rotation
-    if (spectatorMode) {
-      currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
-    } else {
-      currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
-    }
-
-    lastTouchPos.x = touch.clientX;
-    lastTouchPos.y = touch.clientY;
+    const touch = e.touches ? e.touches[0] : e;
+    touchControls.lookTouch.deltaX = (touch.clientX - touchControls.lookTouch.startX) * 0.003;
+    touchControls.lookTouch.deltaY = (touch.clientY - touchControls.lookTouch.startY) * 0.003;
+    
+    touchControls.lookTouch.startX = touch.clientX;
+    touchControls.lookTouch.startY = touch.clientY;
   }
-
+  
+  function handleLookEnd(e) {
+    e.preventDefault();
+    touchControls.lookTouch.active = false;
+    touchControls.lookTouch.deltaX = 0;
+    touchControls.lookTouch.deltaY = 0;
+  }
+  
   // Button event handlers
-  function handleJumpPress() {
-    keys[' '] = true;
-    jumpButton.style.background = 'rgba(255, 255, 255, 0.3)';
-    setTimeout(() => {
-      keys[' '] = false;
-      jumpButton.style.background = 'rgba(255, 255, 255, 0.1)';
-    }, 150);
+  function createButtonHandler(button, controlKey) {
+    const handleStart = (e) => {
+      e.preventDefault();
+      touchControls[controlKey] = true;
+      button.style.opacity = '0.8';
+      button.style.transform = 'scale(0.95)';
+    };
+    
+    const handleEnd = (e) => {
+      e.preventDefault();
+      touchControls[controlKey] = false;
+      button.style.opacity = '1';
+      button.style.transform = 'scale(1)';
+    };
+    
+    button.addEventListener('touchstart', handleStart);
+    button.addEventListener('touchend', handleEnd);
+    button.addEventListener('touchcancel', handleEnd);
   }
-
-  function handleActionPress() {
-    keys['e'] = true;
-    actionButton.style.background = 'rgba(0, 255, 255, 0.3)';
-    setTimeout(() => {
-      keys['e'] = false;
-      actionButton.style.background = 'rgba(0, 255, 255, 0.1)';
-    }, 150);
-  }
-
-  function handleSprintStart() {
-    keys['shift'] = true;
-    sprintButton.style.background = 'rgba(255, 255, 0, 0.3)';
-  }
-
-  function handleSprintEnd() {
-    keys['shift'] = false;
-    sprintButton.style.background = 'rgba(255, 255, 0, 0.1)';
-  }
-
-  function handleQPress() {
-    if (spectatorMode && currentScene.startsWith('model-')) {
-      returnToGallery();
-      qButton.style.background = 'rgba(255, 0, 255, 0.3)';
-      setTimeout(() => {
-        qButton.style.background = 'rgba(255, 0, 255, 0.1)';
-      }, 150);
-    }
-  }
-
+  
   // Add event listeners
-  joystick.addEventListener('touchstart', handleJoystickStart);
-  joystick.addEventListener('touchmove', handleJoystickMove);
-  joystick.addEventListener('touchend', handleJoystickEnd);
-  joystick.addEventListener('mousedown', handleJoystickStart);
-  joystick.addEventListener('mousemove', handleJoystickMove);
-  joystick.addEventListener('mouseup', handleJoystickEnd);
-
+  joystickContainer.addEventListener('touchstart', handleJoystickStart);
+  document.addEventListener('touchmove', handleJoystickMove);
+  document.addEventListener('touchend', handleJoystickEnd);
+  
   lookArea.addEventListener('touchstart', handleLookStart);
   lookArea.addEventListener('touchmove', handleLookMove);
-  lookArea.addEventListener('mousedown', handleLookStart);
-  lookArea.addEventListener('mousemove', handleLookMove);
-
-  jumpButton.addEventListener('touchstart', handleJumpPress);
-  jumpButton.addEventListener('mousedown', handleJumpPress);
-
-  actionButton.addEventListener('touchstart', handleActionPress);
-  actionButton.addEventListener('mousedown', handleActionPress);
-
-  sprintButton.addEventListener('touchstart', handleSprintStart);
-  sprintButton.addEventListener('touchend', handleSprintEnd);
-  sprintButton.addEventListener('mousedown', handleSprintStart);
-  sprintButton.addEventListener('mouseup', handleSprintEnd);
-
-  qButton.addEventListener('touchstart', handleQPress);
-  qButton.addEventListener('mousedown', handleQPress);
-
-  console.log('Mobile controls created');
+  lookArea.addEventListener('touchend', handleLookEnd);
+  
+  createButtonHandler(jumpButton, 'jumpPressed');
+  createButtonHandler(sprintButton, 'sprintPressed');
+  createButtonHandler(useButton, 'usePressed');
+  
+  // Return button for spectator mode
+  returnButton.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (spectatorMode && currentScene.startsWith('model-')) {
+      returnToGallery();
+    }
+  });
+  
+  console.log('Mobile controls setup complete');
 }
 
 function hideMobileControls() {
-  if (mobileControls) {
-    mobileControls.remove();
-    mobileControls = null;
+  const mobileUI = document.getElementById('mobile-ui');
+  if (mobileUI) {
+    mobileUI.remove();
   }
 }
+
+function updateMobileUI() {
+  const returnButton = document.getElementById('return-button');
+  if (returnButton) {
+    if (spectatorMode) {
+      returnButton.style.display = 'flex';
+    } else {
+      returnButton.style.display = 'none';
+    }
+  }
+}
+
+// Hide overlays initially until models are loaded
+hideAllOverlays();
 
 try {
   // 3D Scene Setup
@@ -564,25 +557,28 @@ try {
 
   function updateControlsDisplay() {
     if (isMobile) {
+      // Mobile controls display
       if (spectatorMode) {
         controlsDisplay.innerHTML = `
-          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 MOBILE SPECTATOR</div>
+          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">📱 MOBILE SPECTATOR</div>
           <div><span style="color: #ffff00;">Joystick</span> - Fly around</div>
-          <div><span style="color: #ffff00;">Touch & Drag</span> - Look</div>
+          <div><span style="color: #ffff00;">Right side</span> - Look around</div>
+          <div><span style="color: #ffff00;">↑ Button</span> - Fly up</div>
+          <div><span style="color: #ffff00;">⚡ Button</span> - Fly down</div>
           <div><span style="color: #ffff00;">Q Button</span> - Return to gallery</div>
         `;
       } else {
         controlsDisplay.innerHTML = `
           <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">📱 MOBILE CONTROLS</div>
           <div><span style="color: #ffff00;">Joystick</span> - Move</div>
-          <div><span style="color: #ffff00;">Touch & Drag</span> - Look around</div>
-          <div><span style="color: #ffff00;">⬆ Button</span> - Jump</div>
-          <div><span style="color: #ffff00;">🏃 Button</span> - Sprint</div>
+          <div><span style="color: #ffff00;">Right side</span> - Look around</div>
+          <div><span style="color: #ffff00;">↑ Button</span> - Jump</div>
+          <div><span style="color: #ffff00;">⚡ Button</span> - Sprint</div>
           <div><span style="color: #ffff00;">E Button</span> - Use Portal</div>
-          <div style="margin-top: 8px; color: #888; font-size: 10px;">Aim crosshair at portals to scan</div>
         `;
       }
     } else {
+      // Desktop controls display
       if (spectatorMode) {
         controlsDisplay.innerHTML = `
           <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 SPECTATOR MODE</div>
@@ -638,7 +634,7 @@ try {
     <div style="margin-bottom: 5px;">Energy: <span style="color: #ffff00;">97.3%</span></div>
     <div style="margin-bottom: 5px;">Destination: <span id="portal-destination" style="color: #ff9900;">--</span></div>
     <div style="margin-bottom: 10px;">Distance: <span id="portal-distance" style="color: #00ffff;">--</span></div>
-    <div style="color: #00ff00; font-size: 12px;">${isMobile ? 'Press E button to enter portal' : 'Press E to enter portal'}</div>
+    <div style="color: #00ff00; font-size: 12px;">${isMobile ? 'Press E button to enter' : 'Press E to enter portal'}</div>
   `;
   document.body.appendChild(portalInfoWindow);
 
@@ -1177,9 +1173,9 @@ try {
   let currentRotationX = 0;
   const MOUSE_SENSITIVITY = 0.002;
 
-  // Mouse movement only works when game is started and pointer is locked
+  // Mouse movement only works when game is started and pointer is locked (desktop only)
   document.addEventListener('mousemove', (e) => {
-    if (document.pointerLockElement && gameStarted && !isMobile) {
+    if (!isMobile && document.pointerLockElement && gameStarted) {
       mouseX = e.movementX || 0;
       mouseY = e.movementY || 0;
       
@@ -1195,31 +1191,26 @@ try {
     }
   });
 
-  // Handle window resize
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
   // Movement and physics variables
   const keys = {};
   
-  // Separate handling for keydown and keyup to better manage Q key
-  window.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    keys[key] = true;
+  // Separate handling for keydown and keyup to better manage Q key (desktop only)
+  if (!isMobile) {
+    window.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      keys[key] = true;
+      
+      // Handle Q key press immediately for spectator mode return
+      if (key === 'q' && spectatorMode && currentScene.startsWith('model-')) {
+        returnToGallery();
+        console.log('Q key pressed - returning to gallery');
+      }
+    });
     
-    // Handle Q key press immediately for spectator mode return
-    if (key === 'q' && spectatorMode && currentScene.startsWith('model-')) {
-      returnToGallery();
-      console.log('Q key pressed - returning to gallery');
-    }
-  });
-  
-  window.addEventListener('keyup', (e) => {
-    keys[e.key.toLowerCase()] = false;
-  });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+  }
   
   let velocity = new THREE.Vector3();
   let moveSpeed = 5;
@@ -1252,6 +1243,7 @@ try {
     characterGroup.position.set(0, 0, 10);
     
     updateControlsDisplay();
+    updateMobileUI();
     console.log('Switched to gallery scene');
   }
 
@@ -1268,6 +1260,7 @@ try {
     characterGroup.position.set(0, 0, 5);
     
     updateControlsDisplay();
+    updateMobileUI();
     console.log('Switched to main scene');
   }
 
@@ -1296,6 +1289,7 @@ try {
     currentRotationX = 0;
     
     updateControlsDisplay();
+    updateMobileUI();
     console.log(`Switched to model viewer for ${artPieces[artIndex].name}`);
   }
 
@@ -1313,6 +1307,7 @@ try {
     currentRotationX = 0;
     
     updateControlsDisplay();
+    updateMobileUI();
     console.log('Returned to gallery from model viewer');
   }
 
@@ -1451,3 +1446,12 @@ try {
           Math.pow(currentPosition.x - boxPosition.x, 2) + 
           Math.pow(currentPosition.z - boxPosition.z, 2)
         );
+        const newDistanceToCenter = Math.sqrt(
+          Math.pow(newPosition.x - boxPosition.x, 2) + 
+          Math.pow(newPosition.z - boxPosition.z, 2)
+        );
+        
+        if (wouldCollideX && wouldCollideZ && wouldCollideY &&
+            newDistanceToCenter <= currentDistanceToCenter) {
+          return true;
+        
