@@ -7,6 +7,7 @@ let gameStarted = false;
 let currentScene = 'main'; // Track which scene we're in
 let spectatorMode = false; // Track if in spectator mode
 let allModelsLoaded = false; // Track if all models are loaded
+let isMobile = false; // Will be set by user selection
 
 // Loading manager for better performance
 const loadingManager = new THREE.LoadingManager();
@@ -56,22 +57,145 @@ function showHomeOverlay() {
   if (homeOverlay) {
     homeOverlay.style.display = 'block';
     homeOverlay.classList.add('visible');
+    
+    // Add device selection buttons to the home overlay
+    addDeviceSelectionToHomeOverlay();
   }
 }
 
-// Mobile detection and setup
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                 ('ontouchstart' in window) || 
-                 (navigator.maxTouchPoints > 0);
+// Add device selection buttons to home overlay
+function addDeviceSelectionToHomeOverlay() {
+  const homeOverlay = document.getElementById('overlay-home');
+  if (!homeOverlay) return;
+  
+  // Check if device selection already exists
+  if (homeOverlay.querySelector('.device-selection')) return;
+  
+  // Create device selection container
+  const deviceSelection = document.createElement('div');
+  deviceSelection.className = 'device-selection';
+  deviceSelection.style.cssText = `
+    margin: 20px 0;
+    text-align: center;
+  `;
+  
+  const deviceTitle = document.createElement('div');
+  deviceTitle.textContent = 'Select your device:';
+  deviceTitle.style.cssText = `
+    color: #00ffff;
+    font-size: 14px;
+    margin-bottom: 15px;
+    font-weight: bold;
+  `;
+  
+  const deviceButtons = document.createElement('div');
+  deviceButtons.style.cssText = `
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  `;
+  
+  // PC Button
+  const pcButton = document.createElement('button');
+  pcButton.innerHTML = '🖥️ PC/Desktop';
+  pcButton.style.cssText = `
+    padding: 12px 20px;
+    background: rgba(0, 255, 255, 0.1);
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+  `;
+  
+  pcButton.onmouseover = () => {
+    pcButton.style.background = 'rgba(0, 255, 255, 0.2)';
+    pcButton.style.transform = 'scale(1.05)';
+  };
+  pcButton.onmouseout = () => {
+    pcButton.style.background = 'rgba(0, 255, 255, 0.1)';
+    pcButton.style.transform = 'scale(1)';
+  };
+  
+  pcButton.onclick = () => {
+    isMobile = false;
+    console.log('PC mode selected');
+    setupControls();
+    hideDeviceSelection();
+  };
+  
+  // Mobile Button
+  const mobileButton = document.createElement('button');
+  mobileButton.innerHTML = '📱 Mobile/Touch';
+  mobileButton.style.cssText = `
+    padding: 12px 20px;
+    background: rgba(255, 165, 0, 0.1);
+    border: 2px solid #ffa500;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+  `;
+  
+  mobileButton.onmouseover = () => {
+    mobileButton.style.background = 'rgba(255, 165, 0, 0.2)';
+    mobileButton.style.transform = 'scale(1.05)';
+  };
+  mobileButton.onmouseout = () => {
+    mobileButton.style.background = 'rgba(255, 165, 0, 0.1)';
+    mobileButton.style.transform = 'scale(1)';
+  };
+  
+  mobileButton.onclick = () => {
+    isMobile = true;
+    console.log('Mobile mode selected');
+    setupControls();
+    hideDeviceSelection();
+  };
+  
+  deviceButtons.appendChild(pcButton);
+  deviceButtons.appendChild(mobileButton);
+  deviceSelection.appendChild(deviceTitle);
+  deviceSelection.appendChild(deviceButtons);
+  
+  // Insert device selection before the start walking button
+  const startButton = homeOverlay.querySelector('button');
+  if (startButton) {
+    homeOverlay.insertBefore(deviceSelection, startButton);
+  } else {
+    homeOverlay.appendChild(deviceSelection);
+  }
+}
 
-console.log('Mobile device detected:', isMobile);
+// Hide device selection after choice is made
+function hideDeviceSelection() {
+  const deviceSelection = document.querySelector('.device-selection');
+  if (deviceSelection) {
+    deviceSelection.style.opacity = '0.5';
+    deviceSelection.style.pointerEvents = 'none';
+  }
+}
 
 // Create mobile controls
 let mobileControls = null;
 let joystick = null;
 let lookPad = null;
 
-if (isMobile) {
+function setupControls() {
+  if (isMobile && !mobileControls) {
+    createMobileControls();
+  }
+  updateControlsDisplay();
+}
+
+function createMobileControls() {
   // Create mobile control container
   mobileControls = document.createElement('div');
   mobileControls.id = 'mobile-controls';
@@ -86,20 +210,21 @@ if (isMobile) {
     display: none;
   `;
 
-  // Movement joystick (bottom left)
+  // Bruno Simon style - floating joystick
   joystick = document.createElement('div');
   joystick.id = 'joystick';
   joystick.style.cssText = `
     position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 120px;
-    height: 120px;
+    bottom: 30px;
+    left: 30px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     pointer-events: auto;
     touch-action: none;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
   `;
   
   const joystickKnob = document.createElement('div');
@@ -108,86 +233,128 @@ if (isMobile) {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(0, 255, 255, 0.8);
     transform: translate(-50%, -50%);
     transition: none;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
   `;
   joystick.appendChild(joystickKnob);
 
-  // Look pad (bottom right)
+  // Bruno Simon style - look area (full right side)
   lookPad = document.createElement('div');
   lookPad.id = 'look-pad';
   lookPad.style.cssText = `
     position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    top: 0;
+    right: 0;
+    width: 60%;
+    height: 100%;
     pointer-events: auto;
     touch-action: none;
+    background: transparent;
   `;
 
-  // Action buttons (right side)
+  // Add touch indicator for look area
+  const lookIndicator = document.createElement('div');
+  lookIndicator.style.cssText = `
+    position: absolute;
+    top: 50%;
+    right: 30px;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  `;
+  lookIndicator.textContent = 'LOOK AROUND';
+  lookPad.appendChild(lookIndicator);
+
+  // Action buttons (Bruno Simon style - minimal and floating)
   const actionButtons = document.createElement('div');
   actionButtons.id = 'action-buttons';
   actionButtons.style.cssText = `
     position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    bottom: 30px;
+    right: 30px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     pointer-events: auto;
   `;
 
   const jumpButton = document.createElement('button');
   jumpButton.id = 'jump-btn';
-  jumpButton.innerHTML = '⬆️';
+  jumpButton.innerHTML = '↑';
   jumpButton.style.cssText = `
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
-    font-size: 24px;
+    font-size: 20px;
+    font-weight: bold;
     touch-action: manipulation;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
   `;
 
   const actionButton = document.createElement('button');
   actionButton.id = 'action-btn';
   actionButton.innerHTML = 'E';
   actionButton.style.cssText = `
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background: rgba(0, 255, 255, 0.2);
+    background: rgba(0, 255, 255, 0.1);
     border: 2px solid rgba(0, 255, 255, 0.4);
     color: white;
-    font-size: 20px;
+    font-size: 16px;
     font-weight: bold;
     touch-action: manipulation;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
   `;
 
   const sprintButton = document.createElement('button');
   sprintButton.id = 'sprint-btn';
-  sprintButton.innerHTML = '🏃';
+  sprintButton.innerHTML = '⚡';
   sprintButton.style.cssText = `
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background: rgba(255, 255, 0, 0.2);
+    background: rgba(255, 255, 0, 0.1);
     border: 2px solid rgba(255, 255, 0, 0.4);
     color: white;
-    font-size: 20px;
+    font-size: 16px;
     touch-action: manipulation;
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+  `;
+
+  // Bruno Simon style - Return button for spectator mode
+  const returnButton = document.createElement('button');
+  returnButton.id = 'return-btn';
+  returnButton.innerHTML = '←';
+  returnButton.style.cssText = `
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 100, 100, 0.1);
+    border: 2px solid rgba(255, 100, 100, 0.4);
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    touch-action: manipulation;
+    pointer-events: auto;
+    display: none;
+    box-shadow: 0 0 15px rgba(255, 100, 100, 0.3);
   `;
 
   actionButtons.appendChild(jumpButton);
@@ -197,6 +364,7 @@ if (isMobile) {
   mobileControls.appendChild(joystick);
   mobileControls.appendChild(lookPad);
   mobileControls.appendChild(actionButtons);
+  mobileControls.appendChild(returnButton);
   document.body.appendChild(mobileControls);
 }
 
@@ -364,17 +532,17 @@ try {
         controlsDisplay.innerHTML = `
           <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 SPECTATOR MODE</div>
           <div><span style="color: #ffff00;">Joystick</span> - Fly around</div>
-          <div><span style="color: #ffff00;">Right pad</span> - Look around</div>
-          <div><span style="color: #ffff00;">⬆️</span> - Fly up/down</div>
-          <div><span style="color: #ffff00;">Back</span> - Return to gallery</div>
+          <div><span style="color: #ffff00;">Right side</span> - Look around</div>
+          <div><span style="color: #ffff00;">↑</span> - Fly up/down</div>
+          <div><span style="color: #ffff00;">←</span> - Return to gallery</div>
         `;
       } else {
         controlsDisplay.innerHTML = `
-          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">📱 MOBILE CONTROLS</div>
+          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">📱 TOUCH CONTROLS</div>
           <div><span style="color: #ffff00;">Joystick</span> - Move</div>
-          <div><span style="color: #ffff00;">Right pad</span> - Look around</div>
-          <div><span style="color: #ffff00;">⬆️</span> - Jump</div>
-          <div><span style="color: #ffff00;">🏃</span> - Sprint</div>
+          <div><span style="color: #ffff00;">Right side</span> - Look around</div>
+          <div><span style="color: #ffff00;">↑</span> - Jump</div>
+          <div><span style="color: #ffff00;">⚡</span> - Sprint</div>
           <div><span style="color: #ffff00;">E</span> - Use Portal</div>
         `;
       }
@@ -999,6 +1167,7 @@ try {
   let joystickCenter = { x: 0, y: 0 };
   let joystickInput = { x: 0, y: 0 };
   let lookPadActive = false;
+  let lastTouchPosition = { x: 0, y: 0 };
   let mobileButtons = {
     jump: false,
     action: false,
@@ -1022,8 +1191,10 @@ try {
   });
 
   // Mobile touch event handlers
-  if (isMobile) {
-    // Joystick touch handling
+  function setupMobileControls() {
+    if (!isMobile || !mobileControls) return;
+
+    // Joystick touch handling (Bruno Simon style)
     joystick.addEventListener('touchstart', (e) => {
       e.preventDefault();
       joystickActive = true;
@@ -1040,18 +1211,20 @@ try {
       const deltaX = touch.clientX - joystickCenter.x;
       const deltaY = touch.clientY - joystickCenter.y;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const maxDistance = 40; // Max knob movement
+      const maxDistance = 35; // Max knob movement
       
       if (distance <= maxDistance) {
         joystickInput.x = deltaX / maxDistance;
         joystickInput.y = deltaY / maxDistance;
       } else {
-        joystickInput.x = (deltaX / distance) * (maxDistance / maxDistance);
-        joystickInput.y = (deltaY / distance) * (maxDistance / maxDistance);
+        joystickInput.x = (deltaX / distance);
+        joystickInput.y = (deltaY / distance);
       }
       
       const knob = document.getElementById('joystick-knob');
-      knob.style.transform = `translate(-50%, -50%) translate(${joystickInput.x * maxDistance}px, ${joystickInput.y * maxDistance}px)`;
+      const clampedX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
+      const clampedY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
+      knob.style.transform = `translate(-50%, -50%) translate(${clampedX}px, ${clampedY}px)`;
     });
 
     joystick.addEventListener('touchend', (e) => {
@@ -1063,10 +1236,13 @@ try {
       knob.style.transform = 'translate(-50%, -50%)';
     });
 
-    // Look pad touch handling
+    // Look pad touch handling (Bruno Simon style - entire right side)
     lookPad.addEventListener('touchstart', (e) => {
       e.preventDefault();
       lookPadActive = true;
+      const touch = e.touches[0];
+      lastTouchPosition.x = touch.clientX;
+      lastTouchPosition.y = touch.clientY;
     });
 
     lookPad.addEventListener('touchmove', (e) => {
@@ -1074,14 +1250,14 @@ try {
       e.preventDefault();
       
       const touch = e.touches[0];
-      const sensitivity = 0.003;
+      const deltaX = touch.clientX - lastTouchPosition.x;
+      const deltaY = touch.clientY - lastTouchPosition.y;
       
-      // Simulate mouse movement
-      const movementX = (touch.clientX - (lookPad.getBoundingClientRect().left + lookPad.offsetWidth/2)) * sensitivity;
-      const movementY = (touch.clientY - (lookPad.getBoundingClientRect().top + lookPad.offsetHeight/2)) * sensitivity;
+      // Bruno Simon style sensitivity
+      const sensitivity = 0.005;
       
-      targetRotationY -= movementX;
-      currentRotationX -= movementY;
+      targetRotationY -= deltaX * sensitivity;
+      currentRotationX -= deltaY * sensitivity;
       
       // Limit vertical rotation
       if (spectatorMode) {
@@ -1089,6 +1265,9 @@ try {
       } else {
         currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
       }
+      
+      lastTouchPosition.x = touch.clientX;
+      lastTouchPosition.y = touch.clientY;
     });
 
     lookPad.addEventListener('touchend', (e) => {
@@ -1132,6 +1311,14 @@ try {
       mobileButtons.sprint = false;
       keys['shift'] = false;
     });
+
+    // Return button for spectator mode
+    document.getElementById('return-btn').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (spectatorMode && currentScene.startsWith('model-')) {
+        returnToGallery();
+      }
+    });
   }
   
   let velocity = new THREE.Vector3();
@@ -1165,6 +1352,7 @@ try {
     characterGroup.position.set(0, 0, 10);
     
     updateControlsDisplay();
+    updateMobileControlsVisibility();
     console.log('Switched to gallery scene');
   }
 
@@ -1181,6 +1369,7 @@ try {
     characterGroup.position.set(0, 0, 5);
     
     updateControlsDisplay();
+    updateMobileControlsVisibility();
     console.log('Switched to main scene');
   }
 
@@ -1209,6 +1398,7 @@ try {
     currentRotationX = 0;
     
     updateControlsDisplay();
+    updateMobileControlsVisibility();
     console.log(`Switched to model viewer for ${artPieces[artIndex].name}`);
   }
 
@@ -1226,7 +1416,18 @@ try {
     currentRotationX = 0;
     
     updateControlsDisplay();
+    updateMobileControlsVisibility();
     console.log('Returned to gallery from model viewer');
+  }
+
+  // Update mobile controls visibility based on mode
+  function updateMobileControlsVisibility() {
+    if (!isMobile || !mobileControls) return;
+    
+    const returnBtn = document.getElementById('return-btn');
+    if (returnBtn) {
+      returnBtn.style.display = spectatorMode ? 'block' : 'none';
+    }
   }
 
   // Function to check if crosshair is directly pointing at any portal or interactive element
@@ -1284,7 +1485,7 @@ try {
       }
     }
 
-    if (targetObject) {
+        if (targetObject) {
       // Show portal info window
       portalInfoWindow.style.display = 'block';
       currentPortalInView = targetObject;
@@ -1422,16 +1623,16 @@ try {
     return groundLevel;
   }
 
-    function moveCharacter(dt) {
+  function moveCharacter(dt) {
     if (!gameStarted) return;
     
-    // Mobile joystick input handling
+    // Mobile joystick input handling (Bruno Simon style)
     if (isMobile && joystickActive) {
-      // Convert joystick input to movement keys
-      keys['w'] = joystickInput.y < -0.3;
-      keys['s'] = joystickInput.y > 0.3;
-      keys['a'] = joystickInput.x < -0.3;
-      keys['d'] = joystickInput.x > 0.3;
+      // Convert joystick input to movement keys with improved sensitivity
+      keys['w'] = joystickInput.y < -0.2;
+      keys['s'] = joystickInput.y > 0.2;
+      keys['a'] = joystickInput.x < -0.2;
+      keys['d'] = joystickInput.x > 0.2;
     } else if (isMobile) {
       // Reset movement keys when joystick not active
       keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
@@ -1608,6 +1809,22 @@ try {
       closeOverlay('home');
     }
   });
+
+  // Initialize mobile controls when device is selected
+  function initializeControls() {
+    if (isMobile) {
+      setupMobileControls();
+      console.log('Mobile controls initialized');
+    }
+  }
+
+  // Call this when device selection is made
+  window.selectDevice = function(deviceType) {
+    isMobile = deviceType === 'mobile';
+    initializeControls();
+    hideDeviceSelection();
+    updateControlsDisplay();
+  };
 
   // Optimized render loop with performance monitoring
   let lastTime = performance.now();
