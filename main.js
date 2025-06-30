@@ -196,23 +196,29 @@ function startGame(deviceType) {
 }
 
 // Mobile touch input system
+// Mobile touch input system
 class MobileTouchInput {
   constructor() {
+    // Movement joystick
     this.joystickActive = false;
     this.joystickCenter = { x: 0, y: 0 };
     this.joystickInput = { x: 0, y: 0 };
     this.joystickId = null;
     
+    // Look controller
     this.lookActive = false;
-    this.lookStartPos = { x: 0, y: 0 };
+    this.lookCenter = { x: 0, y: 0 };
+    this.lookInput = { x: 0, y: 0 };
     this.lookId = null;
     
+    // Button states
     this.buttons = {
       jump: false,
       action: false,
       sprint: false
     };
     
+    // Smooth rotation delta
     this.rotationDelta = { x: 0, y: 0 };
   }
   
@@ -221,6 +227,7 @@ class MobileTouchInput {
     this.joystickCenter = center;
     this.joystickId = touch.identifier;
     this.joystickInput = { x: 0, y: 0 };
+    console.log('Joystick started');
   }
   
   handleJoystickMove(touch) {
@@ -259,34 +266,45 @@ class MobileTouchInput {
     if (knob) {
       knob.style.transform = 'translate(-50%, -50%)';
     }
+    console.log('Joystick ended');
   }
   
-  handleLookStart(touch) {
+  handleLookStart(touch, center) {
     this.lookActive = true;
-    this.lookStartPos = { x: touch.clientX, y: touch.clientY };
+    this.lookCenter = center;
     this.lookId = touch.identifier;
+    this.lookInput = { x: 0, y: 0 };
+    console.log('Look started');
   }
   
   handleLookMove(touch) {
     if (!this.lookActive || touch.identifier !== this.lookId) return;
     
-    const deltaX = touch.clientX - this.lookStartPos.x;
-    const deltaY = touch.clientY - this.lookStartPos.y;
+    const deltaX = touch.clientX - this.lookCenter.x;
+    const deltaY = touch.clientY - this.lookCenter.y;
     
-    // Store rotation delta for camera update
-    this.rotationDelta.x = deltaX * 0.002;
-    this.rotationDelta.y = deltaY * 0.002;
+    // Normalize to -1 to 1 range based on screen area
+    const maxDistance = 100; // Adjust sensitivity
+    this.lookInput.x = Math.max(-1, Math.min(1, deltaX / maxDistance));
+    this.lookInput.y = Math.max(-1, Math.min(1, deltaY / maxDistance));
     
-    this.lookStartPos.x = touch.clientX;
-    this.lookStartPos.y = touch.clientY;
+    // Store smooth rotation delta
+    this.rotationDelta.x = this.lookInput.x * 0.03; // Adjust sensitivity
+    this.rotationDelta.y = this.lookInput.y * 0.03;
+    
+    // Update center position for continuous movement
+    this.lookCenter.x = touch.clientX;
+    this.lookCenter.y = touch.clientY;
   }
   
   handleLookEnd(touch) {
     if (touch.identifier !== this.lookId) return;
     
     this.lookActive = false;
+    this.lookInput = { x: 0, y: 0 };
     this.rotationDelta = { x: 0, y: 0 };
     this.lookId = null;
+    console.log('Look ended');
   }
   
   getMovementKeys() {
@@ -300,8 +318,14 @@ class MobileTouchInput {
   
   getRotationDelta() {
     const delta = { ...this.rotationDelta };
-    this.rotationDelta = { x: 0, y: 0 }; // Reset after reading
+    // Don't reset here - let it accumulate for smooth movement
     return delta;
+  }
+  
+  update() {
+    // Smooth decay for rotation delta
+    this.rotationDelta.x *= 0.95;
+    this.rotationDelta.y *= 0.95;
   }
 }
 
@@ -364,37 +388,69 @@ function createMobileControls() {
   `;
   joystick.appendChild(joystickKnob);
 
-  // Look area (right side of screen)
-  const lookPad = document.createElement('div');
-  lookPad.id = 'look-pad';
-  lookPad.style.cssText = `
+  // Look controller (bottom right, separate from buttons)
+  const lookController = document.createElement('div');
+  lookController.id = 'look-controller';
+  lookController.style.cssText = `
     position: absolute;
-    top: 0;
-    right: 0;
-    width: 60%;
-    height: 100%;
+    bottom: 30px;
+    right: 150px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     pointer-events: auto;
     touch-action: none;
-    background: transparent;
+    box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
   `;
-
-  // Add touch indicator
-  const lookIndicator = document.createElement('div');
-  lookIndicator.style.cssText = `
+  
+  const lookKnob = document.createElement('div');
+  lookKnob.id = 'look-knob';
+  lookKnob.style.cssText = `
     position: absolute;
     top: 50%;
-    right: 30px;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.3);
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 165, 0, 0.8);
+    transform: translate(-50%, -50%);
+    transition: none;
+    box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+  `;
+  lookController.appendChild(lookKnob);
+
+  // Add labels
+  const joystickLabel = document.createElement('div');
+  joystickLabel.textContent = 'MOVE';
+  joystickLabel.style.cssText = `
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.6);
     font-family: 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 10px;
     text-align: center;
     pointer-events: none;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
   `;
-  lookIndicator.textContent = 'LOOK AROUND';
-  lookPad.appendChild(lookIndicator);
+  joystick.appendChild(joystickLabel);
+
+  const lookLabel = document.createElement('div');
+  lookLabel.textContent = 'LOOK';
+  lookLabel.style.cssText = `
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    text-align: center;
+    pointer-events: none;
+  `;
+  lookController.appendChild(lookLabel);
 
   // Action buttons (bottom right)
   const actionButtons = document.createElement('div');
@@ -409,7 +465,7 @@ function createMobileControls() {
     pointer-events: auto;
   `;
 
-  const jumpButton = document.createElement('button');
+  const jumpButton = document.createElement('div');
   jumpButton.id = 'jump-btn';
   jumpButton.innerHTML = '↑';
   jumpButton.style.cssText = `
@@ -421,12 +477,16 @@ function createMobileControls() {
     color: white;
     font-size: 20px;
     font-weight: bold;
-    touch-action: manipulation;
+    touch-action: none;
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   `;
 
-  const actionButton = document.createElement('button');
+  const actionButton = document.createElement('div');
   actionButton.id = 'action-btn';
   actionButton.innerHTML = 'E';
   actionButton.style.cssText = `
@@ -438,12 +498,16 @@ function createMobileControls() {
     color: white;
     font-size: 16px;
     font-weight: bold;
-    touch-action: manipulation;
+    touch-action: none;
     box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   `;
 
-  const sprintButton = document.createElement('button');
+  const sprintButton = document.createElement('div');
   sprintButton.id = 'sprint-btn';
   sprintButton.innerHTML = '⚡';
   sprintButton.style.cssText = `
@@ -454,13 +518,17 @@ function createMobileControls() {
     border: 2px solid rgba(255, 255, 0, 0.4);
     color: white;
     font-size: 16px;
-    touch-action: manipulation;
+    touch-action: none;
     box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   `;
 
   // Return button for spectator mode
-  const returnButton = document.createElement('button');
+  const returnButton = document.createElement('div');
   returnButton.id = 'return-btn';
   returnButton.innerHTML = '←';
   returnButton.style.cssText = `
@@ -475,11 +543,14 @@ function createMobileControls() {
     color: white;
     font-size: 20px;
     font-weight: bold;
-    touch-action: manipulation;
+    touch-action: none;
     pointer-events: auto;
     display: none;
     box-shadow: 0 0 15px rgba(255, 100, 100, 0.3);
     user-select: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   `;
 
   actionButtons.appendChild(jumpButton);
@@ -487,12 +558,12 @@ function createMobileControls() {
   actionButtons.appendChild(sprintButton);
 
   mobileControls.appendChild(joystick);
-  mobileControls.appendChild(lookPad);
+  mobileControls.appendChild(lookController);
   mobileControls.appendChild(actionButtons);
   mobileControls.appendChild(returnButton);
   document.body.appendChild(mobileControls);
 
-  // Setup touch events
+  // Setup touch events immediately
   setupMobileEvents();
 }
 
@@ -500,7 +571,7 @@ function setupMobileEvents() {
   if (!mobileControls || !mobileInput) return;
 
   const joystick = document.getElementById('joystick');
-  const lookPad = document.getElementById('look-pad');
+  const lookController = document.getElementById('look-controller');
   
   // Joystick events
   joystick.addEventListener('touchstart', (e) => {
@@ -517,13 +588,19 @@ function setupMobileEvents() {
     mobileInput.handleJoystickStart(touch, center);
   }, { passive: false });
 
-  // Look pad events
-  lookPad.addEventListener('touchstart', (e) => {
+  // Look controller events
+  lookController.addEventListener('touchstart', (e) => {
     e.preventDefault();
     e.stopPropagation();
     
     const touch = e.touches[0];
-    mobileInput.handleLookStart(touch);
+    const rect = lookController.getBoundingClientRect();
+    const center = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+    
+    mobileInput.handleLookStart(touch, center);
   }, { passive: false });
 
   // Global touch move handler
@@ -559,7 +636,7 @@ function setupMobileEvents() {
     }
   }, { passive: false });
 
-  // Button events
+  // Button events - using div elements with proper touch handling
   const jumpBtn = document.getElementById('jump-btn');
   const actionBtn = document.getElementById('action-btn');
   const sprintBtn = document.getElementById('sprint-btn');
@@ -571,6 +648,8 @@ function setupMobileEvents() {
       e.stopPropagation();
       mobileInput.buttons.jump = true;
       keys[' '] = true;
+      jumpBtn.style.background = 'rgba(255, 255, 255, 0.3)';
+      console.log('Jump pressed');
     }, { passive: false });
 
     jumpBtn.addEventListener('touchend', (e) => {
@@ -578,6 +657,8 @@ function setupMobileEvents() {
       e.stopPropagation();
       mobileInput.buttons.jump = false;
       keys[' '] = false;
+      jumpBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+      console.log('Jump released');
     }, { passive: false });
   }
 
@@ -587,6 +668,8 @@ function setupMobileEvents() {
       e.stopPropagation();
       mobileInput.buttons.action = true;
       keys['e'] = true;
+      actionBtn.style.background = 'rgba(0, 255, 255, 0.3)';
+      console.log('Action pressed');
     }, { passive: false });
 
     actionBtn.addEventListener('touchend', (e) => {
@@ -594,6 +677,8 @@ function setupMobileEvents() {
       e.stopPropagation();
       mobileInput.buttons.action = false;
       keys['e'] = false;
+      actionBtn.style.background = 'rgba(0, 255, 255, 0.1)';
+      console.log('Action released');
     }, { passive: false });
   }
 
@@ -603,6 +688,8 @@ function setupMobileEvents() {
       e.stopPropagation();
       mobileInput.buttons.sprint = true;
       keys['shift'] = true;
+      sprintBtn.style.background = 'rgba(255, 255, 0, 0.3)';
+      console.log('Sprint pressed');
     }, { passive: false });
 
     sprintBtn.addEventListener('touchend', (e) => {
@@ -610,6 +697,8 @@ function setupMobileEvents() {
       e.stopPropagation();
       mobileInput.buttons.sprint = false;
       keys['shift'] = false;
+      sprintBtn.style.background = 'rgba(255, 255, 0, 0.1)';
+      console.log('Sprint released');
     }, { passive: false });
   }
 
@@ -619,9 +708,12 @@ function setupMobileEvents() {
       e.stopPropagation();
       if (spectatorMode && currentScene.startsWith('model-')) {
         returnToGallery();
+        console.log('Return pressed');
       }
     }, { passive: false });
   }
+
+  console.log('Mobile events setup complete');
 }
 
 // Update loading progress
@@ -1728,34 +1820,41 @@ try {
   }
 
   function moveCharacter(dt) {
-    if (!gameStarted) return;
+  if (!gameStarted) return;
+  
+  // Update mobile input for smooth movement
+  if (isMobile && mobileInput) {
+    mobileInput.update();
+  }
+  
+  // Mobile input handling
+  if (isMobile && mobileInput) {
+    // Get movement from joystick
+    const movementKeys = mobileInput.getMovementKeys();
+    keys['w'] = movementKeys.w;
+    keys['s'] = movementKeys.s;
+    keys['a'] = movementKeys.a;
+    keys['d'] = movementKeys.d;
     
-    // Mobile input handling
-    if (isMobile && mobileInput) {
-      // Get movement from joystick
-      const movementKeys = mobileInput.getMovementKeys();
-      keys['w'] = movementKeys.w;
-      keys['s'] = movementKeys.s;
-      keys['a'] = movementKeys.a;
-      keys['d'] = movementKeys.d;
+    // Get rotation from look input
+    const rotationDelta = mobileInput.getRotationDelta();
+    if (Math.abs(rotationDelta.x) > 0.001 || Math.abs(rotationDelta.y) > 0.001) {
+      targetRotationY -= rotationDelta.x;
+      currentRotationX -= rotationDelta.y;
       
-      // Get rotation from look input
-      const rotationDelta = mobileInput.getRotationDelta();
-      if (rotationDelta.x !== 0 || rotationDelta.y !== 0) {
-        targetRotationY -= rotationDelta.x;
-        currentRotationX -= rotationDelta.y;
-        
-        // Limit vertical rotation
-        if (spectatorMode) {
-          currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
-        } else {
-          currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
-        }
+      // Limit vertical rotation
+      if (spectatorMode) {
+        currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
+      } else {
+        currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
       }
-    } else if (isMobile) {
-      // Reset movement keys when no mobile input
-      keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
     }
+  } else if (isMobile) {
+    // Reset movement keys when no mobile input
+    keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
+  }
+  
+  // ... rest of the movement function stays the same
     
     if (spectatorMode) {
       // Spectator mode movement (free flight)
