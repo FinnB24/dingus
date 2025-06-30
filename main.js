@@ -8,22 +8,6 @@ let currentScene = 'main'; // Track which scene we're in
 let spectatorMode = false; // Track if in spectator mode
 let allModelsLoaded = false; // Track if all models are loaded
 
-// Device detection
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                  ('ontouchstart' in window) || 
-                  (navigator.maxTouchPoints > 0);
-
-console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
-
-// Mobile controls state
-let touchControls = {
-  moveJoystick: { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 },
-  lookTouch: { active: false, startX: 0, startY: 0, deltaX: 0, deltaY: 0 },
-  jumpPressed: false,
-  sprintPressed: false,
-  usePressed: false
-};
-
 // Loading manager for better performance
 const loadingManager = new THREE.LoadingManager();
 let totalModelsToLoad = 3; // portal.glb, church.glb, grave.glb
@@ -75,6 +59,147 @@ function showHomeOverlay() {
   }
 }
 
+// Mobile detection and setup
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                 ('ontouchstart' in window) || 
+                 (navigator.maxTouchPoints > 0);
+
+console.log('Mobile device detected:', isMobile);
+
+// Create mobile controls
+let mobileControls = null;
+let joystick = null;
+let lookPad = null;
+
+if (isMobile) {
+  // Create mobile control container
+  mobileControls = document.createElement('div');
+  mobileControls.id = 'mobile-controls';
+  mobileControls.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 900;
+    display: none;
+  `;
+
+  // Movement joystick (bottom left)
+  joystick = document.createElement('div');
+  joystick.id = 'joystick';
+  joystick.style.cssText = `
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    pointer-events: auto;
+    touch-action: none;
+  `;
+  
+  const joystickKnob = document.createElement('div');
+  joystickKnob.id = 'joystick-knob';
+  joystickKnob.style.cssText = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: translate(-50%, -50%);
+    transition: none;
+  `;
+  joystick.appendChild(joystickKnob);
+
+  // Look pad (bottom right)
+  lookPad = document.createElement('div');
+  lookPad.id = 'look-pad';
+  lookPad.style.cssText = `
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    pointer-events: auto;
+    touch-action: none;
+  `;
+
+  // Action buttons (right side)
+  const actionButtons = document.createElement('div');
+  actionButtons.id = 'action-buttons';
+  actionButtons.style.cssText = `
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: auto;
+  `;
+
+  const jumpButton = document.createElement('button');
+  jumpButton.id = 'jump-btn';
+  jumpButton.innerHTML = '⬆️';
+  jumpButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    font-size: 24px;
+    touch-action: manipulation;
+  `;
+
+  const actionButton = document.createElement('button');
+  actionButton.id = 'action-btn';
+  actionButton.innerHTML = 'E';
+  actionButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0, 255, 255, 0.2);
+    border: 2px solid rgba(0, 255, 255, 0.4);
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    touch-action: manipulation;
+  `;
+
+  const sprintButton = document.createElement('button');
+  sprintButton.id = 'sprint-btn';
+  sprintButton.innerHTML = '🏃';
+  sprintButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 0, 0.2);
+    border: 2px solid rgba(255, 255, 0, 0.4);
+    color: white;
+    font-size: 20px;
+    touch-action: manipulation;
+  `;
+
+  actionButtons.appendChild(jumpButton);
+  actionButtons.appendChild(actionButton);
+  actionButtons.appendChild(sprintButton);
+
+  mobileControls.appendChild(joystick);
+  mobileControls.appendChild(lookPad);
+  mobileControls.appendChild(actionButtons);
+  document.body.appendChild(mobileControls);
+}
+
 // Update loading progress
 function updateLoadingProgress(loaded, total) {
   const percentage = Math.round((loaded / total) * 100);
@@ -111,22 +236,14 @@ window.closeOverlay = function(name) {
   const overlay = document.getElementById('overlay-'+name);
   if (overlay) {
     overlay.classList.remove('visible');
-    overlay.style.display = 'none'; // Also hide the element completely
+    overlay.style.display = 'none';
     
     // Only start the game when clicking the start button for home overlay AND models are loaded
     if (name === 'home' && allModelsLoaded) {
       gameStarted = true;
-      
-      if (isMobile) {
-        // On mobile, just start the game directly
-        setupMobileControls();
-        console.log('Game started on mobile device');
-      } else {
-        // On desktop, request pointer lock
-        const container = document.getElementById('three-canvas');
-        if (container && !document.pointerLockElement) {
-          container.requestPointerLock();
-        }
+      const container = document.getElementById('three-canvas');
+      if (container && !isMobile && !document.pointerLockElement) {
+        container.requestPointerLock();
       }
     }
   }
@@ -136,331 +253,17 @@ window.openOverlay = function(name) {
   // Only allow overlay opening if models are loaded
   if (!allModelsLoaded) return;
   
-  document.querySelectorAll('.overlay').forEach(o=>{
-    o.classList.remove('visible');
-    o.style.display = 'none';
-  });
-  
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('visible'));
   const targetOverlay = document.getElementById('overlay-'+name);
   if (targetOverlay) {
-    targetOverlay.style.display = 'block';
     targetOverlay.classList.add('visible');
   }
   
   // Stop game when opening overlay
   if (name === 'home') {
     gameStarted = false;
-    if (isMobile) {
-      hideMobileControls();
-    }
   }
 };
-
-// Mobile controls setup
-function setupMobileControls() {
-  if (!isMobile) return;
-  
-  // Create mobile UI container
-  const mobileUI = document.createElement('div');
-  mobileUI.id = 'mobile-ui';
-  mobileUI.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1000;
-  `;
-  
-  // Movement joystick
-  const joystickContainer = document.createElement('div');
-  joystickContainer.id = 'joystick-container';
-  joystickContainer.style.cssText = `
-    position: absolute;
-    bottom: 30px;
-    left: 30px;
-    width: 120px;
-    height: 120px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    pointer-events: auto;
-    touch-action: none;
-  `;
-  
-  const joystickKnob = document.createElement('div');
-  joystickKnob.id = 'joystick-knob';
-  joystickKnob.style.cssText = `
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: all 0.1s ease;
-  `;
-  
-  joystickContainer.appendChild(joystickKnob);
-  mobileUI.appendChild(joystickContainer);
-  
-  // Action buttons container
-  const actionsContainer = document.createElement('div');
-  actionsContainer.style.cssText = `
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    pointer-events: auto;
-  `;
-  
-  // Jump button
-  const jumpButton = document.createElement('div');
-  jumpButton.id = 'jump-button';
-  jumpButton.innerHTML = '↑';
-  jumpButton.style.cssText = `
-    width: 60px;
-    height: 60px;
-    background: rgba(255, 255, 0, 0.3);
-    border: 2px solid rgba(255, 255, 0, 0.6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    user-select: none;
-    touch-action: none;
-  `;
-  
-  // Sprint button
-  const sprintButton = document.createElement('div');
-  sprintButton.id = 'sprint-button';
-  sprintButton.innerHTML = '⚡';
-  sprintButton.style.cssText = `
-    width: 60px;
-    height: 60px;
-    background: rgba(0, 255, 0, 0.3);
-    border: 2px solid rgba(0, 255, 0, 0.6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    user-select: none;
-    touch-action: none;
-  `;
-  
-  // Use/Interact button
-  const useButton = document.createElement('div');
-  useButton.id = 'use-button';
-  useButton.innerHTML = 'E';
-  useButton.style.cssText = `
-    width: 60px;
-    height: 60px;
-    background: rgba(0, 255, 255, 0.3);
-    border: 2px solid rgba(0, 255, 255, 0.6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    user-select: none;
-    touch-action: none;
-  `;
-  
-  // Spectator mode return button (hidden by default)
-  const returnButton = document.createElement('div');
-  returnButton.id = 'return-button';
-  returnButton.innerHTML = 'Q';
-  returnButton.style.cssText = `
-    width: 60px;
-    height: 60px;
-    background: rgba(255, 0, 255, 0.3);
-    border: 2px solid rgba(255, 0, 255, 0.6);
-    border-radius: 50%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    user-select: none;
-    touch-action: none;
-  `;
-  
-  actionsContainer.appendChild(jumpButton);
-  actionsContainer.appendChild(sprintButton);
-  actionsContainer.appendChild(useButton);
-  actionsContainer.appendChild(returnButton);
-  mobileUI.appendChild(actionsContainer);
-  
-  // Look area (right side of screen)
-  const lookArea = document.createElement('div');
-  lookArea.id = 'look-area';
-  lookArea.style.cssText = `
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 60%;
-    height: 100%;
-    pointer-events: auto;
-    touch-action: none;
-  `;
-  mobileUI.appendChild(lookArea);
-  
-  document.body.appendChild(mobileUI);
-  
-  // Joystick event handlers
-  function handleJoystickStart(e) {
-    e.preventDefault();
-    const rect = joystickContainer.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    touchControls.moveJoystick.active = true;
-    touchControls.moveJoystick.startX = centerX;
-    touchControls.moveJoystick.startY = centerY;
-    
-    const touch = e.touches ? e.touches[0] : e;
-    touchControls.moveJoystick.currentX = touch.clientX;
-    touchControls.moveJoystick.currentY = touch.clientY;
-    
-    updateJoystickPosition();
-  }
-  
-  function handleJoystickMove(e) {
-    if (!touchControls.moveJoystick.active) return;
-    e.preventDefault();
-    
-    const touch = e.touches ? e.touches[0] : e;
-    touchControls.moveJoystick.currentX = touch.clientX;
-    touchControls.moveJoystick.currentY = touch.clientY;
-    
-    updateJoystickPosition();
-  }
-  
-  function handleJoystickEnd(e) {
-    e.preventDefault();
-    touchControls.moveJoystick.active = false;
-    
-    // Reset joystick position
-    joystickKnob.style.transform = 'translate(-50%, -50%)';
-  }
-  
-  function updateJoystickPosition() {
-    const deltaX = touchControls.moveJoystick.currentX - touchControls.moveJoystick.startX;
-    const deltaY = touchControls.moveJoystick.currentY - touchControls.moveJoystick.startY;
-    
-    const maxDistance = 40; // Maximum distance from center
-    const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), maxDistance);
-    const angle = Math.atan2(deltaY, deltaX);
-    
-    const x = Math.cos(angle) * distance;
-    const y = Math.sin(angle) * distance;
-    
-    joystickKnob.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-  }
-  
-  // Look area event handlers
-  function handleLookStart(e) {
-    e.preventDefault();
-    const touch = e.touches ? e.touches[0] : e;
-    touchControls.lookTouch.active = true;
-    touchControls.lookTouch.startX = touch.clientX;
-    touchControls.lookTouch.startY = touch.clientY;
-  }
-  
-  function handleLookMove(e) {
-    if (!touchControls.lookTouch.active) return;
-    e.preventDefault();
-    
-    const touch = e.touches ? e.touches[0] : e;
-    touchControls.lookTouch.deltaX = (touch.clientX - touchControls.lookTouch.startX) * 0.003;
-    touchControls.lookTouch.deltaY = (touch.clientY - touchControls.lookTouch.startY) * 0.003;
-    
-    touchControls.lookTouch.startX = touch.clientX;
-    touchControls.lookTouch.startY = touch.clientY;
-  }
-  
-  function handleLookEnd(e) {
-    e.preventDefault();
-    touchControls.lookTouch.active = false;
-    touchControls.lookTouch.deltaX = 0;
-    touchControls.lookTouch.deltaY = 0;
-  }
-  
-  // Button event handlers
-  function createButtonHandler(button, controlKey) {
-    const handleStart = (e) => {
-      e.preventDefault();
-      touchControls[controlKey] = true;
-      button.style.opacity = '0.8';
-      button.style.transform = 'scale(0.95)';
-    };
-    
-    const handleEnd = (e) => {
-      e.preventDefault();
-      touchControls[controlKey] = false;
-      button.style.opacity = '1';
-      button.style.transform = 'scale(1)';
-    };
-    
-    button.addEventListener('touchstart', handleStart);
-    button.addEventListener('touchend', handleEnd);
-    button.addEventListener('touchcancel', handleEnd);
-  }
-  
-  // Add event listeners
-  joystickContainer.addEventListener('touchstart', handleJoystickStart);
-  document.addEventListener('touchmove', handleJoystickMove);
-  document.addEventListener('touchend', handleJoystickEnd);
-  
-  lookArea.addEventListener('touchstart', handleLookStart);
-  lookArea.addEventListener('touchmove', handleLookMove);
-  lookArea.addEventListener('touchend', handleLookEnd);
-  
-  createButtonHandler(jumpButton, 'jumpPressed');
-  createButtonHandler(sprintButton, 'sprintPressed');
-  createButtonHandler(useButton, 'usePressed');
-  
-  // Return button for spectator mode
-  returnButton.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if (spectatorMode && currentScene.startsWith('model-')) {
-      returnToGallery();
-    }
-  });
-  
-  console.log('Mobile controls setup complete');
-}
-
-function hideMobileControls() {
-  const mobileUI = document.getElementById('mobile-ui');
-  if (mobileUI) {
-    mobileUI.remove();
-  }
-}
-
-function updateMobileUI() {
-  const returnButton = document.getElementById('return-button');
-  if (returnButton) {
-    if (spectatorMode) {
-      returnButton.style.display = 'flex';
-    } else {
-      returnButton.style.display = 'none';
-    }
-  }
-}
 
 // Hide overlays initially until models are loaded
 hideAllOverlays();
@@ -557,28 +360,25 @@ try {
 
   function updateControlsDisplay() {
     if (isMobile) {
-      // Mobile controls display
       if (spectatorMode) {
         controlsDisplay.innerHTML = `
-          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">📱 MOBILE SPECTATOR</div>
+          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 SPECTATOR MODE</div>
           <div><span style="color: #ffff00;">Joystick</span> - Fly around</div>
-          <div><span style="color: #ffff00;">Right side</span> - Look around</div>
-          <div><span style="color: #ffff00;">↑ Button</span> - Fly up</div>
-          <div><span style="color: #ffff00;">⚡ Button</span> - Fly down</div>
-          <div><span style="color: #ffff00;">Q Button</span> - Return to gallery</div>
+          <div><span style="color: #ffff00;">Right pad</span> - Look around</div>
+          <div><span style="color: #ffff00;">⬆️</span> - Fly up/down</div>
+          <div><span style="color: #ffff00;">Back</span> - Return to gallery</div>
         `;
       } else {
         controlsDisplay.innerHTML = `
           <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">📱 MOBILE CONTROLS</div>
           <div><span style="color: #ffff00;">Joystick</span> - Move</div>
-          <div><span style="color: #ffff00;">Right side</span> - Look around</div>
-          <div><span style="color: #ffff00;">↑ Button</span> - Jump</div>
-          <div><span style="color: #ffff00;">⚡ Button</span> - Sprint</div>
-          <div><span style="color: #ffff00;">E Button</span> - Use Portal</div>
+          <div><span style="color: #ffff00;">Right pad</span> - Look around</div>
+          <div><span style="color: #ffff00;">⬆️</span> - Jump</div>
+          <div><span style="color: #ffff00;">🏃</span> - Sprint</div>
+          <div><span style="color: #ffff00;">E</span> - Use Portal</div>
         `;
       }
     } else {
-      // Desktop controls display
       if (spectatorMode) {
         controlsDisplay.innerHTML = `
           <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 SPECTATOR MODE</div>
@@ -593,7 +393,7 @@ try {
         controlsDisplay.innerHTML = `
           <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 CONTROLS</div>
           <div><span style="color: #ffff00;">WASD</span> - Move</div>
-          <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
+          <div><span style="color: #ffff00;">Mouse</span> - Free look</div>
           <div><span style="color: #ffff00;">Space</span> - Jump</div>
           <div><span style="color: #ffff00;">Shift</span> - Sprint</div>
           <div><span style="color: #ffff00;">ESC</span> - Menu</div>
@@ -634,7 +434,7 @@ try {
     <div style="margin-bottom: 5px;">Energy: <span style="color: #ffff00;">97.3%</span></div>
     <div style="margin-bottom: 5px;">Destination: <span id="portal-destination" style="color: #ff9900;">--</span></div>
     <div style="margin-bottom: 10px;">Distance: <span id="portal-distance" style="color: #00ffff;">--</span></div>
-    <div style="color: #00ff00; font-size: 12px;">${isMobile ? 'Press E button to enter' : 'Press E to enter portal'}</div>
+    <div style="color: #00ff00; font-size: 12px;">Press E to enter portal</div>
   `;
   document.body.appendChild(portalInfoWindow);
 
@@ -1173,9 +973,9 @@ try {
   let currentRotationX = 0;
   const MOUSE_SENSITIVITY = 0.002;
 
-  // Mouse movement only works when game is started and pointer is locked (desktop only)
+  // Mouse movement only works when game is started and pointer is locked
   document.addEventListener('mousemove', (e) => {
-    if (!isMobile && document.pointerLockElement && gameStarted) {
+    if (document.pointerLockElement && gameStarted) {
       mouseX = e.movementX || 0;
       mouseY = e.movementY || 0;
       
@@ -1194,21 +994,143 @@ try {
   // Movement and physics variables
   const keys = {};
   
-  // Separate handling for keydown and keyup to better manage Q key (desktop only)
-  if (!isMobile) {
-    window.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
-      keys[key] = true;
+  // Mobile input variables
+  let joystickActive = false;
+  let joystickCenter = { x: 0, y: 0 };
+  let joystickInput = { x: 0, y: 0 };
+  let lookPadActive = false;
+  let mobileButtons = {
+    jump: false,
+    action: false,
+    sprint: false
+  };
+
+  // Separate handling for keydown and keyup to better manage Q key
+  window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    
+    // Handle Q key press immediately for spectator mode return
+    if (key === 'q' && spectatorMode && currentScene.startsWith('model-')) {
+      returnToGallery();
+      console.log('Q key pressed - returning to gallery');
+    }
+  });
+  
+  window.addEventListener('keyup', (e) => {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  // Mobile touch event handlers
+  if (isMobile) {
+    // Joystick touch handling
+    joystick.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      joystickActive = true;
+      const rect = joystick.getBoundingClientRect();
+      joystickCenter.x = rect.left + rect.width / 2;
+      joystickCenter.y = rect.top + rect.height / 2;
+    });
+
+    joystick.addEventListener('touchmove', (e) => {
+      if (!joystickActive) return;
+      e.preventDefault();
       
-      // Handle Q key press immediately for spectator mode return
-      if (key === 'q' && spectatorMode && currentScene.startsWith('model-')) {
-        returnToGallery();
-        console.log('Q key pressed - returning to gallery');
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - joystickCenter.x;
+      const deltaY = touch.clientY - joystickCenter.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const maxDistance = 40; // Max knob movement
+      
+      if (distance <= maxDistance) {
+        joystickInput.x = deltaX / maxDistance;
+        joystickInput.y = deltaY / maxDistance;
+      } else {
+        joystickInput.x = (deltaX / distance) * (maxDistance / maxDistance);
+        joystickInput.y = (deltaY / distance) * (maxDistance / maxDistance);
+      }
+      
+      const knob = document.getElementById('joystick-knob');
+      knob.style.transform = `translate(-50%, -50%) translate(${joystickInput.x * maxDistance}px, ${joystickInput.y * maxDistance}px)`;
+    });
+
+    joystick.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      joystickActive = false;
+      joystickInput.x = 0;
+      joystickInput.y = 0;
+      const knob = document.getElementById('joystick-knob');
+      knob.style.transform = 'translate(-50%, -50%)';
+    });
+
+    // Look pad touch handling
+    lookPad.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      lookPadActive = true;
+    });
+
+    lookPad.addEventListener('touchmove', (e) => {
+      if (!lookPadActive || !gameStarted) return;
+      e.preventDefault();
+      
+      const touch = e.touches[0];
+      const sensitivity = 0.003;
+      
+      // Simulate mouse movement
+      const movementX = (touch.clientX - (lookPad.getBoundingClientRect().left + lookPad.offsetWidth/2)) * sensitivity;
+      const movementY = (touch.clientY - (lookPad.getBoundingClientRect().top + lookPad.offsetHeight/2)) * sensitivity;
+      
+      targetRotationY -= movementX;
+      currentRotationX -= movementY;
+      
+      // Limit vertical rotation
+      if (spectatorMode) {
+        currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
+      } else {
+        currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
       }
     });
-    
-    window.addEventListener('keyup', (e) => {
-      keys[e.key.toLowerCase()] = false;
+
+    lookPad.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      lookPadActive = false;
+    });
+
+    // Button event handlers
+    document.getElementById('jump-btn').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mobileButtons.jump = true;
+      keys[' '] = true;
+    });
+
+    document.getElementById('jump-btn').addEventListener('touchend', (e) => {
+      e.preventDefault();
+      mobileButtons.jump = false;
+      keys[' '] = false;
+    });
+
+    document.getElementById('action-btn').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mobileButtons.action = true;
+      keys['e'] = true;
+    });
+
+    document.getElementById('action-btn').addEventListener('touchend', (e) => {
+      e.preventDefault();
+      mobileButtons.action = false;
+      keys['e'] = false;
+    });
+
+    document.getElementById('sprint-btn').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mobileButtons.sprint = true;
+      keys['shift'] = true;
+    });
+
+    document.getElementById('sprint-btn').addEventListener('touchend', (e) => {
+      e.preventDefault();
+      mobileButtons.sprint = false;
+      keys['shift'] = false;
     });
   }
   
@@ -1243,7 +1165,6 @@ try {
     characterGroup.position.set(0, 0, 10);
     
     updateControlsDisplay();
-    updateMobileUI();
     console.log('Switched to gallery scene');
   }
 
@@ -1260,7 +1181,6 @@ try {
     characterGroup.position.set(0, 0, 5);
     
     updateControlsDisplay();
-    updateMobileUI();
     console.log('Switched to main scene');
   }
 
@@ -1289,7 +1209,6 @@ try {
     currentRotationX = 0;
     
     updateControlsDisplay();
-    updateMobileUI();
     console.log(`Switched to model viewer for ${artPieces[artIndex].name}`);
   }
 
@@ -1307,7 +1226,6 @@ try {
     currentRotationX = 0;
     
     updateControlsDisplay();
-    updateMobileUI();
     console.log('Returned to gallery from model viewer');
   }
 
@@ -1454,4 +1372,276 @@ try {
         if (wouldCollideX && wouldCollideZ && wouldCollideY &&
             newDistanceToCenter <= currentDistanceToCenter) {
           return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // Function to get the ground level at a specific position
+  function getGroundLevel(position) {
+    if (currentScene !== 'main') return 0; // Gallery has flat ground
+    
+    let groundLevel = 0;
+    
+    for (const collisionBox of collisionBoxes) {
+      const boxGeometry = collisionBox.geometry;
+      const boxPosition = collisionBox.position;
+      
+      if (boxGeometry.type === 'CylinderGeometry') {
+        const cylinderRadius = boxGeometry.parameters.radiusTop;
+        const cylinderHeight = boxGeometry.parameters.height;
+        const cylinderTop = boxPosition.y + cylinderHeight/2;
         
+        const dx = position.x - boxPosition.x;
+        const dz = position.z - boxPosition.z;
+        const horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+        
+        if (horizontalDistance <= cylinderRadius && cylinderTop > groundLevel) {
+          groundLevel = cylinderTop;
+        }
+      } else {
+        const boxWidth = boxGeometry.parameters.width;
+        const boxDepth = boxGeometry.parameters.depth;
+        const boxHeight = boxGeometry.parameters.height;
+        const boxTop = boxPosition.y + boxHeight/2;
+        
+        const boxMinX = boxPosition.x - boxWidth / 2;
+        const boxMaxX = boxPosition.x + boxWidth / 2;
+        const boxMinZ = boxPosition.z - boxDepth / 2;
+        const boxMaxZ = boxPosition.z + boxDepth / 2;
+        
+        if (position.x >= boxMinX && position.x <= boxMaxX &&
+            position.z >= boxMinZ && position.z <= boxMaxZ &&
+            boxTop > groundLevel) {
+          groundLevel = boxTop;
+        }
+      }
+    }
+    
+    return groundLevel;
+  }
+
+    function moveCharacter(dt) {
+    if (!gameStarted) return;
+    
+    // Mobile joystick input handling
+    if (isMobile && joystickActive) {
+      // Convert joystick input to movement keys
+      keys['w'] = joystickInput.y < -0.3;
+      keys['s'] = joystickInput.y > 0.3;
+      keys['a'] = joystickInput.x < -0.3;
+      keys['d'] = joystickInput.x > 0.3;
+    } else if (isMobile) {
+      // Reset movement keys when joystick not active
+      keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
+    }
+    
+    if (spectatorMode) {
+      // Spectator mode movement (free flight)
+      const spectatorMoveSpeed = spectatorSpeed;
+      
+      // Get movement directions
+      const forward = new THREE.Vector3(0, 0, -1);
+      forward.applyQuaternion(camera.quaternion);
+      
+      const right = new THREE.Vector3(1, 0, 0);
+      right.applyQuaternion(camera.quaternion);
+      
+      const up = new THREE.Vector3(0, 1, 0);
+      
+      let movement = new THREE.Vector3();
+      
+      if (keys['w']) movement.add(forward.multiplyScalar(spectatorMoveSpeed * dt));
+      if (keys['s']) movement.add(forward.multiplyScalar(-spectatorMoveSpeed * dt));
+      if (keys['a']) movement.add(right.multiplyScalar(-spectatorMoveSpeed * dt));
+      if (keys['d']) movement.add(right.multiplyScalar(spectatorMoveSpeed * dt));
+      if (keys[' ']) movement.add(up.multiplyScalar(spectatorMoveSpeed * dt));
+      if (keys['shift']) movement.add(up.multiplyScalar(-spectatorMoveSpeed * dt));
+      
+      camera.position.add(movement);
+      
+      return; // Skip normal character movement in spectator mode
+    }
+    
+    // Normal character movement
+    const forward = new THREE.Vector3(0, 0, -1);
+    forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), targetRotationY);
+    
+    const right = new THREE.Vector3(1, 0, 0);
+    right.applyAxisAngle(new THREE.Vector3(0, 1, 0), targetRotationY);
+    
+    velocity.x = 0;
+    velocity.z = 0;
+    
+    moveSpeed = keys['shift'] ? sprintSpeed : normalSpeed;
+    
+    let desiredVelocity = new THREE.Vector3();
+    
+    if (keys['w'] || keys['arrowup']) {
+      desiredVelocity.x += forward.x * moveSpeed * dt;
+      desiredVelocity.z += forward.z * moveSpeed * dt;
+    }
+    if (keys['s'] || keys['arrowdown']) {
+      desiredVelocity.x -= forward.x * moveSpeed * dt;
+      desiredVelocity.z -= forward.z * moveSpeed * dt;
+    }
+    if (keys['a'] || keys['arrowleft']) {
+      desiredVelocity.x -= right.x * moveSpeed * dt;
+      desiredVelocity.z -= right.z * moveSpeed * dt;
+    }
+    if (keys['d'] || keys['arrowright']) {
+      desiredVelocity.x += right.x * moveSpeed * dt;
+      desiredVelocity.z += right.z * moveSpeed * dt;
+    }
+    
+    // Test movement in X direction
+    const testPositionX = characterGroup.position.clone();
+    testPositionX.x += desiredVelocity.x;
+    if (!checkCollision(characterGroup.position, testPositionX)) {
+      characterGroup.position.x = testPositionX.x;
+    }
+    
+    // Test movement in Z direction
+    const testPositionZ = characterGroup.position.clone();
+    testPositionZ.z += desiredVelocity.z;
+    if (!checkCollision(characterGroup.position, testPositionZ)) {
+      characterGroup.position.z = testPositionZ.z;
+    }
+    
+    // Jump logic
+    if (keys[' '] && !isJumping) {
+      isJumping = true;
+      jumpVelocity = jumpForce;
+    }
+    
+    // Portal activation
+    if (keys['e'] && currentPortalInView) {
+      if (currentScene === 'main' && currentPortalInView.userData.teleport) {
+        switchToGallery();
+        portalInfoWindow.style.display = 'none';
+        currentPortalInView = null;
+      } else if (currentScene === 'gallery') {
+        if (currentPortalInView.userData.type === 'return-portal') {
+          switchToMain();
+          portalInfoWindow.style.display = 'none';
+          currentPortalInView = null;
+        } else if (currentPortalInView.userData.type === 'gallery-frame') {
+          switchToModelViewer(currentPortalInView.userData.artIndex);
+          portalInfoWindow.style.display = 'none';
+          currentPortalInView = null;
+        }
+      }
+    }
+    
+    // Apply gravity and update vertical position
+    if (isJumping || characterGroup.position.y > 0) {
+      jumpVelocity -= gravity * dt;
+      characterGroup.position.y += jumpVelocity * dt;
+    }
+    
+    const currentGroundLevel = getGroundLevel(characterGroup.position);
+    
+    if (characterGroup.position.y <= currentGroundLevel) {
+      characterGroup.position.y = currentGroundLevel;
+      isJumping = false;
+      jumpVelocity = 0;
+    }
+    
+    if (!isJumping && characterGroup.position.y > currentGroundLevel) {
+      isJumping = true;
+      jumpVelocity = 0;
+    }
+    
+    // Clamp position to boundaries
+    characterGroup.position.x = Math.max(Math.min(characterGroup.position.x, 23), -23);
+    characterGroup.position.z = Math.max(Math.min(characterGroup.position.z, 23), -18);
+    
+    characterGroup.rotation.y = targetRotationY;
+  }
+
+  function updateCamera() {
+    if (spectatorMode) {
+      // In spectator mode, camera position is controlled directly
+      // Just apply rotation
+      camera.rotation.set(currentRotationX, targetRotationY, 0, 'YXZ');
+    } else {
+      // Normal third-person camera
+      const eyeHeight = 1.8;
+      
+      camera.position.copy(characterGroup.position);
+      camera.position.y += eyeHeight;
+      
+      camera.rotation.set(currentRotationX, targetRotationY, 0, 'YXZ');
+    }
+  }
+
+  function updateUIVisibility() {
+    const showUI = gameStarted && (isMobile || document.pointerLockElement);
+    crosshair.style.display = showUI ? 'block' : 'none';
+    controlsDisplay.style.display = showUI ? 'block' : 'none';
+    
+    // Show/hide mobile controls
+    if (isMobile && mobileControls) {
+      mobileControls.style.display = showUI ? 'block' : 'none';
+    }
+  }
+
+  // Pointer lock exit handler
+  document.addEventListener('pointerlockchange', () => {
+    if (!document.pointerLockElement && gameStarted) {
+      openOverlay('home');
+      gameStarted = false;
+      portalInfoWindow.style.display = 'none';
+    }
+    updateUIVisibility();
+  });
+
+  // ESC key handler
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && gameStarted && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    
+    // Only allow Enter/Space to start game if models are loaded
+    if(document.getElementById('overlay-home').classList.contains('visible') && (e.key==='Enter'||e.key===' ') && allModelsLoaded) {
+      closeOverlay('home');
+    }
+  });
+
+  // Optimized render loop with performance monitoring
+  let lastTime = performance.now();
+  
+  function animate() {
+    let now = performance.now(), dt = (now-lastTime)/1000;
+    lastTime = now;
+    
+    updateUIVisibility();
+    
+    if(gameStarted && !document.getElementById('overlay-home').classList.contains('visible')) {
+      moveCharacter(dt);
+      checkPortalView();
+    }
+    
+    // Rotate models in viewer scenes (optimized)
+    if (activeScene.userData && activeScene.userData.rotatingMesh) {
+      activeScene.userData.rotatingMesh.rotation.y += dt * 0.5;
+    }
+    
+    updateCamera();
+    renderer.render(activeScene, camera); // Render the active scene
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+} catch (error) {
+  console.error('Fatal error in initialization:', error);
+  document.body.innerHTML = `
+    <div style="padding:20px;color:white;background:rgba(0,0,0,0.8)">
+      <h2>Error Loading Scene</h2>
+      <p>${error.message}</p>
+      <p>Please check the console for more details.</p>
+    </div>
+  `;
+}
