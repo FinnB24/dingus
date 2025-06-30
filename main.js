@@ -58,7 +58,8 @@ function showHomeOverlay() {
     homeOverlay.style.display = 'block';
     homeOverlay.classList.add('visible');
     
-    // Replace existing buttons with device selection
+    // Clear existing content and replace with device selection
+    homeOverlay.innerHTML = '';
     replaceHomeOverlayButtons();
   }
 }
@@ -68,9 +69,9 @@ function replaceHomeOverlayButtons() {
   const homeOverlay = document.getElementById('overlay-home');
   if (!homeOverlay) return;
   
-  // Remove existing buttons
-  const existingButtons = homeOverlay.querySelectorAll('button');
-  existingButtons.forEach(btn => btn.remove());
+  // Create main title
+  const mainTitle = document.createElement('div');
+  mainTitle.innerHTML = '<h1 style="color: #00ffff; margin-bottom: 20px;">🌀 PORTFOLIO PLAYGROUND</h1>';
   
   // Create device selection container
   const deviceSelection = document.createElement('div');
@@ -160,6 +161,7 @@ function replaceHomeOverlayButtons() {
   deviceSelection.appendChild(deviceTitle);
   deviceSelection.appendChild(deviceButtons);
   
+  homeOverlay.appendChild(mainTitle);
   homeOverlay.appendChild(deviceSelection);
 }
 
@@ -193,13 +195,124 @@ function startGame(deviceType) {
   updateControlsDisplay();
 }
 
+// Mobile touch input system
+class MobileTouchInput {
+  constructor() {
+    this.joystickActive = false;
+    this.joystickCenter = { x: 0, y: 0 };
+    this.joystickInput = { x: 0, y: 0 };
+    this.joystickId = null;
+    
+    this.lookActive = false;
+    this.lookStartPos = { x: 0, y: 0 };
+    this.lookId = null;
+    
+    this.buttons = {
+      jump: false,
+      action: false,
+      sprint: false
+    };
+    
+    this.rotationDelta = { x: 0, y: 0 };
+  }
+  
+  handleJoystickStart(touch, center) {
+    this.joystickActive = true;
+    this.joystickCenter = center;
+    this.joystickId = touch.identifier;
+    this.joystickInput = { x: 0, y: 0 };
+  }
+  
+  handleJoystickMove(touch) {
+    if (!this.joystickActive || touch.identifier !== this.joystickId) return;
+    
+    const deltaX = touch.clientX - this.joystickCenter.x;
+    const deltaY = touch.clientY - this.joystickCenter.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const maxDistance = 40;
+    
+    if (distance <= maxDistance) {
+      this.joystickInput.x = deltaX / maxDistance;
+      this.joystickInput.y = deltaY / maxDistance;
+    } else {
+      this.joystickInput.x = deltaX / distance;
+      this.joystickInput.y = deltaY / distance;
+    }
+    
+    // Update visual knob position
+    const knob = document.getElementById('joystick-knob');
+    if (knob) {
+      const clampedX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
+      const clampedY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
+      knob.style.transform = `translate(-50%, -50%) translate(${clampedX}px, ${clampedY}px)`;
+    }
+  }
+  
+  handleJoystickEnd(touch) {
+    if (touch.identifier !== this.joystickId) return;
+    
+    this.joystickActive = false;
+    this.joystickInput = { x: 0, y: 0 };
+    this.joystickId = null;
+    
+    const knob = document.getElementById('joystick-knob');
+    if (knob) {
+      knob.style.transform = 'translate(-50%, -50%)';
+    }
+  }
+  
+  handleLookStart(touch) {
+    this.lookActive = true;
+    this.lookStartPos = { x: touch.clientX, y: touch.clientY };
+    this.lookId = touch.identifier;
+  }
+  
+  handleLookMove(touch) {
+    if (!this.lookActive || touch.identifier !== this.lookId) return;
+    
+    const deltaX = touch.clientX - this.lookStartPos.x;
+    const deltaY = touch.clientY - this.lookStartPos.y;
+    
+    // Store rotation delta for camera update
+    this.rotationDelta.x = deltaX * 0.002;
+    this.rotationDelta.y = deltaY * 0.002;
+    
+    this.lookStartPos.x = touch.clientX;
+    this.lookStartPos.y = touch.clientY;
+  }
+  
+  handleLookEnd(touch) {
+    if (touch.identifier !== this.lookId) return;
+    
+    this.lookActive = false;
+    this.rotationDelta = { x: 0, y: 0 };
+    this.lookId = null;
+  }
+  
+  getMovementKeys() {
+    return {
+      w: this.joystickInput.y < -0.3,
+      s: this.joystickInput.y > 0.3,
+      a: this.joystickInput.x < -0.3,
+      d: this.joystickInput.x > 0.3
+    };
+  }
+  
+  getRotationDelta() {
+    const delta = { ...this.rotationDelta };
+    this.rotationDelta = { x: 0, y: 0 }; // Reset after reading
+    return delta;
+  }
+}
+
 // Create mobile controls
 let mobileControls = null;
-let joystick = null;
-let lookPad = null;
+let mobileInput = null;
 
 function createMobileControls() {
   if (mobileControls) return; // Already created
+  
+  mobileInput = new MobileTouchInput();
   
   // Create mobile control container
   mobileControls = document.createElement('div');
@@ -213,10 +326,13 @@ function createMobileControls() {
     pointer-events: none;
     z-index: 900;
     display: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   `;
 
-  // Bruno Simon style - floating joystick
-  joystick = document.createElement('div');
+  // Movement joystick (bottom left)
+  const joystick = document.createElement('div');
   joystick.id = 'joystick';
   joystick.style.cssText = `
     position: absolute;
@@ -248,8 +364,8 @@ function createMobileControls() {
   `;
   joystick.appendChild(joystickKnob);
 
-  // Bruno Simon style - look area (full right side)
-  lookPad = document.createElement('div');
+  // Look area (right side of screen)
+  const lookPad = document.createElement('div');
   lookPad.id = 'look-pad';
   lookPad.style.cssText = `
     position: absolute;
@@ -262,7 +378,7 @@ function createMobileControls() {
     background: transparent;
   `;
 
-  // Add touch indicator for look area
+  // Add touch indicator
   const lookIndicator = document.createElement('div');
   lookIndicator.style.cssText = `
     position: absolute;
@@ -280,7 +396,7 @@ function createMobileControls() {
   lookIndicator.textContent = 'LOOK AROUND';
   lookPad.appendChild(lookIndicator);
 
-  // Action buttons (Bruno Simon style - minimal and floating)
+  // Action buttons (bottom right)
   const actionButtons = document.createElement('div');
   actionButtons.id = 'action-buttons';
   actionButtons.style.cssText = `
@@ -307,6 +423,7 @@ function createMobileControls() {
     font-weight: bold;
     touch-action: manipulation;
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    user-select: none;
   `;
 
   const actionButton = document.createElement('button');
@@ -323,6 +440,7 @@ function createMobileControls() {
     font-weight: bold;
     touch-action: manipulation;
     box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    user-select: none;
   `;
 
   const sprintButton = document.createElement('button');
@@ -338,9 +456,10 @@ function createMobileControls() {
     font-size: 16px;
     touch-action: manipulation;
     box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+    user-select: none;
   `;
 
-  // Bruno Simon style - Return button for spectator mode
+  // Return button for spectator mode
   const returnButton = document.createElement('button');
   returnButton.id = 'return-btn';
   returnButton.innerHTML = '←';
@@ -360,6 +479,7 @@ function createMobileControls() {
     pointer-events: auto;
     display: none;
     box-shadow: 0 0 15px rgba(255, 100, 100, 0.3);
+    user-select: none;
   `;
 
   actionButtons.appendChild(jumpButton);
@@ -372,8 +492,136 @@ function createMobileControls() {
   mobileControls.appendChild(returnButton);
   document.body.appendChild(mobileControls);
 
-  // Setup mobile touch events immediately after creating controls
-  setupMobileControls();
+  // Setup touch events
+  setupMobileEvents();
+}
+
+function setupMobileEvents() {
+  if (!mobileControls || !mobileInput) return;
+
+  const joystick = document.getElementById('joystick');
+  const lookPad = document.getElementById('look-pad');
+  
+  // Joystick events
+  joystick.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    const rect = joystick.getBoundingClientRect();
+    const center = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+    
+    mobileInput.handleJoystickStart(touch, center);
+  }, { passive: false });
+
+  // Look pad events
+  lookPad.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    mobileInput.handleLookStart(touch);
+  }, { passive: false });
+
+  // Global touch move handler
+  document.addEventListener('touchmove', (e) => {
+    if (!gameStarted || !mobileInput) return;
+    
+    for (let i = 0; i < e.touches.length; i++) {
+      const touch = e.touches[i];
+      
+      // Check if this touch belongs to joystick or look
+      if (mobileInput.joystickActive && touch.identifier === mobileInput.joystickId) {
+        e.preventDefault();
+        mobileInput.handleJoystickMove(touch);
+      } else if (mobileInput.lookActive && touch.identifier === mobileInput.lookId) {
+        e.preventDefault();
+        mobileInput.handleLookMove(touch);
+      }
+    }
+  }, { passive: false });
+
+  // Global touch end handler
+  document.addEventListener('touchend', (e) => {
+    if (!mobileInput) return;
+    
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      
+      if (mobileInput.joystickActive && touch.identifier === mobileInput.joystickId) {
+        mobileInput.handleJoystickEnd(touch);
+      } else if (mobileInput.lookActive && touch.identifier === mobileInput.lookId) {
+        mobileInput.handleLookEnd(touch);
+      }
+    }
+  }, { passive: false });
+
+  // Button events
+  const jumpBtn = document.getElementById('jump-btn');
+  const actionBtn = document.getElementById('action-btn');
+  const sprintBtn = document.getElementById('sprint-btn');
+  const returnBtn = document.getElementById('return-btn');
+
+  if (jumpBtn) {
+    jumpBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mobileInput.buttons.jump = true;
+      keys[' '] = true;
+    }, { passive: false });
+
+    jumpBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mobileInput.buttons.jump = false;
+      keys[' '] = false;
+    }, { passive: false });
+  }
+
+  if (actionBtn) {
+    actionBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mobileInput.buttons.action = true;
+      keys['e'] = true;
+    }, { passive: false });
+
+    actionBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mobileInput.buttons.action = false;
+      keys['e'] = false;
+    }, { passive: false });
+  }
+
+  if (sprintBtn) {
+    sprintBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mobileInput.buttons.sprint = true;
+      keys['shift'] = true;
+    }, { passive: false });
+
+    sprintBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mobileInput.buttons.sprint = false;
+      keys['shift'] = false;
+    }, { passive: false });
+  }
+
+  if (returnBtn) {
+    returnBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (spectatorMode && currentScene.startsWith('model-')) {
+        returnToGallery();
+      }
+    }, { passive: false });
+  }
 }
 
 // Update loading progress
@@ -1160,18 +1408,6 @@ try {
 
   // Movement and physics variables
   const keys = {};
-  
-  // Mobile input variables
-  let joystickActive = false;
-  let joystickCenter = { x: 0, y: 0 };
-  let joystickInput = { x: 0, y: 0 };
-  let lookPadActive = false;
-  let lastTouchPosition = { x: 0, y: 0 };
-  let mobileButtons = {
-    jump: false,
-    action: false,
-    sprint: false
-  };
 
   // Separate handling for keydown and keyup to better manage Q key
   window.addEventListener('keydown', (e) => {
@@ -1188,182 +1424,6 @@ try {
   window.addEventListener('keyup', (e) => {
     keys[e.key.toLowerCase()] = false;
   });
-
-  // Mobile touch event handlers
-  function setupMobileControls() {
-    if (!isMobile || !mobileControls) return;
-
-    console.log('Setting up mobile controls...');
-
-    // Joystick touch handling (Bruno Simon style)
-    joystick.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      joystickActive = true;
-      const rect = joystick.getBoundingClientRect();
-      joystickCenter.x = rect.left + rect.width / 2;
-      joystickCenter.y = rect.top + rect.height / 2;
-      console.log('Joystick touch start');
-    });
-
-    joystick.addEventListener('touchmove', (e) => {
-      if (!joystickActive) return;
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - joystickCenter.x;
-      const deltaY = touch.clientY - joystickCenter.y;
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const maxDistance = 35; // Max knob movement
-      
-      if (distance <= maxDistance) {
-        joystickInput.x = deltaX / maxDistance;
-        joystickInput.y = deltaY / maxDistance;
-      } else {
-        joystickInput.x = (deltaX / distance);
-        joystickInput.y = (deltaY / distance);
-      }
-      
-      const knob = document.getElementById('joystick-knob');
-      const clampedX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
-      const clampedY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
-      knob.style.transform = `translate(-50%, -50%) translate(${clampedX}px, ${clampedY}px)`;
-      
-      console.log('Joystick input:', joystickInput);
-    });
-
-    joystick.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      joystickActive = false;
-      joystickInput.x = 0;
-      joystickInput.y = 0;
-      const knob = document.getElementById('joystick-knob');
-      knob.style.transform = 'translate(-50%, -50%)';
-      console.log('Joystick touch end');
-    });
-
-    // Look pad touch handling (Bruno Simon style - entire right side)
-    lookPad.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      lookPadActive = true;
-      const touch = e.touches[0];
-      lastTouchPosition.x = touch.clientX;
-      lastTouchPosition.y = touch.clientY;
-      console.log('Look pad touch start');
-    });
-
-    lookPad.addEventListener('touchmove', (e) => {
-      if (!lookPadActive || !gameStarted) return;
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - lastTouchPosition.x;
-      const deltaY = touch.clientY - lastTouchPosition.y;
-      
-      // Bruno Simon style sensitivity
-      const sensitivity = 0.005;
-      
-      targetRotationY -= deltaX * sensitivity;
-      currentRotationX -= deltaY * sensitivity;
-      
-      // Limit vertical rotation
-      if (spectatorMode) {
-        currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
-      } else {
-        currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
-      }
-      
-      lastTouchPosition.x = touch.clientX;
-      lastTouchPosition.y = touch.clientY;
-      
-      console.log('Look pad move:', deltaX, deltaY);
-    });
-
-    lookPad.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      lookPadActive = false;
-      console.log('Look pad touch end');
-    });
-
-    // Button event handlers
-    const jumpBtn = document.getElementById('jump-btn');
-    const actionBtn = document.getElementById('action-btn');
-    const sprintBtn = document.getElementById('sprint-btn');
-    const returnBtn = document.getElementById('return-btn');
-
-    if (jumpBtn) {
-      jumpBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        mobileButtons.jump = true;
-        keys[' '] = true;
-        console.log('Jump button pressed');
-      });
-
-      jumpBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        mobileButtons.jump = false;
-        keys[' '] = false;
-        console.log('Jump button released');
-      });
-    }
-
-    if (actionBtn) {
-      actionBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        mobileButtons.action = true;
-        keys['e'] = true;
-        console.log('Action button pressed');
-      });
-
-      actionBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        mobileButtons.action = false;
-        keys['e'] = false;
-        console.log('Action button released');
-      });
-    }
-
-    if (sprintBtn) {
-      sprintBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        mobileButtons.sprint = true;
-        keys['shift'] = true;
-        console.log('Sprint button pressed');
-      });
-
-      sprintBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        mobileButtons.sprint = false;
-        keys['shift'] = false;
-        console.log('Sprint button released');
-      });
-    }
-
-    // Return button for spectator mode
-    if (returnBtn) {
-      returnBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (spectatorMode && currentScene.startsWith('model-')) {
-          returnToGallery();
-          console.log('Return button pressed');
-        }
-      });
-    }
-
-    console.log('Mobile controls setup complete');
-  }
   
   let velocity = new THREE.Vector3();
   let moveSpeed = 5;
@@ -1417,7 +1477,7 @@ try {
     console.log('Switched to main scene');
   }
 
-  function switchToModelViewer(artIndex) {
+    function switchToModelViewer(artIndex) {
     spectatorMode = true;
     
     const sceneMap = {
@@ -1494,7 +1554,7 @@ try {
           }
         });
       });
-          } else if (currentScene === 'gallery') {
+    } else if (currentScene === 'gallery') {
       // Check return portal and gallery frames
       if (returnPortalModel) {
         returnPortalModel.traverse((child) => {
@@ -1670,15 +1730,30 @@ try {
   function moveCharacter(dt) {
     if (!gameStarted) return;
     
-    // Mobile joystick input handling (Bruno Simon style)
-    if (isMobile && joystickActive) {
-      // Convert joystick input to movement keys with improved sensitivity
-      keys['w'] = joystickInput.y < -0.2;
-      keys['s'] = joystickInput.y > 0.2;
-      keys['a'] = joystickInput.x < -0.2;
-      keys['d'] = joystickInput.x > 0.2;
+    // Mobile input handling
+    if (isMobile && mobileInput) {
+      // Get movement from joystick
+      const movementKeys = mobileInput.getMovementKeys();
+      keys['w'] = movementKeys.w;
+      keys['s'] = movementKeys.s;
+      keys['a'] = movementKeys.a;
+      keys['d'] = movementKeys.d;
+      
+      // Get rotation from look input
+      const rotationDelta = mobileInput.getRotationDelta();
+      if (rotationDelta.x !== 0 || rotationDelta.y !== 0) {
+        targetRotationY -= rotationDelta.x;
+        currentRotationX -= rotationDelta.y;
+        
+        // Limit vertical rotation
+        if (spectatorMode) {
+          currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
+        } else {
+          currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
+        }
+      }
     } else if (isMobile) {
-      // Reset movement keys when joystick not active
+      // Reset movement keys when no mobile input
       keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
     }
     
@@ -1835,9 +1910,9 @@ try {
   // Pointer lock exit handler
   document.addEventListener('pointerlockchange', () => {
     if (!document.pointerLockElement && gameStarted && !isMobile) {
-      openOverlay('home');
       gameStarted = false;
       portalInfoWindow.style.display = 'none';
+      showHomeOverlay(); // Show the device selection popup again
     }
     updateUIVisibility();
   });
@@ -1846,6 +1921,13 @@ try {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && gameStarted && !isMobile && document.pointerLockElement) {
       document.exitPointerLock();
+    }
+    
+    // ESC for mobile users (since they don't have pointer lock)
+    if (e.key === 'Escape' && gameStarted && isMobile) {
+      gameStarted = false;
+      portalInfoWindow.style.display = 'none';
+      showHomeOverlay();
     }
     
     // Only allow Enter/Space to start game if models are loaded
