@@ -8,6 +8,11 @@ let currentScene = 'main'; // Track which scene we're in
 let spectatorMode = false; // Track if in spectator mode
 let allModelsLoaded = false; // Track if all models are loaded
 
+// Mobile detection
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                 ('ontouchstart' in window) || 
+                 (navigator.maxTouchPoints > 0);
+
 // Loading manager for better performance
 const loadingManager = new THREE.LoadingManager();
 let totalModelsToLoad = 3; // portal.glb, church.glb, grave.glb
@@ -99,9 +104,15 @@ window.closeOverlay = function(name) {
     // Only start the game when clicking the start button for home overlay AND models are loaded
     if (name === 'home' && allModelsLoaded) {
       gameStarted = true;
-      const container = document.getElementById('three-canvas');
-      if (container && !document.pointerLockElement) {
-        container.requestPointerLock();
+      
+      if (!isMobile) {
+        const container = document.getElementById('three-canvas');
+        if (container && !document.pointerLockElement) {
+          container.requestPointerLock();
+        }
+      } else {
+        // On mobile, just start the game without pointer lock
+        createMobileControls();
       }
     }
   }
@@ -120,11 +131,346 @@ window.openOverlay = function(name) {
   // Stop game when opening overlay
   if (name === 'home') {
     gameStarted = false;
+    hideMobileControls();
   }
 };
 
 // Hide overlays initially until models are loaded
 hideAllOverlays();
+
+// Mobile controls variables
+let mobileControls = null;
+let joystickActive = false;
+let joystickCenter = { x: 0, y: 0 };
+let joystickPosition = { x: 0, y: 0 };
+let lookSensitivity = 0.003;
+let touchStartPos = { x: 0, y: 0 };
+let lastTouchPos = { x: 0, y: 0 };
+
+// Create mobile controls
+function createMobileControls() {
+  if (!isMobile || mobileControls) return;
+
+  mobileControls = document.createElement('div');
+  mobileControls.id = 'mobile-controls';
+  mobileControls.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 500;
+    pointer-events: none;
+  `;
+
+  // Movement joystick (left side)
+  const joystick = document.createElement('div');
+  joystick.style.cssText = `
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    pointer-events: auto;
+    touch-action: none;
+  `;
+
+  const joystickKnob = document.createElement('div');
+  joystickKnob.style.cssText = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.1s ease;
+  `;
+
+  joystick.appendChild(joystickKnob);
+
+  // Look area (right side)
+  const lookArea = document.createElement('div');
+  lookArea.style.cssText = `
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 60%;
+    height: 100%;
+    pointer-events: auto;
+    touch-action: none;
+    background: transparent;
+  `;
+
+  // Action buttons (right side)
+  const actionButtons = document.createElement('div');
+  actionButtons.style.cssText = `
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    pointer-events: auto;
+  `;
+
+  // Jump button
+  const jumpButton = document.createElement('div');
+  jumpButton.innerHTML = '⬆';
+  jumpButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    margin-bottom: 10px;
+    touch-action: none;
+    user-select: none;
+  `;
+
+  // Action button (E key equivalent)
+  const actionButton = document.createElement('div');
+  actionButton.innerHTML = 'E';
+  actionButton.style.cssText = `
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 255, 255, 0.1);
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #00ffff;
+    touch-action: none;
+    user-select: none;
+  `;
+
+  // Sprint button (bottom right)
+  const sprintButton = document.createElement('div');
+  sprintButton.innerHTML = '🏃';
+  sprintButton.style.cssText = `
+    position: absolute;
+    bottom: 30px;
+    right: 110px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 0, 0.1);
+    border: 2px solid rgba(255, 255, 0, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: yellow;
+    touch-action: none;
+    user-select: none;
+    pointer-events: auto;
+  `;
+
+  // Q button for spectator mode (top right)
+  const qButton = document.createElement('div');
+  qButton.innerHTML = 'Q';
+  qButton.style.cssText = `
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 0, 255, 0.1);
+    border: 2px solid rgba(255, 0, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #ff00ff;
+    touch-action: none;
+    user-select: none;
+    pointer-events: auto;
+  `;
+
+  actionButtons.appendChild(jumpButton);
+  actionButtons.appendChild(actionButton);
+
+  mobileControls.appendChild(joystick);
+  mobileControls.appendChild(lookArea);
+  mobileControls.appendChild(actionButtons);
+  mobileControls.appendChild(sprintButton);
+  mobileControls.appendChild(qButton);
+
+  document.body.appendChild(mobileControls);
+
+  // Joystick event handlers
+  function handleJoystickStart(e) {
+    e.preventDefault();
+    const rect = joystick.getBoundingClientRect();
+    joystickCenter.x = rect.left + rect.width / 2;
+    joystickCenter.y = rect.top + rect.height / 2;
+    joystickActive = true;
+    
+    const touch = e.touches ? e.touches[0] : e;
+    updateJoystick(touch.clientX, touch.clientY);
+  }
+
+  function handleJoystickMove(e) {
+    if (!joystickActive) return;
+    e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    updateJoystick(touch.clientX, touch.clientY);
+  }
+
+  function handleJoystickEnd(e) {
+    e.preventDefault();
+    joystickActive = false;
+    joystickPosition.x = 0;
+    joystickPosition.y = 0;
+    joystickKnob.style.transform = 'translate(-50%, -50%)';
+    keys['w'] = false;
+    keys['a'] = false;
+    keys['s'] = false;
+    keys['d'] = false;
+  }
+
+  function updateJoystick(x, y) {
+    const deltaX = x - joystickCenter.x;
+    const deltaY = y - joystickCenter.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const maxDistance = 40; // Half of joystick radius
+
+    if (distance > maxDistance) {
+      const angle = Math.atan2(deltaY, deltaX);
+      joystickPosition.x = Math.cos(angle) * maxDistance;
+      joystickPosition.y = Math.sin(angle) * maxDistance;
+    } else {
+      joystickPosition.x = deltaX;
+      joystickPosition.y = deltaY;
+    }
+
+    joystickKnob.style.transform = `translate(${-50 + (joystickPosition.x / maxDistance) * 50}%, ${-50 + (joystickPosition.y / maxDistance) * 50}%)`;
+
+    // Update movement keys based on joystick position
+    const threshold = 10;
+    keys['w'] = joystickPosition.y < -threshold;
+    keys['s'] = joystickPosition.y > threshold;
+    keys['a'] = joystickPosition.x < -threshold;
+    keys['d'] = joystickPosition.x > threshold;
+  }
+
+  // Look area event handlers
+  function handleLookStart(e) {
+    e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    touchStartPos.x = touch.clientX;
+    touchStartPos.y = touch.clientY;
+    lastTouchPos.x = touch.clientX;
+    lastTouchPos.y = touch.clientY;
+  }
+
+  function handleLookMove(e) {
+    if (!gameStarted) return;
+    e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    
+    const deltaX = touch.clientX - lastTouchPos.x;
+    const deltaY = touch.clientY - lastTouchPos.y;
+
+    targetRotationY -= deltaX * lookSensitivity;
+    currentRotationX -= deltaY * lookSensitivity;
+
+    // Limit vertical rotation
+    if (spectatorMode) {
+      currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
+    } else {
+      currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
+    }
+
+    lastTouchPos.x = touch.clientX;
+    lastTouchPos.y = touch.clientY;
+  }
+
+  // Button event handlers
+  function handleJumpPress() {
+    keys[' '] = true;
+    jumpButton.style.background = 'rgba(255, 255, 255, 0.3)';
+    setTimeout(() => {
+      keys[' '] = false;
+      jumpButton.style.background = 'rgba(255, 255, 255, 0.1)';
+    }, 150);
+  }
+
+  function handleActionPress() {
+    keys['e'] = true;
+    actionButton.style.background = 'rgba(0, 255, 255, 0.3)';
+    setTimeout(() => {
+      keys['e'] = false;
+      actionButton.style.background = 'rgba(0, 255, 255, 0.1)';
+    }, 150);
+  }
+
+  function handleSprintStart() {
+    keys['shift'] = true;
+    sprintButton.style.background = 'rgba(255, 255, 0, 0.3)';
+  }
+
+  function handleSprintEnd() {
+    keys['shift'] = false;
+    sprintButton.style.background = 'rgba(255, 255, 0, 0.1)';
+  }
+
+  function handleQPress() {
+    if (spectatorMode && currentScene.startsWith('model-')) {
+      returnToGallery();
+      qButton.style.background = 'rgba(255, 0, 255, 0.3)';
+      setTimeout(() => {
+        qButton.style.background = 'rgba(255, 0, 255, 0.1)';
+      }, 150);
+    }
+  }
+
+  // Add event listeners
+  joystick.addEventListener('touchstart', handleJoystickStart);
+  joystick.addEventListener('touchmove', handleJoystickMove);
+  joystick.addEventListener('touchend', handleJoystickEnd);
+  joystick.addEventListener('mousedown', handleJoystickStart);
+  joystick.addEventListener('mousemove', handleJoystickMove);
+  joystick.addEventListener('mouseup', handleJoystickEnd);
+
+  lookArea.addEventListener('touchstart', handleLookStart);
+  lookArea.addEventListener('touchmove', handleLookMove);
+  lookArea.addEventListener('mousedown', handleLookStart);
+  lookArea.addEventListener('mousemove', handleLookMove);
+
+  jumpButton.addEventListener('touchstart', handleJumpPress);
+  jumpButton.addEventListener('mousedown', handleJumpPress);
+
+  actionButton.addEventListener('touchstart', handleActionPress);
+  actionButton.addEventListener('mousedown', handleActionPress);
+
+  sprintButton.addEventListener('touchstart', handleSprintStart);
+  sprintButton.addEventListener('touchend', handleSprintEnd);
+  sprintButton.addEventListener('mousedown', handleSprintStart);
+  sprintButton.addEventListener('mouseup', handleSprintEnd);
+
+  qButton.addEventListener('touchstart', handleQPress);
+  qButton.addEventListener('mousedown', handleQPress);
+
+  console.log('Mobile controls created');
+}
+
+function hideMobileControls() {
+  if (mobileControls) {
+    mobileControls.remove();
+    mobileControls = null;
+  }
+}
 
 try {
   // 3D Scene Setup
@@ -217,27 +563,48 @@ try {
   `;
 
   function updateControlsDisplay() {
-    if (spectatorMode) {
-      controlsDisplay.innerHTML = `
-        <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 SPECTATOR MODE</div>
-        <div><span style="color: #ffff00;">WASD</span> - Fly around</div>
-        <div><span style="color: #ffff00;">Mouse</span> - Free look</div>
-        <div><span style="color: #ffff00;">Space</span> - Fly up</div>
-        <div><span style="color: #ffff00;">Shift</span> - Fly down</div>
-        <div><span style="color: #ffff00;">Q</span> - Return to gallery</div>
-        <div><span style="color: #ffff00;">ESC</span> - Menu</div>
-      `;
+    if (isMobile) {
+      if (spectatorMode) {
+        controlsDisplay.innerHTML = `
+          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 MOBILE SPECTATOR</div>
+          <div><span style="color: #ffff00;">Joystick</span> - Fly around</div>
+          <div><span style="color: #ffff00;">Touch & Drag</span> - Look</div>
+          <div><span style="color: #ffff00;">Q Button</span> - Return to gallery</div>
+        `;
+      } else {
+        controlsDisplay.innerHTML = `
+          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">📱 MOBILE CONTROLS</div>
+          <div><span style="color: #ffff00;">Joystick</span> - Move</div>
+          <div><span style="color: #ffff00;">Touch & Drag</span> - Look around</div>
+          <div><span style="color: #ffff00;">⬆ Button</span> - Jump</div>
+          <div><span style="color: #ffff00;">🏃 Button</span> - Sprint</div>
+          <div><span style="color: #ffff00;">E Button</span> - Use Portal</div>
+          <div style="margin-top: 8px; color: #888; font-size: 10px;">Aim crosshair at portals to scan</div>
+        `;
+      }
     } else {
-      controlsDisplay.innerHTML = `
-        <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 CONTROLS</div>
-        <div><span style="color: #ffff00;">WASD</span> - Move</div>
-        <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
-        <div><span style="color: #ffff00;">Space</span> - Jump</div>
-        <div><span style="color: #ffff00;">Shift</span> - Sprint</div>
-        <div><span style="color: #ffff00;">ESC</span> - Menu</div>
-        <div><span style="color: #ffff00;">E</span> - Use Portal</div>
-        <div style="margin-top: 8px; color: #888; font-size: 10px;">Aim crosshair at portals to scan</div>
-      `;
+      if (spectatorMode) {
+        controlsDisplay.innerHTML = `
+          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 SPECTATOR MODE</div>
+          <div><span style="color: #ffff00;">WASD</span> - Fly around</div>
+          <div><span style="color: #ffff00;">Mouse</span> - Free look</div>
+          <div><span style="color: #ffff00;">Space</span> - Fly up</div>
+          <div><span style="color: #ffff00;">Shift</span> - Fly down</div>
+          <div><span style="color: #ffff00;">Q</span> - Return to gallery</div>
+          <div><span style="color: #ffff00;">ESC</span> - Menu</div>
+        `;
+      } else {
+        controlsDisplay.innerHTML = `
+          <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 CONTROLS</div>
+          <div><span style="color: #ffff00;">WASD</span> - Move</div>
+          <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
+          <div><span style="color: #ffff00;">Space</span> - Jump</div>
+          <div><span style="color: #ffff00;">Shift</span> - Sprint</div>
+          <div><span style="color: #ffff00;">ESC</span> - Menu</div>
+          <div><span style="color: #ffff00;">E</span> - Use Portal</div>
+          <div style="margin-top: 8px; color: #888; font-size: 10px;">Aim crosshair at portals to scan</div>
+        `;
+      }
     }
   }
 
@@ -271,7 +638,7 @@ try {
     <div style="margin-bottom: 5px;">Energy: <span style="color: #ffff00;">97.3%</span></div>
     <div style="margin-bottom: 5px;">Destination: <span id="portal-destination" style="color: #ff9900;">--</span></div>
     <div style="margin-bottom: 10px;">Distance: <span id="portal-distance" style="color: #00ffff;">--</span></div>
-    <div style="color: #00ff00; font-size: 12px;">Press E to enter portal</div>
+    <div style="color: #00ff00; font-size: 12px;">${isMobile ? 'Press E button to enter portal' : 'Press E to enter portal'}</div>
   `;
   document.body.appendChild(portalInfoWindow);
 
@@ -812,7 +1179,7 @@ try {
 
   // Mouse movement only works when game is started and pointer is locked
   document.addEventListener('mousemove', (e) => {
-    if (document.pointerLockElement && gameStarted) {
+    if (document.pointerLockElement && gameStarted && !isMobile) {
       mouseX = e.movementX || 0;
       mouseY = e.movementY || 0;
       
@@ -826,6 +1193,13 @@ try {
         currentRotationX = Math.max(-Math.PI/3, Math.min(Math.PI/3, currentRotationX));
       }
     }
+  });
+
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
   // Movement and physics variables
@@ -1077,267 +1451,3 @@ try {
           Math.pow(currentPosition.x - boxPosition.x, 2) + 
           Math.pow(currentPosition.z - boxPosition.z, 2)
         );
-        const newDistanceToCenter = Math.sqrt(
-          Math.pow(newPosition.x - boxPosition.x, 2) + 
-          Math.pow(newPosition.z - boxPosition.z, 2)
-        );
-        
-        if (wouldCollideX && wouldCollideZ && wouldCollideY &&
-            newDistanceToCenter <= currentDistanceToCenter) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  // Function to get the ground level at a specific position
-  function getGroundLevel(position) {
-    if (currentScene !== 'main') return 0; // Gallery has flat ground
-    
-    let groundLevel = 0;
-    
-    for (const collisionBox of collisionBoxes) {
-      const boxGeometry = collisionBox.geometry;
-      const boxPosition = collisionBox.position;
-      
-      if (boxGeometry.type === 'CylinderGeometry') {
-        const cylinderRadius = boxGeometry.parameters.radiusTop;
-        const cylinderHeight = boxGeometry.parameters.height;
-        const cylinderTop = boxPosition.y + cylinderHeight/2;
-        
-        const dx = position.x - boxPosition.x;
-        const dz = position.z - boxPosition.z;
-        const horizontalDistance = Math.sqrt(dx * dx + dz * dz);
-        
-        if (horizontalDistance <= cylinderRadius && cylinderTop > groundLevel) {
-          groundLevel = cylinderTop;
-        }
-      } else {
-        const boxWidth = boxGeometry.parameters.width;
-        const boxDepth = boxGeometry.parameters.depth;
-        const boxHeight = boxGeometry.parameters.height;
-        const boxTop = boxPosition.y + boxHeight/2;
-        
-        const boxMinX = boxPosition.x - boxWidth / 2;
-        const boxMaxX = boxPosition.x + boxWidth / 2;
-        const boxMinZ = boxPosition.z - boxDepth / 2;
-        const boxMaxZ = boxPosition.z + boxDepth / 2;
-        
-        if (position.x >= boxMinX && position.x <= boxMaxX &&
-            position.z >= boxMinZ && position.z <= boxMaxZ &&
-            boxTop > groundLevel) {
-          groundLevel = boxTop;
-        }
-      }
-    }
-    
-    return groundLevel;
-  }
-
-  function moveCharacter(dt) {
-    if (!gameStarted) return;
-    
-    if (spectatorMode) {
-      // Spectator mode movement (free flight)
-      const spectatorMoveSpeed = spectatorSpeed;
-      
-      // Get movement directions
-      const forward = new THREE.Vector3(0, 0, -1);
-      forward.applyQuaternion(camera.quaternion);
-      
-      const right = new THREE.Vector3(1, 0, 0);
-      right.applyQuaternion(camera.quaternion);
-      
-      const up = new THREE.Vector3(0, 1, 0);
-      
-      let movement = new THREE.Vector3();
-      
-      if (keys['w']) movement.add(forward.multiplyScalar(spectatorMoveSpeed * dt));
-      if (keys['s']) movement.add(forward.multiplyScalar(-spectatorMoveSpeed * dt));
-      if (keys['a']) movement.add(right.multiplyScalar(-spectatorMoveSpeed * dt));
-      if (keys['d']) movement.add(right.multiplyScalar(spectatorMoveSpeed * dt));
-      if (keys[' ']) movement.add(up.multiplyScalar(spectatorMoveSpeed * dt));
-      if (keys['shift']) movement.add(up.multiplyScalar(-spectatorMoveSpeed * dt));
-      
-      camera.position.add(movement);
-      
-      return; // Skip normal character movement in spectator mode
-    }
-    
-    // Normal character movement
-    const forward = new THREE.Vector3(0, 0, -1);
-    forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), targetRotationY);
-    
-    const right = new THREE.Vector3(1, 0, 0);
-    right.applyAxisAngle(new THREE.Vector3(0, 1, 0), targetRotationY);
-    
-    velocity.x = 0;
-    velocity.z = 0;
-    
-    moveSpeed = keys['shift'] ? sprintSpeed : normalSpeed;
-    
-    let desiredVelocity = new THREE.Vector3();
-    
-    if (keys['w'] || keys['arrowup']) {
-      desiredVelocity.x += forward.x * moveSpeed * dt;
-      desiredVelocity.z += forward.z * moveSpeed * dt;
-    }
-    if (keys['s'] || keys['arrowdown']) {
-      desiredVelocity.x -= forward.x * moveSpeed * dt;
-      desiredVelocity.z -= forward.z * moveSpeed * dt;
-    }
-    if (keys['a'] || keys['arrowleft']) {
-      desiredVelocity.x -= right.x * moveSpeed * dt;
-      desiredVelocity.z -= right.z * moveSpeed * dt;
-    }
-    if (keys['d'] || keys['arrowright']) {
-      desiredVelocity.x += right.x * moveSpeed * dt;
-      desiredVelocity.z += right.z * moveSpeed * dt;
-    }
-    
-    // Test movement in X direction
-    const testPositionX = characterGroup.position.clone();
-    testPositionX.x += desiredVelocity.x;
-    if (!checkCollision(characterGroup.position, testPositionX)) {
-      characterGroup.position.x = testPositionX.x;
-    }
-    
-    // Test movement in Z direction
-    const testPositionZ = characterGroup.position.clone();
-    testPositionZ.z += desiredVelocity.z;
-    if (!checkCollision(characterGroup.position, testPositionZ)) {
-      characterGroup.position.z = testPositionZ.z;
-    }
-    
-    // Jump logic
-    if (keys[' '] && !isJumping) {
-      isJumping = true;
-      jumpVelocity = jumpForce;
-    }
-    
-    // Portal activation
-    if (keys['e'] && currentPortalInView) {
-      if (currentScene === 'main' && currentPortalInView.userData.teleport) {
-        switchToGallery();
-        portalInfoWindow.style.display = 'none';
-        currentPortalInView = null;
-      } else if (currentScene === 'gallery') {
-        if (currentPortalInView.userData.type === 'return-portal') {
-          switchToMain();
-          portalInfoWindow.style.display = 'none';
-          currentPortalInView = null;
-        } else if (currentPortalInView.userData.type === 'gallery-frame') {
-          switchToModelViewer(currentPortalInView.userData.artIndex);
-          portalInfoWindow.style.display = 'none';
-          currentPortalInView = null;
-        }
-      }
-    }
-    
-    // Apply gravity and update vertical position
-    if (isJumping || characterGroup.position.y > 0) {
-      jumpVelocity -= gravity * dt;
-      characterGroup.position.y += jumpVelocity * dt;
-    }
-    
-    const currentGroundLevel = getGroundLevel(characterGroup.position);
-    
-    if (characterGroup.position.y <= currentGroundLevel) {
-      characterGroup.position.y = currentGroundLevel;
-      isJumping = false;
-      jumpVelocity = 0;
-    }
-    
-    if (!isJumping && characterGroup.position.y > currentGroundLevel) {
-      isJumping = true;
-      jumpVelocity = 0;
-    }
-    
-    // Clamp position to boundaries
-    characterGroup.position.x = Math.max(Math.min(characterGroup.position.x, 23), -23);
-    characterGroup.position.z = Math.max(Math.min(characterGroup.position.z, 23), -18);
-    
-    characterGroup.rotation.y = targetRotationY;
-  }
-
-  function updateCamera() {
-    if (spectatorMode) {
-      // In spectator mode, camera position is controlled directly
-      // Just apply rotation
-      camera.rotation.set(currentRotationX, targetRotationY, 0, 'YXZ');
-    } else {
-      // Normal third-person camera
-      const eyeHeight = 1.8;
-      
-      camera.position.copy(characterGroup.position);
-      camera.position.y += eyeHeight;
-      
-      camera.rotation.set(currentRotationX, targetRotationY, 0, 'YXZ');
-    }
-  }
-
-  function updateUIVisibility() {
-    const showUI = gameStarted && document.pointerLockElement;
-    crosshair.style.display = showUI ? 'block' : 'none';
-    controlsDisplay.style.display = showUI ? 'block' : 'none';
-  }
-
-  // Pointer lock exit handler
-  document.addEventListener('pointerlockchange', () => {
-    if (!document.pointerLockElement && gameStarted) {
-      openOverlay('home');
-      gameStarted = false;
-      portalInfoWindow.style.display = 'none';
-    }
-    updateUIVisibility();
-  });
-
-  // ESC key handler
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && gameStarted && document.pointerLockElement) {
-      document.exitPointerLock();
-    }
-    
-    // Only allow Enter/Space to start game if models are loaded
-    if(document.getElementById('overlay-home').classList.contains('visible') && (e.key==='Enter'||e.key===' ') && allModelsLoaded) {
-      closeOverlay('home');
-    }
-  });
-
-  // Optimized render loop with performance monitoring
-  let lastTime = performance.now();
-  
-  function animate() {
-    let now = performance.now(), dt = (now-lastTime)/1000;
-    lastTime = now;
-    
-    updateUIVisibility();
-    
-    if(gameStarted && !document.getElementById('overlay-home').classList.contains('visible')) {
-      moveCharacter(dt);
-      checkPortalView();
-    }
-    
-    // Rotate models in viewer scenes (optimized)
-    if (activeScene.userData && activeScene.userData.rotatingMesh) {
-      activeScene.userData.rotatingMesh.rotation.y += dt * 0.5;
-    }
-    
-    updateCamera();
-    renderer.render(activeScene, camera); // Render the active scene
-    requestAnimationFrame(animate);
-  }
-
-  animate();
-
-} catch (error) {
-  console.error('Fatal error in initialization:', error);
-  document.body.innerHTML = `
-    <div style="padding:20px;color:white;background:rgba(0,0,0,0.8)">
-      <h2>Error Loading Scene</h2>
-      <p>${error.message}</p>
-      <p>Please check the console for more details.</p>
-    </div>
-  `;
-}
