@@ -44,46 +44,46 @@ class WorldBuilder {
   
   // 🎯 ADD BUILT-IN COLLISION SHAPES TO MODEL LIBRARY
   addBuiltInCollisionShapes() {
-    // Create collision cube
-    const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
-    const cubeMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x0066ff,
-      transparent: true, 
-      opacity: 0.4,
-      wireframe: true 
-    });
-    const cubeScene = new THREE.Group();
-    const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    cubeScene.add(cubeMesh);
-    
-    this.availableModels.set('collision_cube', {
-      scene: cubeScene,
-      isCollisionShape: true,
-      shapeType: 'box',
-      animations: []
-    });
-    
-    // Create collision cylinder
-    const cylinderGeometry = new THREE.CylinderGeometry(1, 1, 2, 12);
-    const cylinderMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0xff00ff,
-      transparent: true, 
-      opacity: 0.4,
-      wireframe: true 
-    });
-    const cylinderScene = new THREE.Group();
-    const cylinderMesh = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-    cylinderScene.add(cylinderMesh);
-    
-    this.availableModels.set('collision_cylinder', {
-      scene: cylinderScene,
-      isCollisionShape: true,
-      shapeType: 'cylinder',
-      animations: []
-    });
-    
-    console.log('📦 Added built-in collision shapes: cube, cylinder');
-  }
+  // Create collision cube
+  const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+  const cubeMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0x0066ff,
+    transparent: true, 
+    opacity: 0.4,
+    wireframe: true 
+  });
+  const cubeScene = new THREE.Group();
+  const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
+  cubeScene.add(cubeMesh);
+
+  this.availableModels.set('collision_cube', {
+    scene: cubeScene,
+    isCollisionShape: true,
+    shapeType: 'box',
+    animations: []
+  });
+
+  // Create collision cylinder
+  const cylinderGeometry = new THREE.CylinderGeometry(1, 1, 2, 12);
+  const cylinderMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0xff00ff,
+    transparent: true, 
+    opacity: 0.4,
+    wireframe: true 
+  });
+  const cylinderScene = new THREE.Group();
+  const cylinderMesh = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+  cylinderScene.add(cylinderMesh);
+
+  this.availableModels.set('collision_cylinder', {
+    scene: cylinderScene,
+    isCollisionShape: true,
+    shapeType: 'cylinder',
+    animations: []
+  });
+
+  console.log('📦 Added built-in collision shapes: cube, cylinder');
+}
   
   init() {
     this.createUI();
