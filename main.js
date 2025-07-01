@@ -1447,14 +1447,15 @@ function closeDesk() {
   }
 }
 
-// GitHub Pages Compatible Global Kudos System
+
+
+// Simple Global Kudos System using CountAPI
 class DeskKudosSystem {
   constructor() {
-    this.storageKey = 'finnb24_desk_kudos_global';
     this.userStorageKey = 'finnb24_desk_user_kudos';
-    this.githubRepo = 'FinnB24/dingus'; // Your repo
-    this.issueNumber = 1; // Create issue #1 for kudos storage
-    this.apiUrl = `https://api.github.com/repos/${this.githubRepo}/issues/${this.issueNumber}/comments`;
+    this.countApiUrl = 'https://api.countapi.xyz';
+    this.namespace = 'finnb24-portfolio';
+    this.key = 'desk-kudos';
     
     this.totalKudos = 0;
     this.userHasGivenKudos = false;
@@ -1471,24 +1472,19 @@ class DeskKudosSystem {
   async loadGlobalKudosCount() {
     try {
       console.log('📊 Loading global kudos count...');
-      const response = await fetch(this.apiUrl);
+      const response = await fetch(`${this.countApiUrl}/get/${this.namespace}/${this.key}`);
       
       if (response.ok) {
-        const comments = await response.json();
-        
-        // Count comments that contain "KUDOS_VOTE"
-        this.totalKudos = comments.filter(comment => 
-          comment.body && comment.body.includes('KUDOS_VOTE')
-        ).length;
-        
+        const data = await response.json();
+        this.totalKudos = data.value || 0;
         console.log(`✅ Global kudos loaded: ${this.totalKudos}`);
       } else {
-        console.warn('⚠️ Could not load global kudos, using local count');
-        this.totalKudos = parseInt(localStorage.getItem(this.storageKey) || '0');
+        console.warn('⚠️ Could not load global kudos, starting at 0');
+        this.totalKudos = 0;
       }
     } catch (error) {
-      console.warn('⚠️ GitHub API error, using local storage:', error);
-      this.totalKudos = parseInt(localStorage.getItem(this.storageKey) || '0');
+      console.warn('⚠️ CountAPI error, starting at 0:', error);
+      this.totalKudos = 0;
     }
   }
   
@@ -1540,16 +1536,17 @@ class DeskKudosSystem {
     }
     
     try {
-      // Send kudos to GitHub API
-      const success = await this.sendKudosToGitHub();
+      // Send kudos to CountAPI
+      const response = await fetch(`${this.countApiUrl}/hit/${this.namespace}/${this.key}`);
       
-      if (success) {
-        // Increment local count immediately for better UX
-        this.totalKudos++;
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update local count with the new global count
+        this.totalKudos = data.value;
         this.userHasGivenKudos = true;
         
-        // Save to localStorage as backup
-        localStorage.setItem(this.storageKey, this.totalKudos.toString());
+        // Save user status
         localStorage.setItem(this.userStorageKey, 'true');
         
         // Update display
@@ -1562,12 +1559,14 @@ class DeskKudosSystem {
         if (typeof portfolioAnalytics !== 'undefined') {
           portfolioAnalytics.trackInteraction('desk', 'give_kudos', { 
             totalKudos: this.totalKudos,
-            method: 'github_api',
+            method: 'countapi',
             timestamp: new Date().toISOString()
           });
         }
+        
+        console.log('✅ Kudos successfully sent! New total:', this.totalKudos);
       } else {
-        throw new Error('Failed to send kudos');
+        throw new Error('CountAPI request failed');
       }
     } catch (error) {
       console.error('❌ Error giving kudos:', error);
@@ -1575,7 +1574,6 @@ class DeskKudosSystem {
       // Fallback to local storage
       this.totalKudos++;
       this.userHasGivenKudos = true;
-      localStorage.setItem(this.storageKey, this.totalKudos.toString());
       localStorage.setItem(this.userStorageKey, 'true');
       this.updateDisplay();
       
@@ -1585,44 +1583,6 @@ class DeskKudosSystem {
       if (button) {
         button.disabled = false;
       }
-    }
-  }
-  
-  async sendKudosToGitHub() {
-    try {
-      const kudosData = {
-        body: `KUDOS_VOTE
-        
-🎨 **Portfolio Kudos Given!**
-
-- **Timestamp:** ${new Date().toISOString()}
-- **From:** Anonymous Visitor
-- **Type:** Workspace Appreciation
-- **Browser:** ${navigator.userAgent.substring(0, 50)}...
-- **Page:** ${window.location.href}
-
-*This kudos was given through the interactive 3D portfolio workspace.*`
-      };
-      
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify(kudosData)
-      });
-      
-      if (response.status === 201) {
-        console.log('✅ Kudos successfully sent to GitHub!');
-        return true;
-      } else {
-        console.warn('⚠️ GitHub API response:', response.status);
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ GitHub API error:', error);
-      return false;
     }
   }
   
@@ -1675,15 +1635,15 @@ class DeskKudosSystem {
       totalKudos: this.totalKudos,
       userHasGivenKudos: this.userHasGivenKudos,
       timestamp: new Date().toISOString(),
-      method: 'github_api'
+      method: 'countapi'
     };
   }
   
-  // Admin function to refresh count from GitHub
-  async refreshFromGitHub() {
+  // Admin function to refresh count
+  async refreshFromCountAPI() {
     await this.loadGlobalKudosCount();
     this.updateDisplay();
-    console.log('🔄 Refreshed kudos count from GitHub');
+    console.log('🔄 Refreshed kudos count from CountAPI');
   }
   
   // Admin function to reset local user status (for testing)
@@ -1694,6 +1654,10 @@ class DeskKudosSystem {
     console.log('🔄 User kudos status reset');
   }
 }
+
+
+
+      
 
 // Initialize kudos system
 const deskKudosSystem = new DeskKudosSystem();
