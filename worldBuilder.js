@@ -1,4 +1,3 @@
-// worldBuilder.js - Advanced World Building System for FinnB24 Portfolio
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
@@ -12,38 +11,38 @@ class WorldBuilder {
     // World building state
     this.isBuilderMode = false;
     this.availableModels = new Map(); // filename -> model data
-    this.placedObjects = []; // objects placed in world
+    this.placedObjects = []; // objects placed
     this.selectedModel = null;
     this.selectedObject = null;
-    this.currentMode = 'select'; // select, place, rotate, scale, move
+    this.currentMode = 'select'; //select, place, rotate, scale, move
     
-    // 🎯 ADD COLLISION BOX TRACKING
-    this.placedCollisionBoxes = []; // Track collision boxes separately
+    //COLISION BOX TRACKING
+    this.placedCollisionBoxes = []; //Trackseparately
     
-    // Controls
+    //Controls
     this.keys = {};
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
     
-    // Loader setup
+    // Loader
     this.loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
     this.loader.setDRACOLoader(dracoLoader);
     
-    // UI elements
+    // UI
     this.rotationPanel = null;
     this.queuedWorldData = null;
     
-    // 🎯 ADD BUILT-IN COLLISION SHAPES
+    //COLLISION SHAPES
     this.addBuiltInCollisionShapes();
     
     this.init();
   }
   
-  // 🎯 ADD BUILT-IN COLLISION SHAPES TO MODEL LIBRARY
+  // COLLISION SHAPES MODEL LIBRARY
   addBuiltInCollisionShapes() {
-    // Create collision cube
+    //collision cube
     const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
     const cubeMaterial = new THREE.MeshBasicMaterial({ 
       color: 0x0066ff,
@@ -62,7 +61,7 @@ class WorldBuilder {
       animations: []
     });
     
-    // Create collision cylinder
+    //collision cylinder
     const cylinderGeometry = new THREE.CylinderGeometry(1, 1, 2, 12);
     const cylinderMaterial = new THREE.MeshBasicMaterial({ 
       color: 0xff00ff,
@@ -81,7 +80,7 @@ class WorldBuilder {
       animations: []
     });
     
-    console.log('📦 Added built-in collision shapes: cube, cylinder');
+    console.log(' Added built-in collision shapes: cube, cylinder');
   }
   
   init() {
@@ -90,13 +89,13 @@ class WorldBuilder {
     this.loadWorldConfig();
     this.setupAutoSave();
     
-    // Try to auto-load world
+    // Try  auto-load world
     this.autoLoadWorld();
     
-    console.log('🛠️ World Builder initialized');
-    console.log('📝 Press Ctrl+B to toggle builder mode');
-    console.log('🎮 Controls: T=Place, Z=Select, V=Move, R=Rotate, S=Scale');
-    console.log('🎯 Built-in collision shapes: collision_cube, collision_cylinder');
+    console.log('World Builder initialized');
+    console.log('Press Ctrl+B to toggle builder mode');
+    console.log('Controls: T=Place, Z=Select, V=Move, R=Rotate, S=Scale');
+    console.log('Built-in collision shapes: collision_cube, collision_cylinder');
   }
   
   async autoLoadWorld() {
@@ -105,7 +104,7 @@ class WorldBuilder {
     if (stored) {
       try {
         const worldData = JSON.parse(stored);
-        console.log('🌍 Found saved world with', worldData.objects.length, 'objects');
+        console.log('Found saved world with', worldData.objects.length, 'objects');
         
         // Store world data to load later
         this.queuedWorldData = worldData;
@@ -115,25 +114,25 @@ class WorldBuilder {
           .map(obj => obj.modelName)
           .filter(name => !name.startsWith('collision_'))
         )];
-        console.log('📦 World requires models:', requiredModels);
+        console.log('World requires models:', requiredModels);
         
         return requiredModels;
       } catch (error) {
-        console.error('❌ Failed to parse world data:', error);
+        console.error('Failed to parse world data:', error);
       }
     }
     
-    console.log('ℹ️ No saved world found, starting with empty scene');
+    console.log('No saved world found, starting with empty scene');
     return [];
   }
 
   async loadWorldWhenReady(retryCount = 0) {
     if (!this.queuedWorldData) return 0;
     
-    console.log('🌍 Attempting to load world (attempt', retryCount + 1, ')...');
+    console.log('Attempting to load world (attempt', retryCount + 1, ')...');
     const worldData = this.queuedWorldData;
     
-    // Check if we have all required models (excluding built-in collision shapes)
+    // Check if  have all required models
     const requiredModels = [...new Set(worldData.objects
       .map(obj => obj.modelName)
       .filter(name => !name.startsWith('collision_'))
@@ -142,29 +141,28 @@ class WorldBuilder {
     const missingModels = requiredModels.filter(model => !this.availableModels.has(model));
     
     if (missingModels.length > 0) {
-      console.log('⏳ Missing models:', missingModels, '- Available:', availableModels);
+      console.log('Missing models:', missingModels, '- Available:', availableModels);
       
-      // Retry up to 10 times with increasing delays
+      // Retry up to 10 times  increasing delays
       if (retryCount < 10) {
         setTimeout(() => {
           this.loadWorldWhenReady(retryCount + 1);
-        }, 1000 + (retryCount * 500)); // Increasing delay
+        }, 1000 + (retryCount * 500));
         return 0;
       } else {
-        console.error('❌ Timeout waiting for models:', missingModels);
+        console.error('Timeout waiting for models:', missingModels);
         return 0;
       }
     }
     
-    // Clear any existing objects
+    // Clear any existing
     this.placedObjects.forEach(obj => this.scene.remove(obj));
     this.placedObjects = [];
     
-    // 🎯 CLEAR EXISTING COLLISION BOXES
     this.placedCollisionBoxes.forEach(box => this.scene.remove(box));
     this.placedCollisionBoxes = [];
     
-    // Load objects
+    // Load
     let loadedCount = 0;
     for (const objData of worldData.objects) {
       if (this.availableModels.has(objData.modelName)) {
@@ -177,25 +175,24 @@ class WorldBuilder {
         obj.userData = objData.userData;
         
         this.scene.add(obj);
-        
-        // 🎯 TRACK COLLISION BOXES SEPARATELY
+        Y
         if (modelData.isCollisionShape) {
           this.placedCollisionBoxes.push(obj);
-          console.log(`✅ Loaded collision ${objData.modelName} at`, obj.position);
+          console.log(`Loaded collision ${objData.modelName} at`, obj.position);
         } else {
           this.placedObjects.push(obj);
-          console.log(`✅ Loaded object: ${objData.modelName} at`, obj.position);
+          console.log(`Loaded object: ${objData.modelName} at`, obj.position);
         }
         
         loadedCount++;
       } else {
-        console.error(`❌ Model "${objData.modelName}" not found in library`);
+        console.error(`Model "${objData.modelName}" not found in library`);
       }
     }
     
     this.updateObjectList();
-    console.log(`🌍 Auto-loaded ${loadedCount}/${worldData.objects.length} objects from saved world`);
-    console.log(`🎯 Collision boxes: ${this.placedCollisionBoxes.length}, Regular objects: ${this.placedObjects.length}`);
+    console.log(`Auto-loaded ${loadedCount}/${worldData.objects.length} objects from saved world`);
+    console.log(`Collision boxes: ${this.placedCollisionBoxes.length}, Regular objects: ${this.placedObjects.length}`);
     
     // Clear queued data
     this.queuedWorldData = null;
@@ -203,19 +200,18 @@ class WorldBuilder {
     return loadedCount;
   }
 
-  // Add method to register a model as loaded
+  //register a model as loaded
   registerModel(modelName, modelData) {
     this.availableModels.set(modelName, modelData);
-    console.log(`📦 Registered model: ${modelName} (${this.availableModels.size} total)`);
+    console.log(`Registered model: ${modelName} (${this.availableModels.size} total)`);
     
-    // Try to load world if we have queued data
+    //Try to load world if queued data
     if (this.queuedWorldData) {
       setTimeout(() => this.loadWorldWhenReady(), 100);
     }
   }
 
   exportForProduction() {
-    // 🎯 COMBINE BOTH COLLISION BOXES AND REGULAR OBJECTS
     const allObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
     
     const worldData = {
@@ -231,10 +227,10 @@ class WorldBuilder {
       }))
     };
     
-    // Save as production world (this will auto-load)
+    // Save as production world  auto-load
     localStorage.setItem('world-builder-save', JSON.stringify(worldData));
     
-    // Also download as backup
+    //download as backup
     const blob = new Blob([JSON.stringify(worldData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -243,27 +239,27 @@ class WorldBuilder {
     a.click();
     URL.revokeObjectURL(url);
     
-    this.showStatus(`🏭 Set as default world! (${allObjects.length} objects)`, 3000);
-    console.log('🏭 Exported production world:', worldData);
+    this.showStatus(`Set as default world! (${allObjects.length} objects)`, 3000);
+    console.log('Exported production world:', worldData);
   }
 
   resetToDefault() {
     localStorage.removeItem('world-builder-save');
     this.placedObjects.forEach(obj => this.scene.remove(obj));
-    this.placedCollisionBoxes.forEach(box => this.scene.remove(box)); // 🎯 CLEAR COLLISION BOXES
+    this.placedCollisionBoxes.forEach(box => this.scene.remove(box));
     this.placedObjects = [];
-    this.placedCollisionBoxes = []; // 🎯 RESET COLLISION BOXES
+    this.placedCollisionBoxes = [];
     this.clearSelection();
     this.updateObjectList();
     this.showStatus('🔄 Reset to empty world', 2000);
   }
 
-  // Add debug helper
+  //debug
   debugWorldState() {
-    console.log('🔍 World Builder Debug:');
+    console.log('World Builder Debug:');
     console.log('- Available models:', Array.from(this.availableModels.keys()));
     console.log('- Placed objects:', this.placedObjects.length);
-    console.log('- Collision boxes:', this.placedCollisionBoxes.length); // 🎯 DEBUG COLLISION BOXES
+    console.log('- Collision boxes:', this.placedCollisionBoxes.length);
     console.log('- Queued world data:', this.queuedWorldData ? 'Yes' : 'No');
     
     const stored = localStorage.getItem('world-builder-save');
@@ -281,7 +277,7 @@ class WorldBuilder {
   }
   
   createUI() {
-    // Main builder panel
+    //builder panel
     this.builderPanel = document.createElement('div');
     this.builderPanel.id = 'world-builder-panel';
     this.builderPanel.style.cssText = `
@@ -291,7 +287,7 @@ class WorldBuilder {
       width: 350px;
       max-height: 80vh;
       background: rgba(0, 0, 0, 0.9);
-      border: 2px solid #00ffff;
+      border: 2px solid rgb(194, 194, 194);
       border-radius: 10px;
       color: white;
       font-family: 'Courier New', monospace;
@@ -303,8 +299,8 @@ class WorldBuilder {
     `;
     
     this.builderPanel.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #00ffff; padding-bottom: 10px;">
-        <h3 style="margin: 0; color: #00ffff;">🛠️ WORLD BUILDER</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid  rgb(194, 194, 194); padding-bottom: 10px;">
+        <h3 style="margin: 0; color: rgb(194, 194, 194);"> BUILDER</h3>
         <button onclick="worldBuilder.toggleBuilder()" style="
           background: #ff4444; color: white; border: none; padding: 5px 10px; 
           border-radius: 3px; cursor: pointer; font-size: 11px;">✕</button>
@@ -312,7 +308,7 @@ class WorldBuilder {
       
       <!-- Current Mode Display -->
       <div id="wb-mode-display" style="
-        background: rgba(0,255,255,0.2); padding: 10px; margin-bottom: 15px; 
+        background:  rgb(194, 194, 194); padding: 10px; margin-bottom: 15px; 
         border-radius: 5px; text-align: center; font-weight: bold;
       ">
         MODE: SELECT
@@ -320,54 +316,54 @@ class WorldBuilder {
 
       <!-- Production Controls -->
       <div style="margin-bottom: 15px; border-top: 1px solid #666; padding-top: 15px;">
-        <h4 style="color: #ff9900; margin: 0 0 8px 0;">🏭 Production Controls</h4>
+        <h4 style="color: rgb(194, 194, 194); margin: 0 0 8px 0;">Controls</h4>
         <div style="display: grid; grid-template-columns: 1fr; gap: 5px;">
           <button onclick="worldBuilder.exportForProduction()" style="
-            padding: 6px; background: #ff6600; color: white; border: 1px solid #ff9900; 
-            border-radius: 3px; cursor: pointer; font-size: 11px;">📤 Set as Default World</button>
+            padding: 6px; background: rgb(194, 194, 194); color: white; border: 1px solid rgb(194, 194, 194); 
+            border-radius: 3px; cursor: pointer; font-size: 11px;">Set as Default</button>
           <button onclick="worldBuilder.resetToDefault()" style="
-            padding: 6px; background: #666600; color: white; border: 1px solid #ffff00; 
-            border-radius: 3px; cursor: pointer; font-size: 11px;">🔄 Reset to Default</button>
+            padding: 6px; background: rgb(194, 194, 194); color: white; border: 1px solid  rgb(194, 194, 194); 
+            border-radius: 3px; cursor: pointer; font-size: 11px;">Reset to Default</button>
           <button onclick="worldBuilder.debugWorldState()" style="
-            padding: 6px; background: #006666; color: white; border: 1px solid #00ffff; 
-            border-radius: 3px; cursor: pointer; font-size: 11px;">🔍 Debug State</button>
+            padding: 6px; background:  rgb(194, 194, 194); color: white; border: 1px solid  rgb(194, 194, 194); 
+            border-radius: 3px; cursor: pointer; font-size: 11px;">ddebug State</button>
         </div>
         <div style="font-size: 9px; color: #888; margin-top: 5px; text-align: center;">
-          Default world loads automatically for all visitors
         </div>
       </div>
       
       <!-- Drop Zone -->
       <div id="wb-drop-zone" style="
-        border: 2px dashed #00ffff; padding: 15px; text-align: center; 
+        border: 2px dashed rgb(194, 194, 194); padding: 15px; text-align: center; 
         margin-bottom: 15px; border-radius: 5px; cursor: pointer;
       ">
-        📁 Drop .glb files here or click to browse
+        .glb upload
       </div>
       <input type="file" id="wb-file-input" multiple accept=".glb,.gltf" style="display: none;">
       
       <!-- Model Library -->
       <div style="margin-bottom: 15px;">
-        <h4 style="color: #ffff00; margin: 0 0 8px 0;">📦 Model Library</h4>
+        <h4 style="color:  rgb(194, 194, 194); margin: 0 0 8px 0;"> aktuelle Library</h4>
         <div id="wb-model-list" style="
           max-height: 150px; overflow-y: auto; background: rgba(255,255,255,0.05); 
           padding: 8px; border-radius: 5px;
         ">
           <div style="color: #888; text-align: center; padding: 20px;">
-            No models loaded. Drop some .glb files above!
+            No models loaded.
           </div>
         </div>
       </div>
       
       <!-- Controls Reference -->
       <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 5px; font-size: 11px; margin-bottom: 15px;">
-        <strong style="color: #00ffff;">🎮 Controls:</strong><br>
-        <div style="margin: 5px 0;"><strong style="color: #ffff00;">Ctrl+B</strong> - Toggle Builder</div>
-        <div style="margin: 5px 0;"><strong style="color: #ffff00;">T</strong> - Place Mode</div>
-        <div style="margin: 5px 0;"><strong style="color: #ffff00;">Z</strong> - Select Mode</div>
-        <div style="margin: 5px 0;"><strong style="color: #ffff00;">V</strong> - Move Mode</div>
-        <div style="margin: 5px 0;"><strong style="color: #ffff00;">R</strong> - Rotate Mode</div>
-        <div style="margin: 5px 0;"><strong style="color: #ffff00;">S</strong> - Scale Mode</div>
+        <strong style="color: rgb(194, 194, 194);"> Controls:</strong><br>
+        <div style="margin: 5px 0;"><strong style="color: #ffff00;"></strong> x top right to exit</div>
+        <div style="margin: 5px 0;"><strong style="color: #ffff00;"></strong> ESC fo move mouse free and scroll HERE</div>
+        <div style="margin: 5px 0;"><strong style="color: #ffff00;">T & RMB</strong> - Place</div>
+        <div style="margin: 5px 0;"><strong style="color: #ffff00;">Z & RMB</strong> - Select</div>
+        <div style="margin: 5px 0;"><strong style="color: #ffff00;">V</strong> - Move</div>
+        <div style="margin: 5px 0;"><strong style="color: #ffff00;">R</strong> - Rotate</div>
+        <div style="margin: 5px 0;"><strong style="color: #ffff00;">S</strong> - Scale</div>
         <div style="margin: 5px 0;"><strong style="color: #ffff00;">Mouse Wheel</strong> - Scale Up/Down</div>
         <div style="margin: 5px 0;"><strong style="color: #ffff00;">Arrow Keys</strong> - Fine Move</div>
         <div style="margin: 5px 0;"><strong style="color: #ffff00;">Delete</strong> - Remove Selected</div>
@@ -376,26 +372,26 @@ class WorldBuilder {
       
       <!-- Quick Actions -->
       <div style="margin-bottom: 15px;">
-        <h4 style="color: #ffff00; margin: 0 0 8px 0;">⚡ Quick Actions</h4>
+        <h4 style="color: #ffff00; margin: 0 0 8px 0;">Quick Actions</h4>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
           <button onclick="worldBuilder.deleteSelected()" style="
-            padding: 6px; background: #660000; color: white; border: 1px solid #ff0000; 
-            border-radius: 3px; cursor: pointer; font-size: 11px;">🗑️ Delete</button>
+            padding: 6px; background:rgb(44, 44, 44); color: white; border: 1px solidrgb(44, 44, 44); 
+            border-radius: 3px; cursor: pointer; font-size: 11px;">Delete</button>
           <button onclick="worldBuilder.duplicateSelected()" style="
-            padding: 6px; background: #006600; color: white; border: 1px solid #00ff00; 
-            border-radius: 3px; cursor: pointer; font-size: 11px;">📋 Copy</button>
+            padding: 6px; background: rgb(44, 44, 44); color: white; border: 1px solidrgb(44, 44, 44); 
+            border-radius: 3px; cursor: pointer; font-size: 11px;">ccopy</button>
           <button onclick="worldBuilder.saveWorld()" style="
-            padding: 6px; background: #000066; color: white; border: 1px solid #0066ff; 
-            border-radius: 3px; cursor: pointer; font-size: 11px;">💾 Save</button>
+            padding: 6px; background:rgb(44, 44, 44); color: white; border: 1px solidrgb(44, 44, 44); 
+            border-radius: 3px; cursor: pointer; font-size: 11px;">Save</button>
           <button onclick="worldBuilder.loadWorld()" style="
-            padding: 6px; background: #660066; color: white; border: 1px solid #ff00ff; 
-            border-radius: 3px; cursor: pointer; font-size: 11px;">📂 Load</button>
+            padding: 6px; background: rgb(44, 44, 44); color: white; border: 1px solidrgb(44, 44, 44); 
+            border-radius: 3px; cursor: pointer; font-size: 11px;">Load</button>
         </div>
       </div>
       
       <!-- Placed Objects -->
       <div style="margin-top: 15px;">
-        <h4 style="color: #ffff00; margin: 0 0 8px 0;">🌍 All Objects (<span id="wb-object-count">0</span>)</h4>
+        <h4 style="color: #ffff00; margin: 0 0 8px 0;">All Objects (<span id="wb-object-count">0</span>)</h4>
         <div id="wb-object-list" style="
           max-height: 100px; overflow-y: auto; background: rgba(255,255,255,0.05); 
           padding: 8px; border-radius: 5px; font-size: 10px;
@@ -416,7 +412,7 @@ class WorldBuilder {
     this.statusIndicator = document.createElement('div');
     this.statusIndicator.style.cssText = `
       position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8);
-      color: #00ffff; padding: 8px 15px; border-radius: 20px; font-family: 'Courier New', monospace;
+      color: rgb(194, 194, 194); padding: 8px 15px; border-radius: 20px; font-family: 'Courier New', monospace;
       font-size: 12px; display: none; z-index: 5000;
     `;
     document.body.appendChild(this.statusIndicator);
@@ -444,7 +440,7 @@ class WorldBuilder {
     
     this.rotationPanel.innerHTML = `
       <div style="text-align: center; margin-bottom: 20px;">
-        <h3 style="margin: 0; color: #ffaa00;">🔄 ROTATION CONTROLS</h3>
+        <h3 style="margin: 0; color: #ffaa00;">ROTATION </h3>
         <div style="color: #888; font-size: 10px; margin-top: 5px;">Use sliders or input precise values</div>
       </div>
       
@@ -480,14 +476,14 @@ class WorldBuilder {
           padding: 8px 15px; background: #444; color: white; border: 1px solid #666; 
           border-radius: 3px; cursor: pointer;">Reset</button>
         <button onclick="worldBuilder.closeRotationPanel()" style="
-          padding: 8px 15px; background: #006600; color: white; border: 1px solid #00ff00; 
+          padding: 8px 15px; background: rgb(194, 194, 194); color: white; border: 1px solid rgb(194, 194, 194); 
           border-radius: 3px; cursor: pointer;">Done</button>
       </div>
     `;
     
     document.body.appendChild(this.rotationPanel);
     
-    // Setup rotation panel event listeners
+    //Setup rotation panel
     this.setupRotationPanelListeners();
   }
   
@@ -499,7 +495,7 @@ class WorldBuilder {
     const yNum = document.getElementById('wb-rot-y-num');
     const zNum = document.getElementById('wb-rot-z-num');
     
-    // Sync sliders with number inputs
+    // Sync sliders inputs
     xSlider.addEventListener('input', () => {
       xNum.value = xSlider.value;
       this.updateObjectRotation();
@@ -515,7 +511,7 @@ class WorldBuilder {
       this.updateObjectRotation();
     });
     
-    // Sync number inputs with sliders
+    // Sync number with sliders
     xNum.addEventListener('input', () => {
       xSlider.value = xNum.value;
       this.updateObjectRotation();
@@ -558,7 +554,7 @@ class WorldBuilder {
   }
   
   setupEventListeners() {
-    // File input handling
+    //File input
     const dropZone = document.getElementById('wb-drop-zone');
     const fileInput = document.getElementById('wb-file-input');
     
@@ -581,10 +577,10 @@ class WorldBuilder {
       });
     }
     
-    // Keyboard controls
+    // Keyboard
     document.addEventListener('keydown', (e) => {
       if (!this.isBuilderMode) {
-        // Toggle builder mode
+  
         if (e.ctrlKey && e.key.toLowerCase() === 'b') {
           e.preventDefault();
           this.toggleBuilder();
@@ -592,7 +588,7 @@ class WorldBuilder {
         return;
       }
       
-      // Builder mode controls
+      // Builder mode
       switch (e.key.toLowerCase()) {
         case 't':
           e.preventDefault();
@@ -608,7 +604,7 @@ class WorldBuilder {
             this.setMode('rotate');
             this.openRotationPanel();
           } else {
-            this.showStatus('❌ Select an object first to rotate', 2000);
+            this.showStatus('Select an object first to rotate', 2000);
           }
           break;
         case 's':
@@ -616,7 +612,7 @@ class WorldBuilder {
           if (this.selectedObject) {
             this.setMode('scale');
           } else {
-            this.showStatus('❌ Select an object first to scale', 2000);
+            this.showStatus('Select an object first to scale', 2000);
           }
           break;
         case 'v':
@@ -624,7 +620,7 @@ class WorldBuilder {
           if (this.selectedObject) {
             this.setMode('move');
           } else {
-            this.showStatus('❌ Select an object first to move', 2000);
+            this.showStatus(' Select an object first to move', 2000);
           }
           break;
       }
@@ -659,7 +655,7 @@ class WorldBuilder {
       }
     });
     
-    // Mouse controls
+    // Mouse
     document.addEventListener('click', (e) => {
       if (!this.isBuilderMode) return;
       if (e.target.closest('#world-builder-panel')) return;
@@ -668,7 +664,7 @@ class WorldBuilder {
       this.handleWorldClick(e);
     });
     
-    // Mouse wheel for scaling
+    //wheel for scaling
     document.addEventListener('wheel', (e) => {
       if (!this.isBuilderMode || this.currentMode !== 'scale' || !this.selectedObject) return;
       
@@ -696,18 +692,18 @@ class WorldBuilder {
       };
       
       const modeColors = {
-        select: 'rgba(0,255,255,0.2)',
-        place: 'rgba(0,255,0,0.2)',
-        rotate: 'rgba(255,170,0,0.2)',
-        scale: 'rgba(255,0,255,0.2)',
-        move: 'rgba(255,255,0,0.2)'
+        select: 'rgb(194, 194, 194)',
+        place: 'rgb(194, 194, 194)',
+        rotate: 'rgb(194, 194, 194)',
+        scale: 'rgb(194, 194, 194)',
+        move: 'rgb(194, 194, 194)'
       };
       
       modeDisplay.textContent = `MODE: ${modeText[mode]}`;
       modeDisplay.style.background = modeColors[mode];
     }
     
-    this.showStatus(`🎯 Mode: ${mode.toUpperCase()}`, 1000);
+    this.showStatus(`Mode: ${mode.toUpperCase()}`, 1000);
   }
   
   toggleBuilder() {
@@ -716,15 +712,15 @@ class WorldBuilder {
     this.statusIndicator.style.display = this.isBuilderMode ? 'block' : 'none';
     
     if (this.isBuilderMode) {
-      this.statusIndicator.textContent = '🛠️ WORLD BUILDER ACTIVE';
+      this.statusIndicator.textContent = 'WORLD BUILDER ACTIVE';
       this.setMode('select');
-      this.updateModelList(); // 🎯 UPDATE MODEL LIST TO SHOW COLLISION SHAPES
-      console.log('🛠️ World Builder activated');
+      this.updateModelList(); 
+      console.log('World Builder activated');
     } else {
       this.statusIndicator.textContent = '';
       this.clearSelection();
       this.rotationPanel.style.display = 'none';
-      console.log('🛠️ World Builder deactivated');
+      console.log('World Builder deactivated');
     }
   }
   
@@ -746,7 +742,6 @@ class WorldBuilder {
         this.loader.load(url, resolve, undefined, reject);
       });
       
-      // Optimize model
       gltf.scene.traverse((node) => {
         if (node.isMesh) {
           node.castShadow = true;
@@ -758,15 +753,15 @@ class WorldBuilder {
         scene: gltf.scene,
         originalFile: file,
         animations: gltf.animations || [],
-        isCollisionShape: false // 🎯 MARK AS NON-COLLISION SHAPE
+        isCollisionShape: false
       });
       
-      console.log(`✅ Loaded model: ${modelName}`);
-      this.showStatus(`📦 Loaded: ${modelName}`, 2000);
+      console.log(`Loaded model: ${modelName}`);
+      this.showStatus(`Loaded: ${modelName}`, 2000);
       
     } catch (error) {
-      console.error(`❌ Failed to load ${modelName}:`, error);
-      this.showStatus(`❌ Failed: ${modelName}`, 3000);
+      console.error(`Failed to load ${modelName}:`, error);
+      this.showStatus(`Failed: ${modelName}`, 3000);
     } finally {
       URL.revokeObjectURL(url);
     }
@@ -785,7 +780,6 @@ class WorldBuilder {
     Array.from(this.availableModels.entries()).forEach(([name, data], index) => {
       const isSelected = this.selectedModel === name;
       
-      // 🎯 VISUAL DISTINCTION FOR COLLISION SHAPES
       const isCollision = data.isCollisionShape;
       const bgColor = isSelected ? 
         (isCollision ? 'rgba(255,0,255,0.3)' : 'rgba(0,255,255,0.2)') : 
@@ -793,7 +787,7 @@ class WorldBuilder {
       const borderColor = isSelected ? 
         (isCollision ? '#ff00ff' : '#00ffff') : 
         'transparent';
-      const icon = isCollision ? '🎯' : '📦';
+      const icon = isCollision ? 'tag' : 'ld';
       
       html += `
         <div onclick="worldBuilder.selectModel('${name}')" style="
@@ -816,10 +810,9 @@ class WorldBuilder {
     this.selectedModel = modelName;
     this.updateModelList();
     
-    // 🎯 SHOW DIFFERENT STATUS FOR COLLISION SHAPES
     const modelData = this.availableModels.get(modelName);
     const type = modelData.isCollisionShape ? 'collision shape' : 'model';
-    this.showStatus(`${modelData.isCollisionShape ? '🎯' : '📦'} Selected: ${modelName} (${type})`, 1500);
+    this.showStatus(`${modelData.isCollisionShape ? 'tg' : 'ld'} Selected: ${modelName} (${type})`, 1500);
   }
   
   selectModelByIndex(index) {
@@ -831,11 +824,11 @@ class WorldBuilder {
 
   handleMoveClick() {
     if (!this.selectedObject) {
-      this.showStatus('❌ No object selected to move', 2000);
+      this.showStatus('No object selected to move', 2000);
       return;
     }
     
-    // Get ground surfaces for movement
+    //ground surfaces for movement
     const groundObjects = [];
     this.scene.children.forEach(child => {
       if (child.geometry && child.geometry.type === 'PlaneGeometry') {
@@ -849,14 +842,14 @@ class WorldBuilder {
     const groundIntersects = this.raycaster.intersectObjects(groundObjects);
     if (groundIntersects.length > 0) {
       const newPosition = groundIntersects[0].point;
-      // Keep the Y position relative to the ground
+      //Y position relative tt ground
       this.selectedObject.position.copy(newPosition);
       this.selectedObject.position.y = Math.max(newPosition.y, 0);
       
-      this.showStatus(`📍 Moved to: ${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)}`, 1500);
+      this.showStatus(`Moved to: ${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)}`, 1500);
       this.updateObjectList();
     } else {
-      this.showStatus('❌ Click on the ground to move object', 2000);
+      this.showStatus('Click on the ground to move object', 2000);
     }
   }
 
@@ -880,14 +873,13 @@ class WorldBuilder {
         break;
     }
     
-    this.showStatus(`📍 Fine move: ${this.selectedObject.position.x.toFixed(1)}, ${this.selectedObject.position.z.toFixed(1)}`, 500);
+    this.showStatus(`Fine move: ${this.selectedObject.position.x.toFixed(1)}, ${this.selectedObject.position.z.toFixed(1)}`, 500);
     this.updateObjectList();
   }
   
   removeModel(modelName) {
-    // 🎯 PREVENT REMOVAL OF BUILT-IN COLLISION SHAPES
     if (modelName.startsWith('collision_')) {
-      this.showStatus('❌ Cannot remove built-in collision shapes', 2000);
+      this.showStatus('Cannot remove built-in collision shapes', 2000);
       return;
     }
     
@@ -896,7 +888,7 @@ class WorldBuilder {
       this.selectedModel = null;
     }
     this.updateModelList();
-    this.showStatus(`🗑️ Removed: ${modelName}`, 1500);
+    this.showStatus(`Removed: ${modelName}`, 1500);
   }
   
   handleWorldClick(e) {
@@ -914,7 +906,6 @@ class WorldBuilder {
   }
   
   handleSelectClick() {
-    // 🎯 CHECK BOTH REGULAR OBJECTS AND COLLISION BOXES
     const allPlacedObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
     const placedMeshes = [];
     
@@ -930,7 +921,7 @@ class WorldBuilder {
     const intersects = this.raycaster.intersectObjects(placedMeshes);
     
     if (intersects.length > 0) {
-      // Find the root placed object
+      //root placed object
       let targetObject = intersects[0].object;
       while (targetObject.parent && targetObject.userData.type !== 'world-builder-object') {
         targetObject = targetObject.parent;
@@ -941,17 +932,17 @@ class WorldBuilder {
       }
     }
     
-    // Clicked on empty space
+    //Clicked on empty space
     this.clearSelection();
   }
   
   handlePlaceClick() {
     if (!this.selectedModel) {
-      this.showStatus('❌ Select a model first (press 1-9 or click in library)', 2000);
+      this.showStatus('Select a model first (press 1-9 or click in library)', 2000);
       return;
     }
     
-    // Get ground surfaces for placement
+    //ground surfaces for placement
     const groundObjects = [];
     this.scene.children.forEach(child => {
       if (child.geometry && child.geometry.type === 'PlaneGeometry') {
@@ -966,7 +957,7 @@ class WorldBuilder {
     if (groundIntersects.length > 0) {
       this.placeModel(groundIntersects[0].point);
     } else {
-      this.showStatus('❌ Click on the ground to place object', 2000);
+      this.showStatus('Click on the ground to place object', 2000);
     }
   }
   
@@ -979,7 +970,6 @@ class WorldBuilder {
     modelClone.position.copy(position);
     modelClone.position.y = Math.max(position.y, 0);
     
-    // 🎯 SET PROPER USERDATA FOR COLLISION SHAPES
     modelClone.userData = {
       type: 'world-builder-object',
       modelName: this.selectedModel,
@@ -991,15 +981,14 @@ class WorldBuilder {
     
     this.scene.add(modelClone);
     
-    // 🎯 ADD TO APPROPRIATE ARRAY
     if (modelData.isCollisionShape) {
       this.placedCollisionBoxes.push(modelClone);
-      this.showStatus(`🎯 Placed collision: ${this.selectedModel}`, 1500);
-      console.log('🎯 Placed collision shape at:', modelClone.position);
+      this.showStatus(`Placed collision: ${this.selectedModel}`, 1500);
+      console.log('Placed collision shape at:', modelClone.position);
     } else {
       this.placedObjects.push(modelClone);
-      this.showStatus(`✅ Placed: ${this.selectedModel}`, 1500);
-      console.log('📍 Placed model at:', modelClone.position);
+      this.showStatus(`Placed: ${this.selectedModel}`, 1500);
+      console.log('Placed model at:', modelClone.position);
     }
     
     this.selectObject(modelClone);
@@ -1007,7 +996,6 @@ class WorldBuilder {
   }
   
   selectObject(object) {
-    // Clear previous selection
     if (this.selectedObject) {
       this.removeSelectionHighlight(this.selectedObject);
     }
@@ -1017,9 +1005,8 @@ class WorldBuilder {
     if (object) {
       this.addSelectionHighlight(object);
       
-      // 🎯 SHOW DIFFERENT STATUS FOR COLLISION SHAPES
       const type = object.userData.isCollisionShape ? 'collision' : 'object';
-      const icon = object.userData.isCollisionShape ? '🎯' : '📦';
+      const icon = object.userData.isCollisionShape ? 'tg' : 'kd';
       this.showStatus(`${icon} Selected: ${object.userData.modelName} (${type})`, 1500);
     }
     
@@ -1057,7 +1044,6 @@ class WorldBuilder {
   openRotationPanel() {
     if (!this.selectedObject) return;
     
-    // Set current rotation values
     const rotation = this.selectedObject.rotation;
     const xDeg = Math.round(rotation.x * 180 / Math.PI);
     const yDeg = Math.round(rotation.y * 180 / Math.PI);
@@ -1081,13 +1067,12 @@ class WorldBuilder {
     
     this.scene.remove(this.selectedObject);
     
-    // 🎯 REMOVE FROM APPROPRIATE ARRAY
     if (isCollision) {
       this.placedCollisionBoxes = this.placedCollisionBoxes.filter(obj => obj !== this.selectedObject);
-      this.showStatus(`🎯 Deleted collision: ${modelName}`, 1500);
+      this.showStatus(` Deleted collision: ${modelName}`, 1500);
     } else {
       this.placedObjects = this.placedObjects.filter(obj => obj !== this.selectedObject);
-      this.showStatus(`🗑️ Deleted: ${modelName}`, 1500);
+      this.showStatus(` Deleted: ${modelName}`, 1500);
     }
     
     this.selectedObject = null;
@@ -1120,13 +1105,12 @@ class WorldBuilder {
     
     this.scene.add(duplicate);
     
-    // 🎯 ADD TO APPROPRIATE ARRAY
     if (original.userData.isCollisionShape) {
       this.placedCollisionBoxes.push(duplicate);
-      this.showStatus(`🎯 Duplicated collision: ${original.userData.modelName}`, 1500);
+      this.showStatus(`Duplicated collision: ${original.userData.modelName}`, 1500);
     } else {
       this.placedObjects.push(duplicate);
-      this.showStatus(`📋 Duplicated: ${original.userData.modelName}`, 1500);
+      this.showStatus(` Duplicated: ${original.userData.modelName}`, 1500);
     }
     
     this.selectObject(duplicate);
@@ -1139,7 +1123,6 @@ class WorldBuilder {
     
     if (!container || !countElement) return;
     
-    // 🎯 COMBINE BOTH ARRAYS FOR DISPLAY
     const allObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
     countElement.textContent = allObjects.length;
     
@@ -1153,7 +1136,7 @@ class WorldBuilder {
       const isSelected = this.selectedObject === obj;
       const pos = obj.position;
       const isCollision = obj.userData.isCollisionShape;
-      const icon = isCollision ? '🎯' : '📦';
+      const icon = isCollision ? 'tg' : 'ld';
       const bgColor = isSelected ? 
         (isCollision ? 'rgba(255,0,255,0.2)' : 'rgba(0,255,255,0.2)') :
         (isCollision ? 'rgba(255,0,255,0.05)' : 'rgba(255,255,255,0.05)');
@@ -1177,7 +1160,6 @@ class WorldBuilder {
   }
   
   selectObjectByIndex(index) {
-    // 🎯 SELECT FROM COMBINED ARRAY
     const allObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
     if (index < allObjects.length) {
       this.selectObject(allObjects[index]);
@@ -1185,7 +1167,6 @@ class WorldBuilder {
   }
   
   saveWorld() {
-    // 🎯 COMBINE BOTH ARRAYS FOR SAVING
     const allObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
     
     const worldData = {
@@ -1210,21 +1191,20 @@ class WorldBuilder {
     a.click();
     URL.revokeObjectURL(url);
     
-    this.showStatus(`💾 World saved! (${allObjects.length} objects)`, 2000);
-    console.log('💾 World saved:', worldData);
+    this.showStatus(`World saved (${allObjects.length} objects)`, 2000);
+    console.log('World saved:', worldData);
   }
   
   async loadWorld() {
     const stored = localStorage.getItem('world-builder-save');
     if (!stored) {
-      this.showStatus('❌ No saved world found', 2000);
+      this.showStatus('No saved world found', 2000);
       return;
     }
     
     try {
       const worldData = JSON.parse(stored);
       
-      // 🎯 CLEAR BOTH ARRAYS
       this.placedObjects.forEach(obj => this.scene.remove(obj));
       this.placedCollisionBoxes.forEach(box => this.scene.remove(box));
       this.placedObjects = [];
@@ -1243,7 +1223,6 @@ class WorldBuilder {
           
           this.scene.add(obj);
           
-          // 🎯 ADD TO APPROPRIATE ARRAY
           if (modelData.isCollisionShape || objData.userData.isCollisionShape) {
             this.placedCollisionBoxes.push(obj);
           } else {
@@ -1256,15 +1235,15 @@ class WorldBuilder {
       this.showStatus(`📂 Loaded ${worldData.objects.length} objects`, 2000);
       
     } catch (error) {
-      console.error('❌ Failed to load world:', error);
-      this.showStatus('❌ Failed to load world', 2000);
+      console.error('Failed to load world:', error);
+      this.showStatus('Failed to load world', 2000);
     }
   }
   
   loadWorldConfig() {
     const stored = localStorage.getItem('world-builder-save');
     if (stored) {
-      console.log('💾 Found saved world data');
+      console.log('Found saved world data');
     }
   }
   
@@ -1284,7 +1263,7 @@ class WorldBuilder {
           }))
         };
         localStorage.setItem('world-builder-autosave', JSON.stringify(worldData));
-        console.log('💾 Auto-saved world');
+        console.log('Auto-saved world');
       }
     }, 5 * 60 * 1000);
   }
@@ -1295,7 +1274,7 @@ class WorldBuilder {
     
     setTimeout(() => {
       if (this.isBuilderMode) {
-        this.statusIndicator.textContent = '🛠️ WORLD BUILDER ACTIVE';
+        this.statusIndicator.textContent = 'WORLD BUILDER ACTIVE';
       } else {
         this.statusIndicator.style.display = 'none';
       }
@@ -1304,7 +1283,7 @@ class WorldBuilder {
   
   destroy() {
     this.placedObjects.forEach(obj => this.scene.remove(obj));
-    this.placedCollisionBoxes.forEach(box => this.scene.remove(box)); // 🎯 CLEAN UP COLLISION BOXES
+    this.placedCollisionBoxes.forEach(box => this.scene.remove(box));
     this.builderPanel.remove();
     this.rotationPanel.remove();
     this.statusIndicator.remove();
