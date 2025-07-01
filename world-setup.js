@@ -1,10 +1,9 @@
-// world-setup.js - Production World Management
 class WorldSetup {
   constructor(worldBuilder) {
     this.worldBuilder = worldBuilder;
   }
   
-  // Export current world for production
+  //Exprt current world
   exportForProduction() {
     const worldData = {
       version: '1.0',
@@ -19,10 +18,10 @@ class WorldSetup {
       }))
     };
     
-    // Save as production world
+    //Save
     localStorage.setItem('world-builder-production', JSON.stringify(worldData));
     
-    // Also download as backup
+    //download as backup
     const blob = new Blob([JSON.stringify(worldData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -35,7 +34,7 @@ class WorldSetup {
     return worldData;
   }
   
-  // Load production world
+  // Load
   loadProduction() {
     const stored = localStorage.getItem('world-builder-production');
     if (stored) {
@@ -44,7 +43,7 @@ class WorldSetup {
     }
   }
   
-  // Clear production world
+  // Clear
   clearProduction() {
     localStorage.removeItem('world-builder-production');
     localStorage.removeItem('world-builder-save');
@@ -52,7 +51,7 @@ class WorldSetup {
   }
 }
 
-// Make globally available
+//globally available
 if (typeof worldBuilder !== 'undefined') {
   window.worldSetup = new WorldSetup(worldBuilder);
 }
