@@ -442,7 +442,6 @@ let currentScene = 'main'; // Track which scene we're in
 let spectatorMode = false; // Track if in spectator mode
 let allModelsLoaded = false; // Track if all models are loaded
 let paperReadingMode = false; // Track if currently reading paper
-let currentDeskInView = null;
 
 // Loading manager for better performance
 const loadingManager = new THREE.LoadingManager();
@@ -1086,200 +1085,6 @@ scrollOverlay.appendChild(scrollContainer);
 scrollOverlay.appendChild(scrollCloseButton);
 document.body.appendChild(scrollOverlay);
 
-
-// Create desk info overlay
-const deskOverlay = document.createElement('div');
-deskOverlay.id = 'desk-overlay';
-deskOverlay.style.cssText = `
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #2a1810 0%, #1a1008 100%);
-  background-image: 
-    radial-gradient(circle at 25% 30%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 75% 70%, rgba(218, 165, 32, 0.05) 0%, transparent 50%);
-  z-index: 4000;
-  display: none;
-  overflow: hidden;
-`;
-
-const deskContainer = document.createElement('div');
-deskContainer.style.cssText = `
-  position: relative;
-  max-width: 750px;
-  height: 100%;
-  margin: 0 auto;
-  background: linear-gradient(145deg, #3d2f1f, #2a1e10);
-  box-shadow: 
-    0 0 60px rgba(139, 69, 19, 0.4),
-    inset 0 0 30px rgba(218, 165, 32, 0.1);
-  border: 3px solid #8b4513;
-  border-radius: 10px;
-  overflow-y: auto;
-  padding: 50px 70px;
-  box-sizing: border-box;
-  margin-top: 40px;
-  margin-bottom: 40px;
-  height: calc(100vh - 80px);
-`;
-
-const deskCloseButton = document.createElement('button');
-deskCloseButton.id = 'desk-close-btn';
-deskCloseButton.innerHTML = '✕';
-deskCloseButton.style.cssText = `
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  background: rgba(139, 69, 19, 0.9);
-  border: 2px solid #d4af37;
-  border-radius: 50%;
-  color: #f4e4c1;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
-  z-index: 4001;
-  transition: all 0.3s ease;
-`;
-
-deskCloseButton.addEventListener('mouseenter', () => {
-  deskCloseButton.style.background = 'rgba(139, 69, 19, 1)';
-  deskCloseButton.style.transform = 'scale(1.1)';
-  deskCloseButton.style.color = '#fff';
-});
-
-deskCloseButton.addEventListener('mouseleave', () => {
-  deskCloseButton.style.background = 'rgba(139, 69, 19, 0.9)';
-  deskCloseButton.style.transform = 'scale(1)';
-  deskCloseButton.style.color = '#f4e4c1';
-});
-
-deskCloseButton.addEventListener('click', closeDesk);
-
-const deskContent = document.createElement('div');
-deskContent.style.cssText = `
-  font-family: 'Times New Roman', serif;
-  color: #f4e4c1;
-  line-height: 1.7;
-  font-size: 15px;
-  text-align: left;
-`;
-
-deskContent.innerHTML = `
-  <div style="text-align: center; margin-bottom: 40px;">
-    <h1 style="color: #d4af37; font-size: 26px; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
-      📚 ARTIST'S WORKSPACE 📚
-    </h1>
-    <div style="color: #b8860b; font-style: italic; font-size: 16px;">The Sacred Desk of Creation</div>
-  </div>
-  
-  <!-- Kudos Section -->
-  <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: rgba(212, 175, 55, 0.1); border-radius: 12px; border: 2px solid #d4af37;">
-    <h3 style="color: #d4af37; margin: 0 0 15px 0;">💖 SHOW APPRECIATION</h3>
-    <div style="margin-bottom: 15px;">
-      <span style="color: #f4e4c1; font-size: 18px;">Total Kudos: </span>
-      <span id="kudos-count" style="color: #d4af37; font-size: 20px; font-weight: bold;">0</span>
-    </div>
-    <button id="kudos-button" style="
-      background: linear-gradient(145deg, #d4af37, #b8860b); 
-      color: #1a1008; 
-      padding: 12px 25px; 
-      border: none; 
-      border-radius: 8px; 
-      font-family: 'Times New Roman', serif; 
-      font-size: 16px; 
-      font-weight: bold;
-      cursor: pointer; 
-      transition: all 0.3s ease; 
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0 auto;
-    ">
-      <span id="kudos-icon">💖</span>
-      <span id="kudos-text">Give Kudos</span>
-    </button>
-    <div id="kudos-status" style="margin-top: 10px; font-size: 12px; color: #b8860b; min-height: 18px;"></div>
-  </div>
-  
-  <div style="border: 2px solid #8b4513; padding: 35px; border-radius: 12px; background: rgba(139, 69, 19, 0.1);">
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">🎨 ABOUT THIS WORKSPACE</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #d4af37;">
-        <p style="margin: 0; color: #f4e4c1;">
-          This desk is where the magic happens. Every pixel, every polygon, every creative decision 
-          begins here. It's not just furniture—it's a portal to infinite possibilities.
-        </p>
-      </div>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">🛠️ TOOLS OF THE TRADE</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #daa520;">
-        <div style="display: grid; gap: 10px;">
-          <div style="color: #87ceeb;">🎭 <strong>Blender:</strong> <span style="color: #f4e4c1;">For 3D modeling and animation</span></div>
-          <div style="color: #ff6b6b;">🖼️ <strong>GIMP:</strong> <span style="color: #f4e4c1;">For image editing and digital art</span></div>
-          <div style="color: #98fb98;">💻 <strong>VS Code:</strong> <span style="color: #f4e4c1;">For coding this very experience</span></div>
-          <div style="color: #dda0dd;">🎵 <strong>Audacity:</strong> <span style="color: #f4e4c1;">For audio editing and sound design</span></div>
-          <div style="color: #ffd700;">⚡ <strong>Three.js:</strong> <span style="color: #f4e4c1;">For bringing 3D to the web</span></div>
-        </div>
-      </div>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">⏰ CREATIVE WORKFLOW</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #cd853f;">
-        <p style="margin: 0 0 15px 0; color: #f4e4c1;">
-          <strong>Morning:</strong> Coffee ☕ + Concept sketching + 3D modeling
-        </p>
-        <p style="margin: 0 0 15px 0; color: #f4e4c1;">
-          <strong>Afternoon:</strong> Coding + Testing + Debugging (lots of debugging)
-        </p>
-        <p style="margin: 0; color: #f4e4c1;">
-          <strong>Evening:</strong> Fine-tuning + Rendering + Planning tomorrow's chaos
-        </p>
-      </div>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">🎯 CURRENT PROJECTS</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #b8860b;">
-        <div style="display: grid; gap: 10px;">
-          <div style="color: #ff8c00;">🌟 <strong>Interactive Portfolio:</strong> <span style="color: #f4e4c1;">You're experiencing it right now!</span></div>
-          <div style="color: #32cd32;">🎮 <strong>Game Assets:</strong> <span style="color: #f4e4c1;">3D models for indie games</span></div>
-          <div style="color: #ff69b4;">🎨 <strong>Surreal Art Series:</strong> <span style="color: #f4e4c1;">Exploring impossible geometries</span></div>
-          <div style="color: #87ceeb;">🔮 <strong>Secret Project:</strong> <span style="color: #f4e4c1;">Can't tell you yet... 😉</span></div>
-        </div>
-      </div>
-    </div>
-    
-    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #8b4513;">
-      <h3 style="color: #d4af37; margin-bottom: 20px;">💭 CREATIVE PHILOSOPHY:</h3>
-      <div style="background: rgba(139, 69, 19, 0.2); padding: 20px; border-radius: 8px; border: 1px solid #8b4513;">
-        <p style="margin: 0; color: #f4e4c1; text-align: center; font-style: italic; font-size: 16px;">
-          "Every masterpiece was once just a mess of ideas on a cluttered desk. 
-          Embrace the chaos, trust the process, and never stop creating."
-        </p>
-      </div>
-    </div>
-  </div>
-  
-  <div style="text-align: center; margin-top: 40px; color: #b8860b; font-style: italic;">
-    "Where imagination meets pixels, and dreams become digital reality"
-  </div>
-`;
-
-deskContainer.appendChild(deskContent);
-deskOverlay.appendChild(deskContainer);
-deskOverlay.appendChild(deskCloseButton);
-document.body.appendChild(deskOverlay);
-
-
-
 // Form submission handling
 function setupFormSubmission() {
   const form = document.getElementById('feedback-form');
@@ -1433,273 +1238,6 @@ function closeScroll() {
     }
   }
 }
-
-function closeDesk() {
-  deskOverlay.style.display = 'none';
-  paperReadingMode = false; // Use same state variable
-  
-  // Re-enable pointer lock if game was started
-  if (gameStarted) {
-    const container = document.getElementById('three-canvas');
-    if (container) {
-      container.requestPointerLock();
-    }
-  }
-}
-
-// GitHub Pages Compatible Global Kudos System
-class DeskKudosSystem {
-  constructor() {
-    this.storageKey = 'finnb24_desk_kudos_global';
-    this.userStorageKey = 'finnb24_desk_user_kudos';
-    this.githubRepo = 'FinnB24/finco'; // Your repo
-    this.issueNumber = 1; // Create issue #1 for kudos storage
-    this.apiUrl = `https://api.github.com/repos/${this.githubRepo}/issues/${this.issueNumber}/comments`;
-    
-    this.totalKudos = 0;
-    this.userHasGivenKudos = false;
-    this.init();
-  }
-  
-  async init() {
-    await this.loadGlobalKudosCount();
-    this.loadUserKudosStatus();
-    this.setupEventListeners();
-    this.updateDisplay();
-  }
-  
-  async loadGlobalKudosCount() {
-    try {
-      console.log('📊 Loading global kudos count...');
-      const response = await fetch(this.apiUrl);
-      
-      if (response.ok) {
-        const comments = await response.json();
-        
-        // Count comments that contain "KUDOS_VOTE"
-        this.totalKudos = comments.filter(comment => 
-          comment.body && comment.body.includes('KUDOS_VOTE')
-        ).length;
-        
-        console.log(`✅ Global kudos loaded: ${this.totalKudos}`);
-      } else {
-        console.warn('⚠️ Could not load global kudos, using local count');
-        this.totalKudos = parseInt(localStorage.getItem(this.storageKey) || '0');
-      }
-    } catch (error) {
-      console.warn('⚠️ GitHub API error, using local storage:', error);
-      this.totalKudos = parseInt(localStorage.getItem(this.storageKey) || '0');
-    }
-  }
-  
-  loadUserKudosStatus() {
-    // Check if user has already given kudos (browser-specific)
-    const userKudos = localStorage.getItem(this.userStorageKey);
-    this.userHasGivenKudos = userKudos === 'true';
-  }
-  
-  setupEventListeners() {
-    this.attachButtonListener();
-  }
-  
-  attachButtonListener() {
-    const kudosButton = document.getElementById('kudos-button');
-    if (kudosButton) {
-      kudosButton.addEventListener('click', () => this.giveKudos());
-      
-      // Add hover effects
-      kudosButton.addEventListener('mouseenter', () => {
-        if (!this.userHasGivenKudos) {
-          kudosButton.style.background = 'linear-gradient(145deg, #ffcc00, #d4af37)';
-          kudosButton.style.transform = 'scale(1.05)';
-        }
-      });
-      
-      kudosButton.addEventListener('mouseleave', () => {
-        if (!this.userHasGivenKudos) {
-          kudosButton.style.background = 'linear-gradient(145deg, #d4af37, #b8860b)';
-          kudosButton.style.transform = 'scale(1)';
-        }
-      });
-    }
-  }
-  
-  async giveKudos() {
-    if (this.userHasGivenKudos) {
-      this.showStatus('You\'ve already given kudos! Thank you! 💖', 'info');
-      return;
-    }
-    
-    // Show loading state
-    this.showStatus('Sending kudos... ✨', 'info');
-    const button = document.getElementById('kudos-button');
-    const originalText = button ? button.innerHTML : '';
-    if (button) {
-      button.innerHTML = '<span>⏳</span><span>Sending...</span>';
-      button.disabled = true;
-    }
-    
-    try {
-      // Send kudos to GitHub API
-      const success = await this.sendKudosToGitHub();
-      
-      if (success) {
-        // Increment local count immediately for better UX
-        this.totalKudos++;
-        this.userHasGivenKudos = true;
-        
-        // Save to localStorage as backup
-        localStorage.setItem(this.storageKey, this.totalKudos.toString());
-        localStorage.setItem(this.userStorageKey, 'true');
-        
-        // Update display
-        this.updateDisplay();
-        
-        // Show success message
-        this.showStatus('Thank you for the kudos! 💖✨', 'success');
-        
-        // Track analytics
-        if (typeof portfolioAnalytics !== 'undefined') {
-          portfolioAnalytics.trackInteraction('desk', 'give_kudos', { 
-            totalKudos: this.totalKudos,
-            method: 'github_api',
-            timestamp: new Date().toISOString()
-          });
-        }
-      } else {
-        throw new Error('Failed to send kudos');
-      }
-    } catch (error) {
-      console.error('❌ Error giving kudos:', error);
-      
-      // Fallback to local storage
-      this.totalKudos++;
-      this.userHasGivenKudos = true;
-      localStorage.setItem(this.storageKey, this.totalKudos.toString());
-      localStorage.setItem(this.userStorageKey, 'true');
-      this.updateDisplay();
-      
-      this.showStatus('Kudos saved locally! (Network error) 💖', 'success');
-    } finally {
-      // Reset button
-      if (button) {
-        button.disabled = false;
-      }
-    }
-  }
-  
-  async sendKudosToGitHub() {
-    try {
-      const kudosData = {
-        body: `KUDOS_VOTE
-        
-🎨 **Portfolio Kudos Given!**
-
-- **Timestamp:** ${new Date().toISOString()}
-- **From:** Anonymous Visitor
-- **Type:** Workspace Appreciation
-- **Browser:** ${navigator.userAgent.substring(0, 50)}...
-- **Page:** ${window.location.href}
-
-*This kudos was given through the interactive 3D portfolio workspace.*`
-      };
-      
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify(kudosData)
-      });
-      
-      if (response.status === 201) {
-        console.log('✅ Kudos successfully sent to GitHub!');
-        return true;
-      } else {
-        console.warn('⚠️ GitHub API response:', response.status);
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ GitHub API error:', error);
-      return false;
-    }
-  }
-  
-  updateDisplay() {
-    const countElement = document.getElementById('kudos-count');
-    const buttonElement = document.getElementById('kudos-button');
-    const iconElement = document.getElementById('kudos-icon');
-    const textElement = document.getElementById('kudos-text');
-    
-    if (countElement) {
-      countElement.textContent = this.totalKudos;
-    }
-    
-    if (buttonElement && this.userHasGivenKudos) {
-      // Update button to show already given state
-      buttonElement.style.background = 'linear-gradient(145deg, #666, #444)';
-      buttonElement.style.cursor = 'default';
-      buttonElement.style.opacity = '0.7';
-      buttonElement.disabled = true;
-      
-      if (iconElement) iconElement.textContent = '✅';
-      if (textElement) textElement.textContent = 'Kudos Given';
-    }
-  }
-  
-  showStatus(message, type = 'info') {
-    const statusElement = document.getElementById('kudos-status');
-    if (statusElement) {
-      const colors = {
-        success: '#90ee90',
-        info: '#87ceeb',
-        error: '#ff6b6b'
-      };
-      
-      statusElement.textContent = message;
-      statusElement.style.color = colors[type] || colors.info;
-      
-      // Clear after 4 seconds
-      setTimeout(() => {
-        if (statusElement) {
-          statusElement.textContent = '';
-        }
-      }, 4000);
-    }
-  }
-  
-  // Get current stats
-  getStats() {
-    return {
-      totalKudos: this.totalKudos,
-      userHasGivenKudos: this.userHasGivenKudos,
-      timestamp: new Date().toISOString(),
-      method: 'github_api'
-    };
-  }
-  
-  // Admin function to refresh count from GitHub
-  async refreshFromGitHub() {
-    await this.loadGlobalKudosCount();
-    this.updateDisplay();
-    console.log('🔄 Refreshed kudos count from GitHub');
-  }
-  
-  // Admin function to reset local user status (for testing)
-  resetUserKudos() {
-    localStorage.removeItem(this.userStorageKey);
-    this.userHasGivenKudos = false;
-    this.updateDisplay();
-    console.log('🔄 User kudos status reset');
-  }
-}
-
-// Initialize kudos system
-const deskKudosSystem = new DeskKudosSystem();
-
-// Make it globally available for debugging
-window.deskKudosSystem = deskKudosSystem;
 
 // Hide all overlays initially
 function hideAllOverlays() {
@@ -2068,46 +1606,6 @@ try {
     <div style="color: #90ee90; font-size: 12px;">Press E to leave feedback</div>
   `;
   document.body.appendChild(scrollInfoWindow);
-
-
-
-
-
-
-// Create desk info window
-const deskInfoWindow = document.createElement('div');
-deskInfoWindow.id = 'desk-info';
-deskInfoWindow.style.cssText = `
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  width: 250px;
-  height: 130px;
-  background: rgba(139, 69, 19, 0.95);
-  border: 2px solid #d4af37;
-  border-radius: 10px;
-  color: #f4e4c1;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  padding: 15px;
-  display: none;
-  z-index: 1000;
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-  transition: opacity 0.3s ease;
-`;
-deskInfoWindow.innerHTML = `
-  <div style="color: #d4af37; font-weight: bold; margin-bottom: 10px;">📚 WORKSPACE DETECTED</div>
-  <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Artist's Desk</span></div>
-  <div style="margin-bottom: 5px;">Condition: <span style="color: #90ee90;">Active</span></div>
-  <div style="margin-bottom: 5px;">Contents: <span style="color: #87ceeb;">Creative Tools</span></div>
-  <div style="margin-bottom: 10px;">Status: <span style="color: #daa520;">Inspiration Ready</span></div>
-  <div style="color: #90ee90; font-size: 12px;">Press E to explore workspace</div>
-`;
-document.body.appendChild(deskInfoWindow);
-
-
-
-
 
   // =======================================
   // 🎯 SETUP MAIN SCENE
@@ -2950,47 +2448,39 @@ document.body.appendChild(deskInfoWindow);
   );
 
   // Load Desk Model - 🌍 WITH WORLD BUILDER REGISTRATION
-  // Load Desk Model (UPDATED TO BE INTERACTIVE) - 🌍 WITH WORLD BUILDER REGISTRATION
-let deskModel = null;
-loadModelOptimized(
-  'desk.glb',
-  function (gltf) {
-    console.log('Desk model loaded successfully');
-    deskModel = gltf.scene;
-    deskModel.scale.set(0.65, 0.6, 0.65);
-    
-    const box = new THREE.Box3().setFromObject(deskModel);
-    const center = box.getCenter(new THREE.Vector3());
-    
-    deskModel.position.set(11, -0.1, -18);
-    deskModel.rotation.set(0, 4.5, 0);
-    
-    // Mark desk as interactive
-    deskModel.userData = {
-      type: 'desk',
-      interactive: true,
-      name: 'Artist\'s Workspace'
-    };
-    
-    scene.add(deskModel);
-    
-    // 🌍 REGISTER WITH WORLD BUILDER
-    registerModelWithWorldBuilder('desk', gltf);
-    
-    loadedModels++;
-    updateLoadingProgress(loadedModels, totalModelsToLoad);
-  },
-  function (xhr) {
-    if (xhr.lengthComputable) {
-      console.log('Desk: ' + (xhr.loaded / xhr.total * 100) + '% loaded');
+  let deskModel = null;
+  loadModelOptimized(
+    'desk.glb',
+    function (gltf) {
+      console.log('Desk model loaded successfully');
+      deskModel = gltf.scene;
+      deskModel.scale.set(0.65, 0.6, 0.65);
+      
+      const box = new THREE.Box3().setFromObject(deskModel);
+      const center = box.getCenter(new THREE.Vector3());
+      
+      deskModel.position.set(11, -0.1, -18);
+      deskModel.rotation.set(0, 4.5, 0);
+      
+      scene.add(deskModel);
+      
+      // 🌍 REGISTER WITH WORLD BUILDER
+      registerModelWithWorldBuilder('desk', gltf);
+      
+      loadedModels++;
+      updateLoadingProgress(loadedModels, totalModelsToLoad);
+    },
+    function (xhr) {
+      if (xhr.lengthComputable) {
+        console.log('Desk: ' + (xhr.loaded / xhr.total * 100) + '% loaded');
+      }
+    },
+    function (error) {
+      console.error('Error loading desk model:', error);
+      loadedModels++;
+      updateLoadingProgress(loadedModels, totalModelsToLoad);
     }
-  },
-  function (error) {
-    console.error('Error loading desk model:', error);
-    loadedModels++;
-    updateLoadingProgress(loadedModels, totalModelsToLoad);
-  }
-);
+  );
 
   // Load desk2 - 🌍 WITH WORLD BUILDER REGISTRATION
   let desk2Model = null;
@@ -3315,7 +2805,6 @@ loadModelOptimized(
   // Portal/interactive object detection variables
   const raycaster = new THREE.Raycaster();
   const portalDetectionDistance = 3;
-  const deskDetectionDistance = 4; // Same as paper
   const paperDetectionDistance = 4; // Slightly larger for paper
   const tombstoneDetectionDistance = 4; // Same as paper
   const bookDetectionDistance = 4; // Same as paper
@@ -3410,7 +2899,6 @@ loadModelOptimized(
   function openPaper() {
     portfolioAnalytics.trackInteraction('paper', 'read', { name: 'Creative Journey Letter' });
     paperReadingMode = true;
-    deskInfoWindow.style.display = 'none';
     paperOverlay.style.display = 'block';
     
     // Exit pointer lock to allow mouse scrolling
@@ -3434,7 +2922,6 @@ loadModelOptimized(
   function openTombstone() {
     portfolioAnalytics.trackInteraction('tombstone', 'read', { name: 'Ancient Tombstone' });
     paperReadingMode = true; // Use same state variable
-    deskInfoWindow.style.display = 'none'; 
     tombstoneOverlay.style.display = 'block';
     
     // Exit pointer lock to allow mouse scrolling
@@ -3458,7 +2945,6 @@ loadModelOptimized(
   function openBook() {
     portfolioAnalytics.trackInteraction('book', 'read', { name: 'Contact Grimoire' });
     paperReadingMode = true; // Use same state variable
-    deskInfoWindow.style.display = 'none'; 
     bookOverlay.style.display = 'block';
     
     // Exit pointer lock to allow mouse scrolling
@@ -3483,7 +2969,6 @@ loadModelOptimized(
     portfolioAnalytics.trackInteraction('scroll', 'open', { name: 'Feedback Scroll' });
     paperReadingMode = true; // Use same state variable
     scrollOverlay.style.display = 'block';
-    deskInfoWindow.style.display = 'none'; 
     
     // Exit pointer lock to allow mouse scrolling
     if (document.pointerLockElement) {
@@ -3503,37 +2988,6 @@ loadModelOptimized(
     currentScrollInView = null;
   }
 
-  function openDesk() {
-  portfolioAnalytics.trackInteraction('desk', 'explore', { name: 'Artist\'s Workspace' });
-  paperReadingMode = true; // Use same state variable
-  deskOverlay.style.display = 'block';
-  
-  // Reinitialize kudos system for this session
-  setTimeout(() => {
-    deskKudosSystem.attachButtonListener();
-    deskKudosSystem.updateDisplay();
-  }, 100);
-  
-  // Exit pointer lock to allow mouse scrolling
-  if (document.pointerLockElement) {
-    document.exitPointerLock();
-  }
-  
-  // Hide info windows
-  portalInfoWindow.style.display = 'none';
-  paperInfoWindow.style.display = 'none';
-  tombstoneInfoWindow.style.display = 'none';
-  bookInfoWindow.style.display = 'none';
-  scrollInfoWindow.style.display = 'none';
-  deskInfoWindow.style.display = 'none';
-  currentPaperInView = null;
-  currentPortalInView = null;
-  currentTombstoneInView = null;
-  currentBookInView = null;
-  currentScrollInView = null;
-  currentDeskInView = null;
-}
-
   // Function to check if crosshair is directly pointing at any portal or interactive element
   function checkPortalView() {
     if (!gameStarted || paperReadingMode) return;
@@ -3547,7 +3001,6 @@ loadModelOptimized(
     let tombstoneMeshes = [];
     let bookMeshes = [];
     let scrollMeshes = [];
-    let deskMeshes = [];
     
     if (currentScene === 'main') {
       // Check portal models in main scene
@@ -3599,15 +3052,6 @@ loadModelOptimized(
           }
         });
       }
-      // Check desk model
-if (deskModel) {
-  deskModel.traverse((child) => {
-    if (child.isMesh) {
-      child.userData.parentDesk = deskModel;
-      deskMeshes.push(child);
-    }
-  });
-}
     } else if (currentScene === 'gallery') {
       // Check return portal and gallery frames for 3D gallery
       const returnPortal = galleryScene.children.find(child => 
@@ -3687,36 +3131,6 @@ if (deskModel) {
       scrollInfoWindow.style.display = 'none';
       currentScrollInView = null;
     }
-
-    // Check for desk intersections third (high priority)
-const deskIntersects = raycaster.intersectObjects(deskMeshes);
-let targetDesk = null;
-let deskDistance = Infinity;
-
-for (const intersect of deskIntersects) {
-  const distance = intersect.distance;
-  if (distance <= deskDetectionDistance && distance < deskDistance) {
-    targetDesk = intersect.object.userData.parentDesk;
-    deskDistance = distance;
-  }
-}
-
-if (targetDesk) {
-  // Show desk info window
-  deskInfoWindow.style.display = 'block';
-  portalInfoWindow.style.display = 'none';
-  tombstoneInfoWindow.style.display = 'none';
-  bookInfoWindow.style.display = 'none';
-  currentDeskInView = targetDesk;
-  currentPortalInView = null;
-  currentTombstoneInView = null;
-  currentBookInView = null;
-  return; // Priority to desk, don't check others
-} else {
-  deskInfoWindow.style.display = 'none';
-  currentDeskInView = null;
-}
-
 
     // Check for book intersections third (high priority)
     const bookIntersects = raycaster.intersectObjects(bookMeshes);
@@ -4013,8 +3427,6 @@ if (targetDesk) {
         openPaper();
       } else if (currentScrollInView) {
         openScroll();
-      } else if (currentDeskInView) {
-        openDesk();
       } else if (currentBookInView) {
         openBook();
       } else if (currentTombstoneInView) {
@@ -4312,24 +3724,3 @@ const errorReporter = new StaticErrorReporter();
 
 // Make available for debugging
 window.errorReporter = errorReporter;
-
-
-
-// Debug functions for kudos system
-window.debugKudos = function() {
-  console.log('🔍 Kudos System Debug:', deskKudosSystem.getStats());
-};
-
-window.resetKudos = function() {
-  deskKudosSystem.resetKudos();
-  console.log('🔄 Kudos system reset');
-};
-
-window.addTestKudos = function(amount = 10) {
-  for(let i = 0; i < amount; i++) {
-    localStorage.setItem('finnb24_desk_kudos', (parseInt(localStorage.getItem('finnb24_desk_kudos') || '0') + 1).toString());
-  }
-  deskKudosSystem.loadKudosCount();
-  deskKudosSystem.updateDisplay();
-  console.log(`➕ Added ${amount} test kudos`);
-};
