@@ -1449,13 +1449,14 @@ function closeDesk() {
 
 
 
-// Simple Global Kudos System using CountAPI
+
+// CORS-Friendly Global Kudos System using JSONBin.io
 class DeskKudosSystem {
   constructor() {
     this.userStorageKey = 'finnb24_desk_user_kudos';
-    this.countApiUrl = 'https://api.countapi.xyz';
-    this.namespace = 'finnb24-portfolio';
-    this.key = 'desk-kudos';
+    // Public JSONBin - no API key required for reading
+    this.binId = '676c8a12ad19ca34f8c8f8a1'; // Create this bin first
+    this.apiUrl = 'https://api.jsonbin.io/v3/b/' + this.binId;
     
     this.totalKudos = 0;
     this.userHasGivenKudos = false;
@@ -1472,24 +1473,27 @@ class DeskKudosSystem {
   async loadGlobalKudosCount() {
     try {
       console.log('📊 Loading global kudos count...');
-      const response = await fetch(`${this.countApiUrl}/get/${this.namespace}/${this.key}`);
+      const response = await fetch(this.apiUrl + '/latest', {
+        headers: {
+          'X-Bin-Meta': 'false'
+        }
+      });
       
       if (response.ok) {
         const data = await response.json();
-        this.totalKudos = data.value || 0;
+        this.totalKudos = data.kudos || 0;
         console.log(`✅ Global kudos loaded: ${this.totalKudos}`);
       } else {
         console.warn('⚠️ Could not load global kudos, starting at 0');
         this.totalKudos = 0;
       }
     } catch (error) {
-      console.warn('⚠️ CountAPI error, starting at 0:', error);
+      console.warn('⚠️ JSONBin error, starting at 0:', error);
       this.totalKudos = 0;
     }
   }
   
   loadUserKudosStatus() {
-    // Check if user has already given kudos (browser-specific)
     const userKudos = localStorage.getItem(this.userStorageKey);
     this.userHasGivenKudos = userKudos === 'true';
   }
@@ -1503,7 +1507,6 @@ class DeskKudosSystem {
     if (kudosButton) {
       kudosButton.addEventListener('click', () => this.giveKudos());
       
-      // Add hover effects
       kudosButton.addEventListener('mouseenter', () => {
         if (!this.userHasGivenKudos) {
           kudosButton.style.background = 'linear-gradient(145deg, #ffcc00, #d4af37)';
@@ -1526,47 +1529,48 @@ class DeskKudosSystem {
       return;
     }
     
-    // Show loading state
     this.showStatus('Sending kudos... ✨', 'info');
     const button = document.getElementById('kudos-button');
-    const originalText = button ? button.innerHTML : '';
     if (button) {
       button.innerHTML = '<span>⏳</span><span>Sending...</span>';
       button.disabled = true;
     }
     
     try {
-      // Send kudos to CountAPI
-      const response = await fetch(`${this.countApiUrl}/hit/${this.namespace}/${this.key}`);
+      // Update kudos count
+      const newCount = this.totalKudos + 1;
+      
+      const response = await fetch(this.apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bin-Meta': 'false'
+        },
+        body: JSON.stringify({
+          kudos: newCount,
+          lastUpdated: new Date().toISOString(),
+          source: 'portfolio-desk'
+        })
+      });
       
       if (response.ok) {
-        const data = await response.json();
-        
-        // Update local count with the new global count
-        this.totalKudos = data.value;
+        this.totalKudos = newCount;
         this.userHasGivenKudos = true;
-        
-        // Save user status
         localStorage.setItem(this.userStorageKey, 'true');
-        
-        // Update display
         this.updateDisplay();
-        
-        // Show success message
         this.showStatus('Thank you for the kudos! 💖✨', 'success');
         
-        // Track analytics
         if (typeof portfolioAnalytics !== 'undefined') {
           portfolioAnalytics.trackInteraction('desk', 'give_kudos', { 
             totalKudos: this.totalKudos,
-            method: 'countapi',
+            method: 'jsonbin',
             timestamp: new Date().toISOString()
           });
         }
         
         console.log('✅ Kudos successfully sent! New total:', this.totalKudos);
       } else {
-        throw new Error('CountAPI request failed');
+        throw new Error('JSONBin request failed');
       }
     } catch (error) {
       console.error('❌ Error giving kudos:', error);
@@ -1576,10 +1580,8 @@ class DeskKudosSystem {
       this.userHasGivenKudos = true;
       localStorage.setItem(this.userStorageKey, 'true');
       this.updateDisplay();
-      
       this.showStatus('Kudos saved locally! (Network error) 💖', 'success');
     } finally {
-      // Reset button
       if (button) {
         button.disabled = false;
       }
@@ -1597,7 +1599,6 @@ class DeskKudosSystem {
     }
     
     if (buttonElement && this.userHasGivenKudos) {
-      // Update button to show already given state
       buttonElement.style.background = 'linear-gradient(145deg, #666, #444)';
       buttonElement.style.cursor = 'default';
       buttonElement.style.opacity = '0.7';
@@ -1620,7 +1621,6 @@ class DeskKudosSystem {
       statusElement.textContent = message;
       statusElement.style.color = colors[type] || colors.info;
       
-      // Clear after 4 seconds
       setTimeout(() => {
         if (statusElement) {
           statusElement.textContent = '';
@@ -1629,24 +1629,21 @@ class DeskKudosSystem {
     }
   }
   
-  // Get current stats
   getStats() {
     return {
       totalKudos: this.totalKudos,
       userHasGivenKudos: this.userHasGivenKudos,
       timestamp: new Date().toISOString(),
-      method: 'countapi'
+      method: 'jsonbin'
     };
   }
   
-  // Admin function to refresh count
-  async refreshFromCountAPI() {
+  async refreshFromAPI() {
     await this.loadGlobalKudosCount();
     this.updateDisplay();
-    console.log('🔄 Refreshed kudos count from CountAPI');
+    console.log('🔄 Refreshed kudos count from JSONBin');
   }
   
-  // Admin function to reset local user status (for testing)
   resetUserKudos() {
     localStorage.removeItem(this.userStorageKey);
     this.userHasGivenKudos = false;
@@ -1654,6 +1651,7 @@ class DeskKudosSystem {
     console.log('🔄 User kudos status reset');
   }
 }
+
 
 
 
