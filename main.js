@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/DRACOLoader.js';
-import { WorldBuilder } from './worldBuilder.js'; // Adjust path to match hosted URL
+import { WorldBuilder } from './worldBuilder.js'; // Correct path
 
 // Portfolio Analytics System - Privacy-First
 class PortfolioAnalytics {
