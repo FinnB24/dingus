@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { WorldBuilder } from '/worldBuilder.js';
+import { WorldBuilder } from './worldBuilder.js';
 
 // Portfolio Analytics System - Privacy-First
 class PortfolioAnalytics {
