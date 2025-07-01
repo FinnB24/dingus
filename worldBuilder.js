@@ -126,79 +126,75 @@ class WorldBuilder {
     return [];
   }
 
+
+
   async loadWorldWhenReady(retryCount = 0) {
-    if (!this.queuedWorldData) return 0;
+  if (!this.queuedWorldData) return 0;
+  
+  console.log('Attempting to load world (attempt', retryCount + 1, ')...');
+  const worldData = this.queuedWorldData;
+  
+  const requiredModels = [...new Set(worldData.objects
+    .map(obj => obj.modelName)
+    .filter(name => !name.startsWith('collision_'))
+  )];
+  const availableModels = Array.from(this.availableModels.keys());
+  const missingModels = requiredModels.filter(model => !this.availableModels.has(model));
+  
+  if (missingModels.length > 0) {
+    console.log('Missing models:', missingModels, '- Available:', availableModels);
     
-    console.log('Attempting to load world (attempt', retryCount + 1, ')...');
-    const worldData = this.queuedWorldData;
-    
-    // Check if  have all required models
-    const requiredModels = [...new Set(worldData.objects
-      .map(obj => obj.modelName)
-      .filter(name => !name.startsWith('collision_'))
-    )];
-    const availableModels = Array.from(this.availableModels.keys());
-    const missingModels = requiredModels.filter(model => !this.availableModels.has(model));
-    
-    if (missingModels.length > 0) {
-      console.log('Missing models:', missingModels, '- Available:', availableModels);
-      
-      // Retry up to 10 times  increasing delays
-      if (retryCount < 10) {
-        setTimeout(() => {
-          this.loadWorldWhenReady(retryCount + 1);
-        }, 1000 + (retryCount * 500));
-        return 0;
-      } else {
-        console.error('Timeout waiting for models:', missingModels);
-        return 0;
-      }
+    if (retryCount < 10) {
+      setTimeout(() => {
+        this.loadWorldWhenReady(retryCount + 1);
+      }, 1000 + (retryCount * 500));
+      return 0;
+    } else {
+      console.error('Timeout waiting for models:', missingModels);
+      return 0;
     }
-    
-    // Clear any existing
-    this.placedObjects.forEach(obj => this.scene.remove(obj));
-    this.placedObjects = [];
-    
-    this.placedCollisionBoxes.forEach(box => this.scene.remove(box));
-    this.placedCollisionBoxes = [];
-    
-    // Load
-    let loadedCount = 0;
-    for (const objData of worldData.objects) {
-      if (this.availableModels.has(objData.modelName)) {
-        const modelData = this.availableModels.get(objData.modelName);
-        const obj = modelData.scene.clone();
-        
-        obj.position.set(objData.position.x, objData.position.y, objData.position.z);
-        obj.rotation.set(objData.rotation.x, objData.rotation.y, objData.rotation.z);
-        obj.scale.set(objData.scale.x, objData.scale.y, objData.scale.z);
-        obj.userData = objData.userData;
-        
-        this.scene.add(obj);
-        Y
-        if (modelData.isCollisionShape) {
-          this.placedCollisionBoxes.push(obj);
-          console.log(`Loaded collision ${objData.modelName} at`, obj.position);
-        } else {
-          this.placedObjects.push(obj);
-          console.log(`Loaded object: ${objData.modelName} at`, obj.position);
-        }
-        
-        loadedCount++;
-      } else {
-        console.error(`Model "${objData.modelName}" not found in library`);
-      }
-    }
-    
-    this.updateObjectList();
-    console.log(`Auto-loaded ${loadedCount}/${worldData.objects.length} objects from saved world`);
-    console.log(`Collision boxes: ${this.placedCollisionBoxes.length}, Regular objects: ${this.placedObjects.length}`);
-    
-    // Clear queued data
-    this.queuedWorldData = null;
-    
-    return loadedCount;
   }
+  
+  this.placedObjects.forEach(obj => this.scene.remove(obj));
+  this.placedObjects = [];
+  this.placedCollisionBoxes.forEach(box => this.scene.remove(box));
+  this.placedCollisionBoxes = [];
+  
+  let loadedCount = 0;
+  for (const objData of worldData.objects) {
+    if (this.availableModels.has(objData.modelName)) {
+      const modelData = this.availableModels.get(objData.modelName);
+      const obj = modelData.scene.clone();
+      
+      obj.position.set(objData.position.x, objData.position.y, objData.position.z);
+      obj.rotation.set(objData.rotation.x, objData.rotation.y, objData.rotation.z);
+      obj.scale.set(objData.scale.x, objData.scale.y, objData.scale.z);
+      obj.userData = objData.userData;
+      
+      this.scene.add(obj);
+      
+      if (modelData.isCollisionShape) {
+        this.placedCollisionBoxes.push(obj);
+        console.log(`Loaded collision ${objData.modelName} at`, obj.position);
+      } else {
+        this.placedObjects.push(obj);
+        console.log(`Loaded object: ${objData.modelName} at`, obj.position);
+      }
+      
+      loadedCount++;
+    } else {
+      console.error(`Model "${objData.modelName}" not found in library`);
+    }
+  }
+  
+  this.updateObjectList();
+  console.log(`Auto-loaded ${loadedCount}/${worldData.objects.length} objects from saved world`);
+  console.log(`Collision boxes: ${this.placedCollisionBoxes.length}, Regular objects: ${this.placedObjects.length}`);
+  
+  this.queuedWorldData = null;
+  return loadedCount;
+}
+    
 
   //register a model as loaded
   registerModel(modelName, modelData) {
@@ -222,8 +218,9 @@ exportForProduction() {
     version: '1.0',
     created: new Date().toISOString(),
     isProduction: true,
-    objects: allObjects.map(obj => ({
+    objects: allObjects.map((obj, index) => ({
       modelName: obj.userData.modelName,
+      instanceId: obj.userData.instanceId || (Date.now() + index),
       position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
       rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
       scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
@@ -231,20 +228,18 @@ exportForProduction() {
     }))
   };
   
-  // Save to local
   localStorage.setItem('world-builder-save', JSON.stringify(worldData));
   
-  //Download
   const blob = new Blob([JSON.stringify(worldData, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `default-world.json`; // ← Always name it this!
+  a.download = `default-world.json`;
   a.click();
   URL.revokeObjectURL(url);
   
-  this.showStatus(`World saved! Put 'default-world.json' in /worlds/ folder`, 4000);
-  console.log('Exported world for GitHub Pages deployment');
+  this.showStatus(`World saved! Put 'default-world.json' in /worlds/ folder (${allObjects.length} objects)`, 4000);
+  console.log('Exported world for GitHub Pages deployment:', allObjects.length, 'objects');
 }
 
 async autoLoadWorld() {
@@ -1019,39 +1014,45 @@ async autoLoadWorld() {
     }
   }
   
-  placeModel(position) {
-    if (!this.selectedModel || !this.availableModels.has(this.selectedModel)) return;
-    
-    const modelData = this.availableModels.get(this.selectedModel);
-    const modelClone = modelData.scene.clone();
-    
-    modelClone.position.copy(position);
-    modelClone.position.y = Math.max(position.y, 0);
-    
-    modelClone.userData = {
-      type: 'world-builder-object',
-      modelName: this.selectedModel,
-      id: Date.now() + Math.random(),
-      created: new Date().toISOString(),
-      isCollisionShape: modelData.isCollisionShape || false,
-      shapeType: modelData.shapeType || null
-    };
-    
-    this.scene.add(modelClone);
-    
-    if (modelData.isCollisionShape) {
-      this.placedCollisionBoxes.push(modelClone);
-      this.showStatus(`Placed collision: ${this.selectedModel}`, 1500);
-      console.log('Placed collision shape at:', modelClone.position);
-    } else {
-      this.placedObjects.push(modelClone);
-      this.showStatus(`Placed: ${this.selectedModel}`, 1500);
-      console.log('Placed model at:', modelClone.position);
-    }
-    
-    this.selectObject(modelClone);
-    this.updateObjectList();
+
+placeModel(position) {
+  if (!this.selectedModel || !this.availableModels.has(this.selectedModel)) return;
+  
+  const modelData = this.availableModels.get(this.selectedModel);
+  const modelClone = modelData.scene.clone();
+  
+  modelClone.position.copy(position);
+  modelClone.position.y = Math.max(position.y, 0);
+  
+  const uniqueId = Date.now() + Math.random();
+  const instanceName = `${this.selectedModel}_${uniqueId}`;
+  
+  modelClone.userData = {
+    type: 'world-builder-object',
+    modelName: this.selectedModel,        // ← Original model name
+    instanceId: uniqueId,                 // ← Unique instance ID
+    instanceName: instanceName,           // ← Unique name for saving
+    id: uniqueId,
+    created: new Date().toISOString(),
+    isCollisionShape: modelData.isCollisionShape || false,
+    shapeType: modelData.shapeType || null
+  };
+  
+  this.scene.add(modelClone);
+  
+  if (modelData.isCollisionShape) {
+    this.placedCollisionBoxes.push(modelClone);
+    this.showStatus(`Placed collision: ${this.selectedModel}`, 1500);
+    console.log('Placed collision shape at:', modelClone.position);
+  } else {
+    this.placedObjects.push(modelClone);
+    this.showStatus(`Placed: ${this.selectedModel}`, 1500);
+    console.log('Placed model at:', modelClone.position);
   }
+  
+  this.selectObject(modelClone);
+  this.updateObjectList();
+}
   
   selectObject(object) {
     if (this.selectedObject) {
@@ -1176,46 +1177,48 @@ async autoLoadWorld() {
   }
   
   updateObjectList() {
-    const container = document.getElementById('wb-object-list');
-    const countElement = document.getElementById('wb-object-count');
-    
-    if (!container || !countElement) return;
-    
-    const allObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
-    countElement.textContent = allObjects.length;
-    
-    if (allObjects.length === 0) {
-      container.innerHTML = '<div style="color: #888; text-align: center; padding: 10px;">No objects placed</div>';
-      return;
-    }
-    
-    let html = '';
-    allObjects.forEach((obj, index) => {
-      const isSelected = this.selectedObject === obj;
-      const pos = obj.position;
-      const isCollision = obj.userData.isCollisionShape;
-      const icon = isCollision ? 'tg' : 'ld';
-      const bgColor = isSelected ? 
-        (isCollision ? 'rgba(255,0,255,0.2)' : 'rgba(0,255,255,0.2)') :
-        (isCollision ? 'rgba(255,0,255,0.05)' : 'rgba(255,255,255,0.05)');
-      const borderColor = isSelected ? 
-        (isCollision ? '#ff00ff' : '#00ffff') : 
-        'transparent';
-      
-      html += `
-        <div onclick="worldBuilder.selectObjectByIndex(${index})" style="
-          padding: 4px; margin: 1px 0; background: ${bgColor};
-          border-radius: 2px; cursor: pointer; font-size: 9px;
-          border: 1px solid ${borderColor};
-        ">
-          <strong>${icon} ${obj.userData.modelName}</strong><br>
-          <span style="color: #888;">x:${pos.x.toFixed(1)} y:${pos.y.toFixed(1)} z:${pos.z.toFixed(1)}</span>
-        </div>
-      `;
-    });
-    
-    container.innerHTML = html;
+  const container = document.getElementById('wb-object-list');
+  const countElement = document.getElementById('wb-object-count');
+  
+  if (!container || !countElement) return;
+  
+  const allObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
+  countElement.textContent = allObjects.length;
+  
+  if (allObjects.length === 0) {
+    container.innerHTML = '<div style="color: #888; text-align: center; padding: 10px;">No objects placed</div>';
+    return;
   }
+  
+  const modelCounts = {};
+  allObjects.forEach(obj => {
+    const modelName = obj.userData.modelName;
+    if (!modelCounts[modelName]) {
+      modelCounts[modelName] = { count: 0, objects: [], isCollision: obj.userData.isCollisionShape };
+    }
+    modelCounts[modelName].count++;
+    modelCounts[modelName].objects.push(obj);
+  });
+  
+  let html = '';
+  Object.entries(modelCounts).forEach(([modelName, data]) => {
+    const icon = data.isCollision ? '🎯' : '📦';
+    const bgColor = data.isCollision ? 'rgba(255,0,255,0.05)' : 'rgba(255,255,255,0.05)';
+    
+    html += `
+      <div style="
+        padding: 4px; margin: 1px 0; background: ${bgColor};
+        border-radius: 2px; font-size: 9px; border: 1px solid transparent;
+      ">
+        <strong>${icon} ${modelName}</strong> 
+        <span style="color: #ffff00;">(${data.count}x)</span><br>
+        <span style="color: #888; font-size: 8px;">Click objects individually to select</span>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
   
   selectObjectByIndex(index) {
     const allObjects = [...this.placedObjects, ...this.placedCollisionBoxes];
