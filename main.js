@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { WorldBuilder } from './worldBuilder.js';
+import { WorldBuilder } from '/worldBuilder.js';
 
-// Portfolio Analytics System - Privacy-First
+// Portfolio Analytics System Privacy-First
 class PortfolioAnalytics {
   constructor() {
     this.sessionId = this.generateSessionId();
@@ -21,7 +21,7 @@ class PortfolioAnalytics {
   }
   
   init() {
-    // Track initial page load
+    //Track initial page load
     this.track('portfolio_loaded', {
       userAgent: navigator.userAgent,
       screenSize: `${window.innerWidth}x${window.innerHeight}`,
@@ -30,7 +30,7 @@ class PortfolioAnalytics {
       timestamp: new Date().toISOString()
     });
     
-    // Track page visibility changes
+    //Track page visibility changes
     document.addEventListener('visibilitychange', () => {
       this.track('visibility_change', { 
         hidden: document.hidden,
@@ -38,7 +38,7 @@ class PortfolioAnalytics {
       });
     });
     
-    // Track when user leaves
+    //Track when user leaves
     window.addEventListener('beforeunload', () => {
       this.track('session_end', {
         totalTime: Date.now() - this.sessionStart,
@@ -47,7 +47,7 @@ class PortfolioAnalytics {
       this.saveToStorage();
     });
     
-    console.log('📊 Portfolio Analytics initialized for FinnB24');
+    console.log('Portfolio Analytics initialized for FinnB24');
   }
   
   track(event, data = {}) {
@@ -65,14 +65,14 @@ class PortfolioAnalytics {
     
     this.events.push(eventData);
     
-    // Auto-save every 10 events or immediately for important events
+    //Auto-save every 10 events or immediately for important events
     const importantEvents = ['portfolio_loaded', 'session_end', 'error_occurred'];
     if (this.events.length >= 10 || importantEvents.includes(event)) {
       this.saveToStorage();
     }
     
-    // Debug logging (remove in production if desired)
-    console.log('📊 Analytics:', event, data);
+    //Debug logging
+    console.log('Analytics:', event, data);
   }
   
   trackSceneChange(newScene) {
@@ -171,7 +171,7 @@ class PortfolioAnalytics {
   clearData() {
     localStorage.removeItem('finnb24_portfolio_analytics');
     this.events = [];
-    console.log('📊 Analytics data cleared');
+    console.log('Analytics data cleared');
   }
   
   // Export analytics data
@@ -196,10 +196,10 @@ class PortfolioAnalytics {
 // Initialize analytics
 const portfolioAnalytics = new PortfolioAnalytics();
 
-// Make it globally available for debugging
+//globally available for debugging
 window.portfolioAnalytics = portfolioAnalytics;
 
-// Enhanced Analytics Dashboard - Replace the existing dashboard code
+// Enhanced Analytics Dashboard
 if (window.location.search.includes('analytics=true')) {
   setTimeout(() => {
     const dashboard = document.createElement('div');
@@ -222,7 +222,7 @@ if (window.location.search.includes('analytics=true')) {
       const allEvents = window.portfolioAnalytics ? window.portfolioAnalytics.getAnalytics() : [];
       const summary = window.portfolioAnalytics ? window.portfolioAnalytics.getSummary() : {};
       
-      // Detailed breakdown by category
+      //  breakdown by category
       const sceneStats = {};
       const interactionStats = {};
       const sessionStats = [];
@@ -286,7 +286,7 @@ if (window.location.search.includes('analytics=true')) {
         }
       });
       
-      // Calculate average time spent in each scene
+      // average time spent in each scene
       Object.keys(timeSpentInScenes).forEach(scene => {
         if (sceneStats[scene]) {
           const times = timeSpentInScenes[scene];
@@ -324,11 +324,11 @@ if (window.location.search.includes('analytics=true')) {
       
       dashboard.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #00ffff; padding-bottom: 10px;">
-          <h1 style="color: #00ffff; margin: 0;">📊 FinnB24 Portfolio Analytics Dashboard</h1>
+          <h1 style="color: #00ffff; margin: 0;">Analytics Dashboard</h1>
           <div>
-            <button onclick="refreshDashboard()" style="margin-right: 10px; padding: 8px 15px; background: #004455; color: white; border: 1px solid #00ffff; border-radius: 4px; cursor: pointer;">🔄 Refresh</button>
-            <button onclick="window.portfolioAnalytics.exportData()" style="margin-right: 10px; padding: 8px 15px; background: #004455; color: white; border: 1px solid #00ffff; border-radius: 4px; cursor: pointer;">📥 Export</button>
-            <button onclick="window.portfolioAnalytics.clearData(); refreshDashboard();" style="margin-right: 10px; padding: 8px 15px; background: #440000; color: white; border: 1px solid #ff0000; border-radius: 4px; cursor: pointer;">🗑️ Clear</button>
+            <button onclick="refreshDashboard()" style="margin-right: 10px; padding: 8px 15px; background: #004455; color: white; border: 1px solid #00ffff; border-radius: 4px; cursor: pointer;">Refresh</button>
+            <button onclick="window.portfolioAnalytics.exportData()" style="margin-right: 10px; padding: 8px 15px; background: #004455; color: white; border: 1px solid #00ffff; border-radius: 4px; cursor: pointer;">Export</button>
+            <button onclick="window.portfolioAnalytics.clearData(); refreshDashboard();" style="margin-right: 10px; padding: 8px 15px; background: #440000; color: white; border: 1px solid #ff0000; border-radius: 4px; cursor: pointer;">Clear</button>
             <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 8px 15px; background: #333; color: white; border: 1px solid #666; border-radius: 4px; cursor: pointer;">✕ Close</button>
           </div>
         </div>
@@ -346,7 +346,7 @@ if (window.location.search.includes('analytics=true')) {
           
           <!-- Device Stats -->
           <div style="background: rgba(255,255,0,0.1); padding: 15px; border-radius: 8px; border: 1px solid #ffff00;">
-            <h2 style="color: #ffff00; margin-top: 0;">💻 Device Statistics</h2>
+            <h2 style="color: #ffff00; margin-top: 0;">Device Statistics</h2>
             ${Object.entries(analytics.summary.deviceTypes || {}).map(([device, count]) => 
               `<div><strong>${device.charAt(0).toUpperCase() + device.slice(1)}:</strong> ${count} visits</div>`
             ).join('')}
@@ -363,7 +363,7 @@ if (window.location.search.includes('analytics=true')) {
         
         <!-- Scene Statistics -->
         <div style="background: rgba(0,255,0,0.1); padding: 15px; border-radius: 8px; border: 1px solid #00ff00; margin-bottom: 20px;">
-          <h2 style="color: #00ff00; margin-top: 0;">🎮 Scene/Gallery Statistics</h2>
+          <h2 style="color: #00ff00; margin-top: 0;">Scene/Gallery Statistics</h2>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
             ${Object.entries(analytics.sceneStats).map(([scene, stats]) => `
               <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">
@@ -379,15 +379,15 @@ if (window.location.search.includes('analytics=true')) {
         
         <!-- Interaction Statistics -->
         <div style="background: rgba(255,0,255,0.1); padding: 15px; border-radius: 8px; border: 1px solid #ff00ff; margin-bottom: 20px;">
-          <h2 style="color: #ff00ff; margin-top: 0;">🎯 Interactive Elements Usage</h2>
+          <h2 style="color: #ff00ff; margin-top: 0;">Interactive Elements Usage</h2>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
             ${Object.entries(analytics.interactionStats).map(([key, stats]) => {
               const elementNames = {
-                'paper': '📜 Creative Journey Letter',
-                'book': '📚 Contact Grimoire', 
-                'scroll': '📜 Feedback Scroll',
-                'tombstone': '⚰️ Ancient Tombstone',
-                'feedback_form': '✉️ Feedback Form'
+                'paper': 'Creative Journey Letter',
+                'book': 'Contact Grimoire', 
+                'scroll': 'Feedback Scroll',
+                'tombstone': 'Ancient Tombstone',
+                'feedback_form': 'Feedback Form'
               };
               const displayName = elementNames[stats.element] || stats.element;
               
@@ -418,7 +418,7 @@ if (window.location.search.includes('analytics=true')) {
         
         <!-- Raw Summary Data -->
         <div style="background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; border: 1px solid #808080; margin-top: 20px;">
-          <h2 style="color: #808080; margin-top: 0;">🔍 Raw Summary Data</h2>
+          <h2 style="color: #808080; margin-top: 0;">Raw Summary Data</h2>
           <div style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;">
             <pre style="margin: 0; font-size: 11px; white-space: pre-wrap;">${JSON.stringify(analytics.summary, null, 2)}</pre>
           </div>
@@ -426,7 +426,7 @@ if (window.location.search.includes('analytics=true')) {
       `;
     }
     
-    // Make refresh function globally available
+    // refresh function globally available
     window.refreshDashboard = refreshDashboard;
     
     // Initial dashboard load
@@ -438,7 +438,7 @@ if (window.location.search.includes('analytics=true')) {
 
 // Game state
 let gameStarted = false;
-let currentScene = 'main'; // Track which scene we're in
+let currentScene = 'main'; // Track  scene 
 let spectatorMode = false; // Track if in spectator mode
 let allModelsLoaded = false; // Track if all models are loaded
 let paperReadingMode = false; // Track if currently reading paper
@@ -448,7 +448,7 @@ const loadingManager = new THREE.LoadingManager();
 let totalModelsToLoad = 11; // portal.glb, church.glb, grave.glb, altar.glb, paper.glb, crow.glb, desk.glb, book1.glb, book2.glb, scroll.glb, desk2.glb
 let loadedModels = 0;
 
-// Animation mixers
+//Animation mixers
 let crowMixer = null;
 
 // Loading progress display
@@ -460,7 +460,7 @@ loadingDisplay.style.cssText = `
   left: 50%;
   transform: translate(-50%, -50%);
   background: rgba(0, 0, 0, 0.9);
-  border: 2px solid #00ffff;
+  border: 2px solid rgb(192, 195, 195);
   border-radius: 10px;
   color: white;
   font-family: 'Courier New', monospace;
@@ -472,12 +472,12 @@ loadingDisplay.style.cssText = `
   backdrop-filter: blur(10px);
 `;
 loadingDisplay.innerHTML = `
-  <div style="color: #00ffff; font-weight: bold; margin-bottom: 15px;">🌀 LOADING PORTFOLIO</div>
-  <div id="loading-progress">Loading models... 0%</div>
+  <div style="color:rgb(192, 195, 195) ; font-weight: bold; margin-bottom: 15px;">loading stuff</div>
+  <div id="loading-progress">Loading ... 0%</div>
   <div style="margin-top: 10px; height: 4px; background: #333; border-radius: 2px;">
-    <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00ffff, #0080ff); border-radius: 2px; transition: width 0.3s ease;"></div>
+    <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg,rgb(192, 195, 195),rgb(142, 239, 140)); border-radius: 2px; transition: width 0.3s ease;"></div>
   </div>
-  <div style="margin-top: 10px; color: #888; font-size: 12px;">Please wait while we prepare the experience...</div>
+  <div style="margin-top: 10px; color: #888; font-size: 12px;">wait until models and all of that stuff is loaded...</div>
 `;
 document.body.appendChild(loadingDisplay);
 
@@ -486,7 +486,7 @@ const paperOverlay = document.createElement('div');
 paperOverlay.id = 'paper-overlay';
 paperOverlay.style.cssText = `
   position: fixed;
-  top: 0;
+  top: 100px;
   left: 0;
   width: 100%;
   height: 100%;
@@ -503,8 +503,8 @@ paperOverlay.style.cssText = `
 const paperContainer = document.createElement('div');
 paperContainer.style.cssText = `
   position: relative;
-  max-width: 800px;
-  height: 100%;
+  max-width: 400px;
+  height: 30%;
   margin: 0 auto;
   background: #f9f7f1;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
@@ -558,91 +558,8 @@ paperContent.style.cssText = `
 
 paperContent.innerHTML = `
   <h1 style="text-align: center; margin-bottom: 30px; color: #1a0e08; font-size: 28px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
-    Welcome to My Creative Journey
+    Fuck AI Art.
   </h1>
-  
-  <p style="font-style: italic; text-align: center; margin-bottom: 40px; color: #5a4030;">
-    "Art is not what you see, but what you make others see." - Edgar Degas
-  </p>
-  
-  <p>
-    Greetings, fellow wanderer of digital realms! You've stumbled upon a fragment of my creative soul, 
-    carefully preserved within this virtual space. This portfolio is more than just a collection of works—it's 
-    a testament to the countless hours spent chasing ideas, wrestling with pixels, and breathing life into 
-    the impossible.
-  </p>
-  
-  <p>
-    My name is Eric, though you might know me as FinnB24 in the vast expanse of the internet. I'm a GenZ 
-    creative who believes that art should provoke, inspire, and occasionally confuse. From the depths of 
-    surreal digital paintings to the intricate geometries of 3D modeling, I explore the boundaries between 
-    reality and imagination.
-  </p>
-  
-  <h2 style="color: #3d2418; margin-top: 40px; margin-bottom: 20px;">The Philosophy Behind the Chaos</h2>
-  
-  <p>
-    Every piece you'll encounter here was born from a simple question: "What if?" What if gravity worked 
-    sideways? What if colors had emotions? What if time moved in spirals instead of lines? These questions 
-    drive me to create worlds that exist nowhere but in the digital ether.
-  </p>
-  
-  <p>
-    I'm particularly drawn to surrealism—that beautiful madness that Salvador Dalí and René Magritte 
-    pioneered. In our age of digital creation, we have tools they could only dream of. Every shader, 
-    every particle system, every impossible geometry is a brush stroke in this new medium.
-  </p>
-  
-  <h2 style="color: #3d2418; margin-top: 40px; margin-bottom: 20px;">A Note on Process</h2>
-  
-  <p>
-    Creation, for me, is rarely linear. It's a dance between intention and accident, between control and 
-    chaos. I might start with a simple sketch and end up with a fully animated 3D scene, or begin with 
-    a melody and discover it needs visual accompaniment. This interconnectedness of media is what makes 
-    modern art so exciting.
-  </p>
-  
-  <p>
-    The 3D Art portal in this space represents the core of my creative expression. It showcases my 
-    ventures into three-dimensional storytelling and digital sculpture. This is where the magic happens.
-  </p>
-  
-  <h2 style="color: #3d2418; margin-top: 40px; margin-bottom: 20px;">The Technology Behind the Magic</h2>
-  
-  <p>
-    This very experience you're having—walking through a 3D space, interacting with objects, reading 
-    this paper—represents the convergence of art and technology that fascinates me. Built with Three.js 
-    and powered by WebGL, this portfolio itself is a piece of art, a statement about how we can present 
-    creative work in the digital age.
-  </p>
-  
-  <p>
-    I believe in the democratization of tools. The software I use—Blender for 3D, GIMP for image editing, 
-    Audacity for audio—proves that creativity isn't limited by budget. It's limited only by imagination 
-    and persistence.
-  </p>
-  
-  <h2 style="color: #3d2418; margin-top: 40px; margin-bottom: 20px;">Looking Forward</h2>
-  
-  <p>
-    Art is evolution. Every day brings new techniques to master, new concepts to explore, new boundaries 
-    to push. I'm constantly learning, constantly experimenting. The works you see here represent where 
-    I've been, but they're just stepping stones to where I'm going.
-  </p>
-  
-  <p>
-    I invite you to explore, to question, to feel. Art is meant to be experienced, not just observed. 
-    Each piece has a story, each composition a purpose. Some might make you smile, others might leave 
-    you puzzled. That's exactly as it should be.
-  </p>
-  
-  <p style="margin-top: 50px; font-style: italic; text-align: center; color: #5a4030;">
-    Thank you for taking this journey with me. May it inspire your own creative adventures.
-  </p>
-  
-  <p style="text-align: center; margin-top: 30px; font-weight: bold; color: #1a0e08;">
-    — Eric (FinnB24)
-  </p>
   
   <div style="height: 100px;"></div>
 `;
@@ -736,62 +653,10 @@ tombstoneContent.style.cssText = `
 tombstoneContent.innerHTML = `
   <div style="text-align: center; margin-bottom: 40px;">
     <h1 style="color: #ccc; font-size: 24px; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
-      ⚰️ SACRED ENGRAVINGS ⚰️
+      about page oder so idk who-the-fuck-is-this-person-who-made-this-bs-here maybe in a less self deprecating way lol
     </h1>
-    <div style="color: #888; font-style: italic;">Here lies the essence of the Tarnished Artist</div>
   </div>
   
-  <div style="border: 2px solid #555; padding: 30px; border-radius: 10px; background: rgba(0,0,0,0.3);">
-    <div style="margin-bottom: 25px;">
-      <strong style="color: #bbb;">NAME:</strong> 
-      <span style="color: #e0e0e0; margin-left: 10px;">Eric</span>
-    </div>
-    
-    <div style="margin-bottom: 25px;">
-      <strong style="color: #bbb;">AGE:</strong> 
-      <span style="color: #e0e0e0; margin-left: 10px;">GenZ (I am an adult)</span>
-    </div>
-    
-    <div style="margin-bottom: 25px;">
-      <strong style="color: #bbb;">LOCATION:</strong> 
-      <span style="color: #e0e0e0; margin-left: 10px;">Somewhere in Europe</span>
-    </div>
-    
-    <div style="margin-bottom: 25px;">
-      <strong style="color: #bbb;">PHILOSOPHY:</strong> 
-      <span style="color: #e0e0e0; margin-left: 10px;">Procrastination from my irl life</span>
-    </div>
-    
-    <div style="margin-bottom: 25px;">
-      <strong style="color: #bbb;">AI OPINION:</strong> 
-      <span style="color: #ff6b6b; margin-left: 10px;">Fuck AI (mostly, except in like medical areas)</span>
-    </div>
-    
-    <div style="margin-bottom: 25px;">
-      <strong style="color: #bbb;">CREATIVITY SOURCE:</strong> 
-      <span style="color: #e0e0e0; margin-left: 10px;">Ideas come from my brain (obv)</span>
-    </div>
-    
-    <div style="margin-top: 35px; padding-top: 25px; border-top: 1px solid #555;">
-      <h3 style="color: #bbb; margin-bottom: 20px;">📜 SACRED RULES & DECREES:</h3>
-      
-      <div style="margin-bottom: 20px; padding-left: 20px; border-left: 3px solid #666;">
-        <span style="color: #ffeb3b;">⚡</span> If you have a problem with me, tell me directly & don't spread misinformation
-      </div>
-      
-      <div style="margin-bottom: 20px; padding-left: 20px; border-left: 3px solid #666;">
-        <span style="color: #ff5722;">⚔️</span> Don't copy my stuff without crediting me (I will find you!)
-      </div>
-      
-      <div style="margin-bottom: 20px; padding-left: 20px; border-left: 3px solid #666;">
-        <span style="color: #9c27b0;">🎨</span> Surrealism is sick af
-      </div>
-    </div>
-  </div>
-  
-  <div style="text-align: center; margin-top: 40px; color: #888; font-style: italic;">
-    "Here ends the testimony of the Artist Eric, forever wandering between realms of creation and procrastination"
-  </div>
 `;
 
 tombstoneContainer.appendChild(tombstoneContent);
@@ -883,66 +748,8 @@ bookContent.style.cssText = `
 bookContent.innerHTML = `
   <div style="text-align: center; margin-bottom: 40px;">
     <h1 style="color: #d4af37; font-size: 26px; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
-      📞 CONTACT GRIMOIRE 📞
+      contact here. evtl socials auch wenn iwann mal aktiv
     </h1>
-    <div style="color: #b8860b; font-style: italic; font-size: 16px;">Sacred Methods of Communication</div>
-  </div>
-  
-  <div style="border: 2px solid #8b4513; padding: 35px; border-radius: 12px; background: rgba(139, 69, 19, 0.1);">
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">📧 ELECTRONIC CORRESPONDENCE</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #d4af37;">
-        <strong style="color: #b8860b;">Email:</strong> 
-        <span style="color: #f4e4c1; margin-left: 10px; font-family: 'Courier New', monospace;">finco.creative@web.de</span>
-      </div>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">💬 COMMUNICATION ETIQUETTE</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #daa520;">
-        <p style="margin: 0; color: #f4e4c1; font-style: italic;">
-          "Please get straight to the point - formalities aren't important to me"
-        </p>
-      </div>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">⏰ RESPONSE EXPECTATIONS</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #cd853f;">
-        <p style="margin: 0; color: #f4e4c1;">
-          I'll respond on weekends mostly... depends on how busy & motivated I am
-        </p>
-      </div>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h3 style="color: #d4af37; margin-bottom: 15px;">🌐 SOCIAL MEDIA REALMS</h3>
-      <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #b8860b;">
-        <p style="margin: 0 0 15px 0; color: #f4e4c1; font-style: italic;">
-          "I'm not good at updating social media, but you can find me here:"
-        </p>
-        <div style="display: grid; gap: 10px;">
-          <div style="color: #87ceeb;">🦋 <strong>Bluesky:</strong> <span style="font-family: 'Courier New', monospace;">@finnb24.bsky.social</span></div>
-          <div style="color: #ff6b6b;">📺 <strong>YouTube:</strong> <span style="font-family: 'Courier New', monospace;">FinnB24</span></div>
-          <div style="color: #e1306c;">📸 <strong>Instagram:</strong> <span style="font-family: 'Courier New', monospace;">@finnb24_creative</span></div>
-          <div style="color: #ff8c00;">🎵 <strong>SoundCloud:</strong> <span style="font-family: 'Courier New', monospace;">FinnB24</span></div>
-          <div style="color: #000;">📱 <strong>TikTok:</strong> <span style="font-family: 'Courier New', monospace;">@finnb24</span></div>
-        </div>
-      </div>
-    </div>
-    
-    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #8b4513;">
-      <h3 style="color: #d4af37; margin-bottom: 20px;">⚠️ IMPORTANT NOTICE:</h3>
-      <div style="background: rgba(139, 69, 19, 0.2); padding: 20px; border-radius: 8px; border: 1px solid #8b4513;">
-        <p style="margin: 0; color: #f4e4c1; text-align: center; font-weight: bold;">
-          Quality over quantity - I prefer meaningful conversations over small talk
-        </p>
-      </div>
-    </div>
-  </div>
-  
-  <div style="text-align: center; margin-top: 40px; color: #b8860b; font-style: italic;">
-    "May your messages find swift passage through the digital realm"
   </div>
 `;
 
@@ -1030,17 +837,17 @@ scrollContent.style.cssText = `
 scrollContent.innerHTML = `
   <div style="text-align: center; margin-bottom: 30px;">
     <h2 style="color: #d4af37; font-size: 28px; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
-      📜 FEEDBACK SCROLL 📜
+      anonymus feedback
     </h2>
-    <div style="color: #b8860b; font-style: italic;">Share your thoughts, brave traveler...</div>
+    <div style="color: #b8860b; font-style: italic;">finally works. fuck yeah</div>
   </div>
   
   <form id="feedback-form" action="https://formspree.io/f/xovwrear" method="POST">
     <div style="margin-bottom: 20px;">
-      <label style="display: block; margin-bottom: 8px; color: #d4af37; font-weight: bold;">Your Message:</label>
+      <label style="display: block; margin-bottom: 8px; color: #d4af37; font-weight: bold;">msg:</label>
       <textarea 
         name="message" 
-        placeholder="Share your thoughts about the portfolio, suggestions, or just say hello..."
+        placeholder="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         style="width: 100%; height: 120px; padding: 15px; background: #1a1008; 
                color: #f4e4c1; border: 2px solid #8b4513; border-radius: 8px;
                font-family: 'Times New Roman', serif; resize: vertical; font-size: 15px;
@@ -1050,11 +857,11 @@ scrollContent.innerHTML = `
     </div>
     
     <div style="margin-bottom: 20px;">
-      <label style="display: block; margin-bottom: 8px; color: #d4af37; font-weight: bold;">Your Name (Optional):</label>
+      <label style="display: block; margin-bottom: 8px; color: #d4af37; font-weight: bold;">name/sender (aka second column on frmsp. layout):</label>
       <input 
         type="text" 
         name="name" 
-        placeholder="Anonymous Traveler"
+        placeholder="name"
         style="width: 100%; padding: 12px; background: #1a1008; 
                color: #f4e4c1; border: 2px solid #8b4513; border-radius: 8px;
                font-family: 'Times New Roman', serif; font-size: 15px;
@@ -1066,7 +873,7 @@ scrollContent.innerHTML = `
               color: #f4e4c1; padding: 15px 40px; border: none; border-radius: 8px; 
               font-family: 'Times New Roman', serif; font-size: 16px; font-weight: bold;
               cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
-        🕊️ Send Message
+        yeet.
       </button>
     </div>
     
@@ -1075,7 +882,7 @@ scrollContent.innerHTML = `
   
   <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #8b4513; text-align: center;">
     <p style="color: #b8860b; font-style: italic; margin: 0; font-size: 14px;">
-      "Your words shall be carried by digital ravens to the artist's realm"
+      " "
     </p>
   </div>
 `;
@@ -1085,46 +892,46 @@ scrollOverlay.appendChild(scrollContainer);
 scrollOverlay.appendChild(scrollCloseButton);
 document.body.appendChild(scrollOverlay);
 
-// Form submission handling
+//submission handling
 function setupFormSubmission() {
   const form = document.getElementById('feedback-form');
   const submitBtn = document.getElementById('submit-btn');
   const formStatus = document.getElementById('form-status');
   
   if (form) {
-    let isSubmitting = false; // Add flag to prevent multiple submissions
+    let isSubmitting = false; //flag to prevent multiple submissions
     
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      // Prevent multiple submissions
+      //Prevent multiple submissions
       if (isSubmitting) {
         console.log('Form already submitting, ignoring duplicate submission');
         return;
       }
       
-      // Get form data
+      //form data
       const formData = new FormData(form);
       const message = formData.get('message').trim();
       
-      // Check if message is empty (additional client-side validation)
+      //Check if msg mpty
       if (!message || message.length < 3) {
         formStatus.innerHTML = `
           <div style="color: #ff6b6b; background: rgba(255, 107, 107, 0.1); 
                       padding: 15px; border-radius: 8px; border: 1px solid #ff6b6b;">
-            ⚠️ <strong>Please enter a message.</strong><br>
-            <small>Your feedback message must be at least 3 characters long.</small>
+             <strong>nu uh. write something.</strong><br>
+            <small>at least 3 characters</small>
           </div>
         `;
         formStatus.style.display = 'block';
         return;
       }
       
-      // Set submitting flag
+      // ssubmitting flag
       isSubmitting = true;
       
-      // Update button state
-      submitBtn.innerHTML = '🕊️ Sending...';
+      //Update button
+      submitBtn.innerHTML = 'yeeting...';
       submitBtn.disabled = true;
       submitBtn.style.opacity = '0.7';
       submitBtn.style.cursor = 'not-allowed';
@@ -1146,38 +953,37 @@ function setupFormSubmission() {
             messageLength: message.length,
             hasName: !!formData.get('name')
           });
-          // Success
+          //Success
           formStatus.innerHTML = `
             <div style="color: #90ee90; background: rgba(144, 238, 144, 0.1); 
                         padding: 15px; border-radius: 8px; border: 1px solid #90ee90;">
-              ✅ <strong>Message sent successfully!</strong><br>
-              <small>Your feedback has been delivered to the artist's realm.</small>
+              <strong>yeeted.</strong><br>
+              <small> </small>
             </div>
           `;
-          form.reset(); // Clear the form
+          form.reset();
           
-          // Auto-close scroll after successful submission (optional)
+          //Auto-close scroll after submission
           setTimeout(() => {
             closeScroll();
-          }, 3000); // Close after 3 seconds
+          }, 3000);
           
         } else {
           throw new Error('Form submission failed');
         }
       } catch (error) {
-        // Error
+       
         console.error('Form submission error:', error);
         formStatus.innerHTML = `
           <div style="color: #ff6b6b; background: rgba(255, 107, 107, 0.1); 
                       padding: 15px; border-radius: 8px; border: 1px solid #ff6b6b;">
-            ❌ <strong>Failed to send message.</strong><br>
-            <small>Please try again or contact directly via email.</small>
+            <strong> didnt work</strong><br>
+            <small> try again</small>
           </div>
         `;
       } finally {
-        // Reset button state and submission flag
         isSubmitting = false;
-        submitBtn.innerHTML = '🕊️ Send Message';
+        submitBtn.innerHTML = 'yeet';
         submitBtn.disabled = false;
         submitBtn.style.opacity = '1';
         submitBtn.style.cursor = 'pointer';
@@ -1191,7 +997,7 @@ function closePaper() {
   paperOverlay.style.display = 'none';
   paperReadingMode = false;
   
-  // Re-enable pointer lock if game was started
+  // Re-enable pointer lock
   if (gameStarted) {
     const container = document.getElementById('three-canvas');
     if (container) {
@@ -1202,9 +1008,7 @@ function closePaper() {
 
 function closeTombstone() {
   tombstoneOverlay.style.display = 'none';
-  paperReadingMode = false; // Use same state variable
-  
-  // Re-enable pointer lock if game was started
+  paperReadingMode = false; 
   if (gameStarted) {
     const container = document.getElementById('three-canvas');
     if (container) {
@@ -1215,9 +1019,7 @@ function closeTombstone() {
 
 function closeBook() {
   bookOverlay.style.display = 'none';
-  paperReadingMode = false; // Use same state variable
-  
-  // Re-enable pointer lock if game was started
+  paperReadingMode = false;
   if (gameStarted) {
     const container = document.getElementById('three-canvas');
     if (container) {
@@ -1228,9 +1030,7 @@ function closeBook() {
 
 function closeScroll() {
   scrollOverlay.style.display = 'none';
-  paperReadingMode = false; // Use same state variable
-  
-  // Re-enable pointer lock if game was started
+  paperReadingMode = false;
   if (gameStarted) {
     const container = document.getElementById('three-canvas');
     if (container) {
@@ -1239,14 +1039,14 @@ function closeScroll() {
   }
 }
 
-// Hide all overlays initially
+// Hide all overlays
 function hideAllOverlays() {
   document.querySelectorAll('.overlay').forEach(overlay => {
     overlay.style.display = 'none';
   });
 }
 
-// Show home overlay after loading is complete
+//home overlay after loading complete
 function showHomeOverlay() {
   const homeOverlay = document.getElementById('overlay-home');
   if (homeOverlay) {
@@ -1255,7 +1055,7 @@ function showHomeOverlay() {
   }
 }
 
-// Update loading progress
+// loading
 function updateLoadingProgress(loaded, total) {
   const percentage = Math.round((loaded / total) * 100);
   const progressText = document.getElementById('loading-progress');
@@ -1265,26 +1065,24 @@ function updateLoadingProgress(loaded, total) {
   if (progressBar) progressBar.style.width = `${percentage}%`;
   
   if (loaded >= total) {
-    // Show completion message briefly
-    if (progressText) progressText.textContent = 'Loading complete! 🎮';
+    if (progressText) progressText.textContent = 'completed';
     
     setTimeout(() => {
       loadingDisplay.style.display = 'none';
       allModelsLoaded = true;
       showHomeOverlay();
-      setupFormSubmission(); // Setup form after loading
+      setupFormSubmission();
       console.log('All models loaded - showing home overlay');
       
-      // 🌍 AUTO-LOAD WORLD AFTER MODELS ARE LOADED
       if (worldBuilder && worldBuilder.queuedWorldData) {
         setTimeout(async () => {
           const loadedCount = await worldBuilder.loadWorldWhenReady();
           if (loadedCount > 0) {
-            console.log(`🌍 Auto-loaded world with ${loadedCount} objects`);
+            console.log(`Auto-loaded world with ${loadedCount} objects`);
           }
         }, 1000);
       }
-    }, 800); // Brief delay to show completion
+    }, 800);
   }
 }
 
@@ -1297,14 +1095,13 @@ loadingManager.onLoad = function() {
   updateLoadingProgress(100, 100);
 };
 
-// Make functions globally available for HTML onclick handlers
 window.closeOverlay = function(name) {
   const overlay = document.getElementById('overlay-'+name);
   if (overlay) {
     overlay.classList.remove('visible');
     overlay.style.display = 'none';
     
-    // Only start the game when clicking the start button for home overlay AND models are loaded
+    
     if (name === 'home' && allModelsLoaded) {
       gameStarted = true;
       const container = document.getElementById('three-canvas');
@@ -1315,7 +1112,6 @@ window.closeOverlay = function(name) {
   }};
 
 window.openOverlay = function(name) {
-  // Only allow overlay opening if models are loaded
   if (!allModelsLoaded) return;
   
   document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('visible'));
@@ -1325,51 +1121,48 @@ window.openOverlay = function(name) {
     targetOverlay.classList.add('visible');
   }
   
-  // Stop game when opening overlay
+  //Stop game when opening overlay
   if (name === 'home') {
     gameStarted = false;
   }
 };
-
-// Hide overlays initially until models are loaded
 hideAllOverlays();
 
 try {
-  // 3D Scene Setup
+  //3D Scene Setup
   const container = document.getElementById('three-canvas');
   if (!container) throw new Error('Cannot find #three-canvas element');
 
   const scene = new THREE.Scene();
-  const galleryScene = new THREE.Scene(); // 3D Art Gallery (ONLY gallery)
+  const galleryScene = new THREE.Scene(); // 3D Art Gallery ONLY gallery
   
-  // Individual model viewer scenes
+  //Individual model viewer scenes
   const cubeViewerScene = new THREE.Scene();
   const sphereViewerScene = new THREE.Scene();
   const cylinderViewerScene = new THREE.Scene();
   const coneViewerScene = new THREE.Scene();
   
-  let activeScene = scene; // Track which scene is currently active
+  let activeScene = scene; //ttrack scene currently active
   
   const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({ 
     antialias: true,
-    powerPreference: "high-performance", // Use high performance GPU
-    stencil: false, // Disable stencil buffer for better performance
+    powerPreference: "high-performance",
+    stencil: false,
     depth: true
   });
-  renderer.setClearColor(0x89c4f4); // top sky color
+  renderer.setClearColor(0x89c4f4);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   
-  // Optimize renderer settings for performance
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   
   container.appendChild(renderer.domElement);
 
-  // Create crosshair
+  // crosshair
   const crosshair = document.createElement('div');
   crosshair.id = 'crosshair';
   crosshair.style.cssText = `
@@ -1406,7 +1199,7 @@ try {
   `;
   document.body.appendChild(crosshair);
 
-  // Create controls display
+  //controls display
   const controlsDisplay = document.createElement('div');
   controlsDisplay.id = 'controls-display';
   controlsDisplay.style.cssText = `
@@ -1428,24 +1221,23 @@ try {
   function updateControlsDisplay() {
     if (spectatorMode) {
       controlsDisplay.innerHTML = `
-        <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 SPECTATOR MODE</div>
-        <div><span style="color: #ffff00;">WASD</span> - Fly around</div>
-        <div><span style="color: #ffff00;">Mouse</span> - Free look</div>
-        <div><span style="color: #ffff00;">Space</span> - Fly up</div>
-        <div><span style="color: #ffff00;">Shift</span> - Fly down</div>
+        <div style="color: rgb(192, 195, 195); font-weight: bold; margin-bottom: 8px;">spect. mode</div>
+        <div><span style="color: #ffff00;">WASD</span> - Fly</div>
+        <div><span style="color: #ffff00;">Mouse</span> - Free</div>
+        <div><span style="color: #ffff00;">Space</span> - up</div>
+        <div><span style="color: #ffff00;">Shift</span> - down</div>
         <div><span style="color: #ffff00;">Q</span> - Return to gallery</div>
         <div><span style="color: #ffff00;">ESC</span> - Menu</div>
       `;
     } else {
       controlsDisplay.innerHTML = `
-        <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🎮 CONTROLS</div>
+        <div style="color: rgb(192, 195, 195); font-weight: bold; margin-bottom: 8px;">controls</div>
         <div><span style="color: #ffff00;">WASD</span> - Move</div>
         <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
-        <div><span style="color: #ffff00;">Space</span> - Jump</div>
-        <div><span style="color: #ffff00;">Shift</span> - Sprint</div>
+        <div><span style="color: #ffff00;">Space</span> - jump</div>
+        <div><span style="color: #ffff00;">Shift</span> - sprint</div>
         <div><span style="color: #ffff00;">ESC</span> - Menu</div>
-        <div><span style="color: #ffff00;">E</span> - Use Portal/Read</div>
-        <div style="margin-top: 8px; color: #888; font-size: 10px;">Aim crosshair at portals/objects to interact</div>
+        <div><span style="color: #ffff00;">E</span> - interact with stuff</div>
       `;
     }
   }
@@ -1463,7 +1255,7 @@ try {
     width: 250px;
     height: 150px;
     background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #00ffff;
+    border: 2px solid rgb(192, 195, 195);
     border-radius: 10px;
     color: white;
     font-family: 'Courier New', monospace;
@@ -1471,15 +1263,15 @@ try {
     padding: 15px;
     display: none;
     z-index: 1000;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 20px rgb(192, 195, 195);
     transition: opacity 0.3s ease;
   `;
   portalInfoWindow.innerHTML = `
-    <div style="color: #00ffff; font-weight: bold; margin-bottom: 10px;">🌀 PORTAL DETECTED</div>
+    <div style="color: rgb(192, 195, 195); font-weight: bold; margin-bottom: 10px;">PORTAL DETECTED</div>
     <div style="margin-bottom: 5px;">Status: <span style="color: #00ff00;">ACTIVE</span></div>
     <div style="margin-bottom: 5px;">Energy: <span style="color: #ffff00;">97.3%</span></div>
     <div style="margin-bottom: 5px;">Destination: <span id="portal-destination" style="color: #ff9900;">--</span></div>
-    <div style="margin-bottom: 10px;">Distance: <span id="portal-distance" style="color: #00ffff;">--</span></div>
+    <div style="margin-bottom: 10px;">Distance: <span id="portal-distance" style="color: rgb(192, 195, 195);">--</span></div>
     <div style="color: #00ff00; font-size: 12px;">Press E to enter portal</div>
   `;
   document.body.appendChild(portalInfoWindow);
@@ -1491,8 +1283,8 @@ try {
     position: fixed;
     top: 20px;
     left: 20px;
-    width: 250px;
-    height: 120px;
+    width: 150px;
+    height: 8w0px;
     background: rgba(139, 69, 19, 0.9);
     border: 2px solid #d4af37;
     border-radius: 10px;
@@ -1506,11 +1298,12 @@ try {
     transition: opacity 0.3s ease;
   `;
   paperInfoWindow.innerHTML = `
-    <div style="color: #d4af37; font-weight: bold; margin-bottom: 10px;">📜 DOCUMENT FOUND</div>
-    <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Personal Letter</span></div>
+    <div style="color: #d4af37; font-weight: bold; margin-bottom: 10px;">document found</div>
+    <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Letter</span></div>
     <div style="margin-bottom: 5px;">Condition: <span style="color: #90ee90;">Readable</span></div>
+    <div style="margin-bottom: 5px;">Opinion: <span style="color: #90ee90;">Based.</span></div>
     <div style="margin-bottom: 10px;">Language: <span style="color: #87ceeb;">English</span></div>
-    <div style="color: #90ee90; font-size: 12px;">Press E to read</div>
+    <div style="color: #90ee90; font-size: 12px;">E to read</div>
   `;
   document.body.appendChild(paperInfoWindow);
 
@@ -1522,7 +1315,7 @@ try {
     top: 20px;
     left: 20px;
     width: 250px;
-    height: 130px;
+    height: 190px;
     background: rgba(64, 64, 64, 0.95);
     border: 2px solid #888;
     border-radius: 10px;
@@ -1536,12 +1329,12 @@ try {
     transition: opacity 0.3s ease;
   `;
   tombstoneInfoWindow.innerHTML = `
-    <div style="color: #aaa; font-weight: bold; margin-bottom: 10px;">⚰️ TOMBSTONE FOUND</div>
-    <div style="margin-bottom: 5px;">Type: <span style="color: #ccc;">Ancient Grave</span></div>
-    <div style="margin-bottom: 5px;">Condition: <span style="color: #90ee90;">Engraved</span></div>
-    <div style="margin-bottom: 5px;">Era: <span style="color: #87ceeb;">Tarnished Age</span></div>
+    <div style="color: #aaa; font-weight: bold; margin-bottom: 10px;">Gravestone found</div>
+    <div style="margin-bottom: 5px;">Type: <span style="color: #ccc;">ancient Grave (idk maybe change this whole thing for diff model</span></div>
+    <div style="margin-bottom: 5px;">Condition: <span style="color: #90ee90;">fucked up</span></div>
+    <div style="margin-bottom: 5px;">Era: <span style="color: #87ceeb;"> unknown </span></div>
     <div style="margin-bottom: 10px;">Language: <span style="color: #d4af37;">Runic Script</span></div>
-    <div style="color: #90ee90; font-size: 12px;">Press E to read engravings</div>
+    <div style="color: #90ee90; font-size: 12px;">E to read engravings</div>
   `;
   document.body.appendChild(tombstoneInfoWindow);
 
@@ -1567,12 +1360,12 @@ try {
     transition: opacity 0.3s ease;
   `;
   bookInfoWindow.innerHTML = `
-    <div style="color: #d4af37; font-weight: bold; margin-bottom: 10px;">📚 GRIMOIRE DISCOVERED</div>
-    <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Contact Registry</span></div>
+    <div style="color: #d4af37; font-weight: bold; margin-bottom: 10px;">GRIMOIRE found</div>
+    <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Contact registry</span></div>
     <div style="margin-bottom: 5px;">Condition: <span style="color: #90ee90;">Well-Preserved</span></div>
-    <div style="margin-bottom: 5px;">Content: <span style="color: #87ceeb;">Communication Methods</span></div>
-    <div style="margin-bottom: 10px;">Language: <span style="color: #daa520;">Ancient Script</span></div>
-    <div style="color: #90ee90; font-size: 12px;">Press E to read grimoire</div>
+    <div style="margin-bottom: 5px;">Content: <span style="color: #87ceeb;"> idk see for yourself bivch</span></div>
+    <div style="margin-bottom: 10px;">Language: <span style="color: #daa520;"> idk, readable</span></div>
+    <div style="color: #90ee90; font-size: 12px;">E to read</div>
   `;
   document.body.appendChild(bookInfoWindow);
 
@@ -1598,46 +1391,43 @@ try {
     transition: opacity 0.3s ease;
   `;
   scrollInfoWindow.innerHTML = `
-    <div style="color: #d4af37; font-weight: bold; margin-bottom: 10px;">📜 FEEDBACK SCROLL</div>
+    <div style="color: #d4af37; font-weight: bold; margin-bottom: 10px;"> Scroll</div>
     <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Message Carrier</span></div>
-    <div style="margin-bottom: 5px;">Condition: <span style="color: #90ee90;">Enchanted</span></div>
-    <div style="margin-bottom: 5px;">Purpose: <span style="color: #87ceeb;">Feedback Collection</span></div>
-    <div style="margin-bottom: 10px;">Magic: <span style="color: #daa520;">Active</span></div>
-    <div style="color: #90ee90; font-size: 12px;">Press E to leave feedback</div>
+    <div style="margin-bottom: 5px;">Condition: <span style="color: #90ee90;"> *shrugs* </span></div>
+    <div style="margin-bottom: 5px;">Purpose: <span style="color: #87ceeb;"> anonymus feedback</span></div>
+    <div style="margin-bottom: 10px;">Magic: <span style="color: #daa520;"> Curse of Vanishing bt also Loyalty </span></div>
+    <div style="color: #90ee90; font-size: 12px;">Press E</div>
   `;
   document.body.appendChild(scrollInfoWindow);
 
-  // =======================================
-  // 🎯 SETUP MAIN SCENE
-  // =======================================
   
-  // Optimized sky (smaller, lower detail for better performance)
-  const skyGeo = new THREE.SphereGeometry(60, 16, 16); // Reduced segments
+  //main scenee =======================================
+  
+  // sky 
+  const skyGeo = new THREE.SphereGeometry(60, 16, 16); //rreduced segments
   const skyMat = new THREE.MeshBasicMaterial({ color:0x89c4f4, side:THREE.BackSide });
   const sky = new THREE.Mesh(skyGeo,skyMat);
   scene.add(sky);
 
-  // Sun (just a glowing disc)
+  //Sun
   const sunGeo = new THREE.CircleGeometry(3, 16); // Reduced segments
   const sunMat = new THREE.MeshBasicMaterial({ color:0xfff0b1, transparent:true, opacity:0.8 });
   const sun = new THREE.Mesh(sunGeo,sunMat);
   sun.position.set(12,16,-40);
   scene.add(sun);
 
-  // =======================================
-  // 🌅 DYNAMIC DAY/NIGHT CYCLE SYSTEM
-  // =======================================
-
-  // Day/night cycle configuration
+// day/night cycl =======================================
+  
+  //config
   const dayNightConfig = {
-    speedMultiplier: 360, // Real time (set to 60 for fast cycle)
-    transitionDuration: 0.3, // How smooth transitions are (0-1)
+    speedMultiplier: 360, //Real time 60 for fast cycle
+    transitionDuration: 0.3, // smooth transitions (0-1)
     
-    // Time periods (in 24-hour format)
+    //Time periods
     sunrise: 6,
     sunset: 20,
     
-    // Color configurations
+    // Color config
     colors: {
       day: {
         sky: 0x89c4f4,
@@ -1669,7 +1459,7 @@ try {
       }
     },
     
-    // Light intensity configurations
+  //Light intensity
     intensity: {
       day: { ambient: 0.4, directional: 0.7, sun: 0.8 },
       night: { ambient: 0.1, directional: 0.2, sun: 0.3 },
@@ -1678,10 +1468,10 @@ try {
     }
   };
 
-  // Add fog to main scene for better atmosphere
+  //fog
   scene.fog = new THREE.Fog(dayNightConfig.colors.day.fog, 30, 80);
 
-  // Create time display
+  //time display
   const timeDisplay = document.createElement('div');
   timeDisplay.id = 'time-display';
   timeDisplay.style.cssText = `
@@ -1701,11 +1491,11 @@ try {
   `;
   document.body.appendChild(timeDisplay);
 
-  // Function to get CEST time (Central European Summer Time)
+  //get CEST time
   function getCESTTime() {
     const now = new Date();
     
-    // Convert to CEST (UTC+2)
+    //Convert
     const cestOffset = 2 * 60; // CEST is UTC+2
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     const cestTime = new Date(utc + (cestOffset * 60000));
@@ -1713,14 +1503,14 @@ try {
     return cestTime;
   }
 
-  // Function to get accelerated time for testing
+////////////////////accelerated time for testing
   function getAcceleratedTime() {
     const realTime = getCESTTime();
     const acceleratedMs = realTime.getTime() * dayNightConfig.speedMultiplier;
     return new Date(acceleratedMs);
   }
 
-  // Function to interpolate between colors
+  //interpolate between colors
   function lerpColor(color1, color2, factor) {
     const r1 = (color1 >> 16) & 0xff;
     const g1 = (color1 >> 8) & 0xff;
@@ -1737,7 +1527,7 @@ try {
     return (r << 16) | (g << 8) | b;
   }
 
-  // Function to interpolate between intensity values
+  ////interpolate between intensity values
   function lerpIntensity(intensity1, intensity2, factor) {
     return {
       ambient: intensity1.ambient + (intensity2.ambient - intensity1.ambient) * factor,
@@ -1746,22 +1536,22 @@ try {
     };
   }
 
-  // Function to get sun/moon position based on time
+  //get sun/moon position based on time
   function getSunPosition(hours) {
-    // Sun moves in an arc from east to west
-    const sunAngle = ((hours - 6) / 12) * Math.PI; // 6 AM to 6 PM = 0 to PI
-    const sunHeight = Math.sin(sunAngle) * 20 + 5; // Height varies from 5 to 25
-    const sunX = Math.cos(sunAngle) * 30; // X position varies
-    const sunZ = -40; // Keep Z constant
+    // Sun moves in arc  east to west
+    const sunAngle = ((hours - 6) / 12) * Math.PI; //6 AM to 6 PM = 0 to PI
+    const sunHeight = Math.sin(sunAngle) * 20 + 5; //Height varies 5 to 25
+    const sunX = Math.cos(sunAngle) * 30; // Xposition var
+    const sunZ = -40; //Z constant
     
     return {
       x: sunX,
-      y: Math.max(sunHeight, 2), // Don't let it go below horizon
+      y: Math.max(sunHeight, 2), //Don't go below horizon
       z: sunZ
     };
   }
 
-  // Function to update day/night cycle
+  //update day/night cycle
   function updateDayNightCycle() {
     const currentTime = getAcceleratedTime();
     const hours = currentTime.getHours() + currentTime.getMinutes() / 60;
@@ -1769,17 +1559,17 @@ try {
     // Update time display
     const realCEST = getCESTTime();
     timeDisplay.innerHTML = `
-      <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">🕒 TIME</div>
-      <div><span style="color: #ffff00;">Real CEST:</span> ${realCEST.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris' })}</div>
-      <div><span style="color: #ffff00;">Game Time:</span> ${currentTime.toLocaleTimeString('en-GB')}</div>
-      <div style="margin-top: 8px; color: #888; font-size: 10px;">⚡ ${dayNightConfig.speedMultiplier}x speed</div>
+      <div style="color: #00ffff; font-weight: bold; margin-bottom: 8px;">time</div>
+      <div><span style="color: #ffff00;">CEST:</span> ${realCEST.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris' })}</div>
+      <div><span style="color: #ffff00;">in game:</span> ${currentTime.toLocaleTimeString('en-GB')}</div>
+      <div style="color: #ffff00;""margin-top: 8px; color: #888; font-size: 10px;">${dayNightConfig.speedMultiplier}x speed bc i'm impatient while testing</div>
+      <div <span style="color: #ffff00;">// maybe add Seasonal theme/change oder so as well (needs assets replaced in ex. winter theme i guess? -> 4 Vers per asset?</span> ${realCEST.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris' })}</div>
     `;
-    
     let currentColors, currentIntensity, timeOfDay;
     
-    // Determine time of day and calculate transitions
+    //time of day and calculate transitions
     if (hours >= 5 && hours < 7) {
-      // Sunrise transition (5 AM - 7 AM)
+      // Sunrise transition5 AM - 7 AM
       const factor = (hours - 5) / 2;
       currentColors = {
         sky: lerpColor(dayNightConfig.colors.night.sky, dayNightConfig.colors.sunrise.sky, factor),
@@ -1789,9 +1579,9 @@ try {
         fog: lerpColor(dayNightConfig.colors.night.fog, dayNightConfig.colors.sunrise.fog, factor)
       };
       currentIntensity = lerpIntensity(dayNightConfig.intensity.night, dayNightConfig.intensity.sunrise, factor);
-      timeOfDay = `🌅 Sunrise (${Math.round(factor * 100)}%)`;
+      timeOfDay = `Sunrise (${Math.round(factor * 100)}%)`;
     } else if (hours >= 7 && hours < 9) {
-      // Morning transition (7 AM - 9 AM)
+      // Morning transition 7 AM - 9 AM
       const factor = (hours - 7) / 2;
       currentColors = {
         sky: lerpColor(dayNightConfig.colors.sunrise.sky, dayNightConfig.colors.day.sky, factor),
@@ -1801,14 +1591,14 @@ try {
         fog: lerpColor(dayNightConfig.colors.sunrise.fog, dayNightConfig.colors.day.fog, factor)
       };
       currentIntensity = lerpIntensity(dayNightConfig.intensity.sunrise, dayNightConfig.intensity.day, factor);
-      timeOfDay = `🌄 Morning (${Math.round(factor * 100)}%)`;
+      timeOfDay = `Morning (${Math.round(factor * 100)}%)`;
     } else if (hours >= 9 && hours < 18) {
-      // Full day (9 AM - 6 PM)
+      // Full day 9 AM - 6 PM
       currentColors = dayNightConfig.colors.day;
       currentIntensity = dayNightConfig.intensity.day;
-      timeOfDay = "☀️ Day";
+      timeOfDay = "Day";
     } else if (hours >= 18 && hours < 20) {
-      // Sunset transition (6 PM - 8 PM)
+      // Sunset 6 PM - 8 PM
       const factor = (hours - 18) / 2;
       currentColors = {
         sky: lerpColor(dayNightConfig.colors.day.sky, dayNightConfig.colors.sunset.sky, factor),
@@ -1818,9 +1608,9 @@ try {
         fog: lerpColor(dayNightConfig.colors.day.fog, dayNightConfig.colors.sunset.fog, factor)
       };
       currentIntensity = lerpIntensity(dayNightConfig.intensity.day, dayNightConfig.intensity.sunset, factor);
-      timeOfDay = `🌅 Sunset (${Math.round(factor * 100)}%)`;
+      timeOfDay = `Sunset (${Math.round(factor * 100)}%)`;
     } else if (hours >= 20 && hours < 22) {
-      // Evening transition (8 PM - 10 PM)
+      // Evening 8 PM - 10 PM
       const factor = (hours - 20) / 2;
       currentColors = {
         sky: lerpColor(dayNightConfig.colors.sunset.sky, dayNightConfig.colors.night.sky, factor),
@@ -1830,51 +1620,51 @@ try {
         fog: lerpColor(dayNightConfig.colors.sunset.fog, dayNightConfig.colors.night.fog, factor)
       };
       currentIntensity = lerpIntensity(dayNightConfig.intensity.sunset, dayNightConfig.intensity.night, factor);
-      timeOfDay = `🌆 Evening (${Math.round(factor * 100)}%)`;
+      timeOfDay = `Evening (${Math.round(factor * 100)}%)`;
     } else {
-      // Night (10 PM - 5 AM)
+      // Night 10 PM - 5 AM
       currentColors = dayNightConfig.colors.night;
       currentIntensity = dayNightConfig.intensity.night;
-      timeOfDay = "🌙 Night";
+      timeOfDay = "Night";
     }
     
-    // Update time of day in display
+    //Update time of day in display
     timeDisplay.innerHTML += `<div><span style="color: #ffff00;">Period:</span> ${timeOfDay}</div>`;
     
-    // Apply colors and lighting
+    //colors and lighting
     if (currentScene === 'main') {
-      // Update sky color
+      //sky color
       skyMat.color.setHex(currentColors.sky);
       
-      // Update sun/moon color and position
+      //sun/moon color and pos
       sunMat.color.setHex(currentColors.sun);
       const sunPos = getSunPosition(hours);
       sun.position.set(sunPos.x, sunPos.y, sunPos.z);
       
-      // Update lighting
+      //  lighting
       ambLight.color.setHex(currentColors.ambient);
       ambLight.intensity = currentIntensity.ambient;
       
       dirLight.color.setHex(currentColors.directional);
       dirLight.intensity = currentIntensity.directional;
       
-      // Update sun material opacity based on intensity
+      //  sun material opacity  intensity
       sunMat.opacity = currentIntensity.sun;
       
-      // Update fog
+      //fog
       scene.fog.color.setHex(currentColors.fog);
       
-      // Position directional light to follow sun
+      // Pos directional light follow sun
       dirLight.position.set(sunPos.x * 0.5, sunPos.y + 5, sunPos.z * 0.5);
     }
   }
 
-  // Optimized grid helper for ground
+  //grid for ground
   const grid = new THREE.GridHelper(44, 22, 0x9be7ff, 0x3d4262);
   grid.position.y = 0.01;
   scene.add(grid);
 
-  // Floor
+  //Floor
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(50,50),
     new THREE.MeshPhongMaterial({ color:0x3d4262, shininess: 10 })
@@ -1884,31 +1674,29 @@ try {
   floor.receiveShadow = true;
   scene.add(floor);
 
-  // 🌍 Initialize World Builder
+  //Initialize World Builder
   let worldBuilder;
   try {
     worldBuilder = new WorldBuilder(scene, camera, renderer);
-    console.log('🛠️ World Builder system initialized');
+    console.log(' World Builder system initialized');
     
-    // Start auto-loading process
+    // Start auto-loading
     const requiredModels = await worldBuilder.autoLoadWorld();
     if (requiredModels.length > 0) {
-      console.log('🌍 Will auto-load world when models are ready:', requiredModels);
+      console.log('Will auto-load world when models are ready:', requiredModels);
     }
     
   } catch (error) {
-    console.error('❌ Failed to initialize World Builder:', error);
+    console.error('failed to initialize World Builder:', error);
   }
 
-  // =======================================
-  // 🎯 SETUP 3D ART GALLERY SCENE (ONLY GALLERY)
-  // =======================================
+  // 3d galleyy scene=======================================
   
-  // Gallery sky (reuse geometry)
+  //sky
   const gallerySky = new THREE.Mesh(skyGeo.clone(), new THREE.MeshBasicMaterial({ color:0x2a1810, side:THREE.BackSide }));
   galleryScene.add(gallerySky);
 
-  // Gallery lighting (optimized)
+  // lighting
   const galleryAmbLight = new THREE.AmbientLight(0xffffff, 0.3);
   galleryScene.add(galleryAmbLight);
   
@@ -1916,12 +1704,12 @@ try {
   gallerySpotLight.position.set(0, 15, 0);
   gallerySpotLight.target.position.set(0, 0, 0);
   gallerySpotLight.castShadow = true;
-  // Reduce shadow map size for better performance
+  // llow shadow map size for better perf
   gallerySpotLight.shadow.mapSize.setScalar(512);
   galleryScene.add(gallerySpotLight);
   galleryScene.add(gallerySpotLight.target);
 
-  // Gallery floor (reuse plane geometry)
+  //floor
   const galleryFloor = new THREE.Mesh(
     new THREE.PlaneGeometry(50,50),
     new THREE.MeshPhongMaterial({ color:0x1a1a1a, shininess: 30 })
@@ -1931,12 +1719,12 @@ try {
   galleryFloor.receiveShadow = true;
   galleryScene.add(galleryFloor);
 
-  // Gallery grid (reuse)
+  //grid
   const galleryGrid = new THREE.GridHelper(44, 22, 0x333333, 0x222222);
   galleryGrid.position.y = 0.01;
   galleryScene.add(galleryGrid);
 
-   // Create gallery walls with shared materials
+   //gallery walls w shared mat
   const wallMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 });
   const wallGeometry = new THREE.PlaneGeometry(30, 8);
   
@@ -1945,7 +1733,7 @@ try {
   backWall.position.set(0, 4, -15);
   galleryScene.add(backWall);
   
-  // Side walls
+  ///Side walls
   const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
   leftWall.rotation.y = Math.PI/2;
   leftWall.position.set(-15, 4, 0);
@@ -1956,7 +1744,7 @@ try {
   rightWall.position.set(15, 4, 0);
   galleryScene.add(rightWall);
 
-  // Art pieces data
+  // Art data
   const artPieces = [
     { pos: [-10, 2, -14.5], color: 0xff4444, shape: 'cube', name: 'Red Cube' },
     { pos: [10, 2, -14.5], color: 0x44ff44, shape: 'sphere', name: 'Green Sphere' },
@@ -1964,7 +1752,7 @@ try {
     { pos: [14.5, 2, 5], color: 0xffff44, shape: 'cone', name: 'Yellow Cone' },
   ];
 
-  // Create gallery frames and interactive areas with shared geometries
+  //gallery frames + interactive areas
   const galleryFrames = [];
   const interactiveAreas = [];
   const frameGeometry = new THREE.PlaneGeometry(4, 3);
@@ -1978,45 +1766,45 @@ try {
   });
 
   artPieces.forEach((art, index) => {
-    // Create frame (reuse geometry and material)
+    // frame
     const frame = new THREE.Mesh(frameGeometry, frameMaterial);
     
-    // Create canvas preview of the 3D model (optimized canvas size)
+    //canvas preview of 3D model 
     const canvas = document.createElement('canvas');
-    canvas.width = 128; // Reduced from 256
-    canvas.height = 96;  // Reduced from 192
+    canvas.width = 128; //  256
+    canvas.height = 96;  //  192
     const ctx = canvas.getContext('2d');
     
-    // Draw a simple preview representation
+    //simple preview representation
     ctx.fillStyle = `#${art.color.toString(16).padStart(6, '0')}`;
     ctx.fillRect(25, 25, 78, 46);
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px Arial'; // Reduced font size
     ctx.textAlign = 'center';
     ctx.fillText(art.name, 64, 80);
-    ctx.fillText('Click to View', 64, 90);
+    ctx.fillText('E to View', 64, 90);
     
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
-    texture.generateMipmaps = false; // Disable mipmaps for better performance
+    texture.generateMipmaps = false; //ddisable mipmaps
     texture.minFilter = THREE.LinearFilter;
     
     const previewMaterial = new THREE.MeshPhongMaterial({ map: texture });
     const preview = new THREE.Mesh(previewGeometry, previewMaterial);
     
-    // Position frames on walls
+    //frames on walls
     frame.position.copy(new THREE.Vector3(...art.pos));
     preview.position.copy(frame.position);
-    preview.position.z += 0.01; // Slightly in front of frame
+    preview.position.z += 0.02; // Slightly in fron
     
-    // Set rotations based on wall
-    if (art.pos[2] < 0) { // Back wall
+    //rotations based on wall
+    if (art.pos[2] < 0) { // Bac
       frame.rotation.y = 0;
       preview.rotation.y = 0;
-    } else if (art.pos[0] < 0) { // Left wall
+    } else if (art.pos[0] < 0) { //Left
       frame.rotation.y = Math.PI/2;
       preview.rotation.y = Math.PI/2;
-    } else { // Right wall
+    } else { //Right
       frame.rotation.y = -Math.PI/2;
       preview.rotation.y = -Math.PI/2;
     }
@@ -2025,7 +1813,7 @@ try {
     galleryScene.add(preview);
     galleryFrames.push(frame);
     
-    // Create invisible interactive area (reuse geometry and material)
+    //invisible interactive area
     const interactiveArea = new THREE.Mesh(interactiveGeometry, interactiveMaterial);
     interactiveArea.position.copy(preview.position);
     interactiveArea.rotation.copy(preview.rotation);
@@ -2034,42 +1822,39 @@ try {
     interactiveAreas.push(interactiveArea);
   });
 
-  // =======================================
-  // 🎯 SETUP MODEL VIEWER SCENES
-  // =======================================
+  // modell viewer =======================================
   
-  // Shared geometries for model viewer scenes
   const sharedGeometries = {
     cube: new THREE.BoxGeometry(4, 4, 4),
-    sphere: new THREE.SphereGeometry(2.5, 24, 24), // Reduced segments
-    cylinder: new THREE.CylinderGeometry(2, 2, 6, 24), // Reduced segments
-    cone: new THREE.ConeGeometry(2.5, 6, 24) // Reduced segments
+    sphere: new THREE.SphereGeometry(2.5, 24, 24), // Red segments
+    cylinder: new THREE.CylinderGeometry(2, 2, 6, 24), // Red segmts
+    cone: new THREE.ConeGeometry(2.5, 6, 24) // Red seg
   };
   
   function createModelViewerScene(art, scene) {
-    // Dark space environment (reuse sky geometry)
+    // Dark space environment
     const viewerSky = new THREE.Mesh(skyGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x0a0a0a, side: THREE.BackSide }));
     scene.add(viewerSky);
     
-    // Optimized lighting
+    //lighting
     const ambLight = new THREE.AmbientLight(0x404040, 0.2);
     scene.add(ambLight);
     
     const spotLight1 = new THREE.SpotLight(0xffffff, 2, 50, Math.PI/4, 0.1, 2);
     spotLight1.position.set(10, 10, 10);
     spotLight1.target.position.set(0, 0, 0);
-    spotLight1.shadow.mapSize.setScalar(256); // Reduced shadow map size
+    spotLight1.shadow.mapSize.setScalar(256); // Red shadow map
     scene.add(spotLight1);
     scene.add(spotLight1.target);
     
     const spotLight2 = new THREE.SpotLight(0x4444ff, 1, 50, Math.PI/4, 0.1, 2);
     spotLight2.position.set(-10, 5, -5);
     spotLight2.target.position.set(0, 0, 0);
-    spotLight2.shadow.mapSize.setScalar(256); // Reduced shadow map size
+    spotLight2.shadow.mapSize.setScalar(256); // shadow
     scene.add(spotLight2);
     scene.add(spotLight2.target);
     
-    // Use shared geometry
+    //shared geometry
     const geometry = sharedGeometries[art.shape];
     
     const material = new THREE.MeshPhongMaterial({ 
@@ -2085,17 +1870,17 @@ try {
     mesh.receiveShadow = true;
     scene.add(mesh);
     
-    // Add some rotation animation
+    //rotation animation
     scene.userData = { rotatingMesh: mesh };
   }
 
-  // Create all model viewer scenes
+  //all model viewer scenes
   createModelViewerScene(artPieces[0], cubeViewerScene);
   createModelViewerScene(artPieces[1], sphereViewerScene);
   createModelViewerScene(artPieces[2], cylinderViewerScene);
   createModelViewerScene(artPieces[3], coneViewerScene);
 
-  // Character
+  //Character
   const characterGroup = new THREE.Group();
   const characterBody = new THREE.Mesh(
     new THREE.CapsuleGeometry(0.3, 1.2, 4, 8),
@@ -2107,7 +1892,7 @@ try {
   characterGroup.add(characterBody);
 
   const characterHead = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 12, 12), // Reduced segments
+    new THREE.SphereGeometry(0.25, 12, 12),
     new THREE.MeshPhongMaterial({ color: 0x6ce1ff, shininess: 60 })
   );
   characterHead.position.set(0, 1.9, 0);
@@ -2115,15 +1900,14 @@ try {
   characterGroup.add(characterHead);
 
   characterGroup.position.set(0, 0, 5);
-  scene.add(characterGroup); // Character is added to main scene initially
+  scene.add(characterGroup); // Character added to main scene initially
 
-  // Collision detection arrays (only for main scene)
+  //Collision detection
   const collisionBoxes = [];
 
-  // =======================================
-  // 🎯 COLLISION BOXES (OPTIMIZED)
-  // =======================================
-  // Add a random standalone collision box (blue wireframe)
+
+  //colision boxes =======================================
+  // blue wirefram
   const randomCollisionBox = new THREE.Mesh(
     new THREE.BoxGeometry(3, 2, 1.5),
     new THREE.MeshBasicMaterial({ 
@@ -2138,9 +1922,9 @@ try {
   scene.add(randomCollisionBox);
   collisionBoxes.push(randomCollisionBox);
 
-  // Add a cylinder collision (purple wireframe)
+  //purple wireframe
   const cylinderCollisionBox = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.5, 1.5, 3, 12), // Reduced segments
+    new THREE.CylinderGeometry(1.5, 1.5, 3, 12),
     new THREE.MeshBasicMaterial({ 
       color: 0xff00ff,
       transparent: true, 
@@ -2153,45 +1937,44 @@ try {
   scene.add(cylinderCollisionBox);
   collisionBoxes.push(cylinderCollisionBox);
 
-  // =======================================
-  // 🎯 OPTIMIZED MODEL LOADING
-  // =======================================
+
+  //model load==================================
   
-  // Setup optimized loaders
+  //optimized loaders
   const loader = new GLTFLoader(loadingManager);
   
-  // Optional: Add DRACO compression support for even smaller files
+  //DRACO compression support smaller files -> sollte mit church model testen
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
   loader.setDRACOLoader(dracoLoader);
 
   let returnPortalModel = null;
 
-  // Optimized model loading with caching
+  //model loading w caching
   const modelCache = new Map();
   
   function loadModelOptimized(url, callback, progressCallback, errorCallback) {
     if (modelCache.has(url)) {
-      // Return cached model
+      //Return cached
       callback(modelCache.get(url));
       return;
     }
     
     loader.load(url, 
       function(gltf) {
-        // Cache the model
+        //Cache model
         modelCache.set(url, gltf);
         
-        // Optimize loaded model
+        //ptimize loaded model
         gltf.scene.traverse((node) => {
           if (node.isMesh) {
             node.castShadow = true;
             node.receiveShadow = true;
             
-            // Optimize materials
+            // materials
             if (node.material) {
               node.material.needsUpdate = false;
-              // Disable unnecessary features for performance
+              // Disable unnecessary features
               if (node.material.map) {
                 node.material.map.generateMipmaps = false;
                 node.material.map.minFilter = THREE.LinearFilter;
@@ -2207,7 +1990,7 @@ try {
     );
   }
 
-  // 🌍 MODEL REGISTRATION FOR WORLD BUILDER
+  /////// MMODEL REGISRT FOR WORLD BUILDER
   function registerModelWithWorldBuilder(modelName, gltf) {
     if (worldBuilder) {
       worldBuilder.registerModel(modelName, {
@@ -2217,7 +2000,7 @@ try {
     }
   }
 
-  // Load Church Model (optimized) - 🌍 WITH WORLD BUILDER REGISTRATION
+  // Load Church BUILDER REGISTRATION
   let churchModel = null;
   loadModelOptimized(
     'church.glb',
@@ -2238,7 +2021,7 @@ try {
       churchModel.rotation.set(0, 30, 0);
       scene.add(churchModel);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
+      // REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('church', gltf);
       
       loadedModels++;
@@ -2256,7 +2039,7 @@ try {
     }
   );
 
-  // Load Grave Model with interactive detection - 🌍 WITH WORLD BUILDER REGISTRATION
+  //Grave Model with interactive detection
   let graveModel = null;
   loadModelOptimized(
     'grave.glb',
@@ -2271,7 +2054,7 @@ try {
       graveModel.position.set(16, 0, 10);
       graveModel.rotation.set(0, 10, 0);
       
-      // Mark grave as interactive
+      //grave as interactive
       graveModel.userData = {
         type: 'tombstone',
         interactive: true,
@@ -2280,7 +2063,7 @@ try {
       
       scene.add(graveModel);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
+      //REGISTER
       registerModelWithWorldBuilder('grave', gltf);
       
       loadedModels++;
@@ -2298,7 +2081,7 @@ try {
     }
   );
 
-  // Load Altar Model - 🌍 WITH WORLD BUILDER REGISTRATION
+  // Load Altar
   let altarModel = null;
   loadModelOptimized(
     'altar.glb',
@@ -2319,7 +2102,7 @@ try {
       altarModel.rotation.set(0, Math.PI/4, 0);
       scene.add(altarModel);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
+      // regstter
       registerModelWithWorldBuilder('altar', gltf);
       
       loadedModels++;
@@ -2337,7 +2120,7 @@ try {
     }
   );
 
-  // Load Paper Model with interactive detection - 🌍 WITH WORLD BUILDER REGISTRATION
+  //Paper Model interactive detection
   let paperModel = null;
   loadModelOptimized(
     'paper.glb',
@@ -2352,16 +2135,14 @@ try {
       paperModel.position.set(22, 1, -5);
       paperModel.rotation.set(0, -Math.PI/6, 0);
       
-      // Mark paper as interactive
       paperModel.userData = {
         type: 'paper',
         interactive: true,
-        name: 'Creative Journey Letter'
+        name: 'Letter'
       };
       
       scene.add(paperModel);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('paper', gltf);
       
       loadedModels++;
@@ -2379,7 +2160,7 @@ try {
     }
   );
 
-  // Load Animated Crow Model - 🌍 WITH WORLD BUILDER REGISTRATION
+  // Animated Crow Model
   let crowModel = null;
   loadModelOptimized(
     'crow.glb',
@@ -2393,29 +2174,29 @@ try {
       });
       
       crowModel = gltf.scene;
-      crowModel.scale.set(1.1, 1.1, 1.1); // Make crow a bit bigger
+      crowModel.scale.set(1.1, 1.1, 1.1); // bigger
       
       const box = new THREE.Box3().setFromObject(crowModel);
       const center = box.getCenter(new THREE.Vector3());
       
-      // Position crow on the altar or nearby
+      // Position
       crowModel.position.set(14, 1.4, -18);
       crowModel.rotation.set(0, 10, 0);
       
-      // Mark crow as interactive
+      //crow as interactive
       crowModel.userData = {
         type: 'crow',
         interactive: true,
         name: 'Messenger Crow'
       };
       
-      // Setup animation mixer
+      //animation mixer
       if (gltf.animations && gltf.animations.length > 0) {
         crowMixer = new THREE.AnimationMixer(crowModel);
         
-        // Play animation2 (index 1) specifically
+        //Play animation2
         if (gltf.animations.length > 1) {
-          const animation2 = crowMixer.clipAction(gltf.animations[1]); // Animation2 is index 1
+          const animation2 = crowMixer.clipAction(gltf.animations[1]); 
           animation2.setLoop(THREE.LoopRepeat);
           animation2.play();
           console.log('Playing animation2 on repeat');
@@ -2429,7 +2210,7 @@ try {
       
       scene.add(crowModel);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
+
       registerModelWithWorldBuilder('crow', gltf);
       
       loadedModels++;
@@ -2447,7 +2228,7 @@ try {
     }
   );
 
-  // Load Desk Model - 🌍 WITH WORLD BUILDER REGISTRATION
+  // Load Desk 
   let deskModel = null;
   loadModelOptimized(
     'desk.glb',
@@ -2464,7 +2245,6 @@ try {
       
       scene.add(deskModel);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('desk', gltf);
       
       loadedModels++;
@@ -2482,7 +2262,7 @@ try {
     }
   );
 
-  // Load desk2 - 🌍 WITH WORLD BUILDER REGISTRATION
+  // Load desk2
   let desk2Model = null;
   loadModelOptimized(
     'desk2.glb',
@@ -2499,7 +2279,6 @@ try {
       
       scene.add(desk2Model);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('desk2', gltf);
       
       loadedModels++;
@@ -2517,7 +2296,7 @@ try {
     }
   );
 
-  // Load Book1 Model (Decorative) - 🌍 WITH WORLD BUILDER REGISTRATION
+  // Load Book1
   let book1Model = null;
   loadModelOptimized(
     'book1.glb',
@@ -2529,12 +2308,11 @@ try {
       const box = new THREE.Box3().setFromObject(book1Model);
       const center = box.getCenter(new THREE.Vector3());
       
-      book1Model.position.set(11.3, 1.2, -17.9); // On the desk
+      book1Model.position.set(11.3, 1.2, -17.9);
       book1Model.rotation.set(0, Math.PI/2, 0);
       
       scene.add(book1Model);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('book1', gltf);
       
       loadedModels++;
@@ -2552,7 +2330,7 @@ try {
     }
   );
 
-  // Load Book2 Model (Interactive Contact Book) - 🌍 WITH WORLD BUILDER REGISTRATION
+  //oad Book2 Interactive
   let book2Model = null;
   loadModelOptimized(
     'book2.glb',
@@ -2564,10 +2342,10 @@ try {
       const box = new THREE.Box3().setFromObject(book2Model);
       const center = box.getCenter(new THREE.Vector3());
       
-      book2Model.position.set(10.2,-0.5, -17.5); // On the desk, next to book1
+      book2Model.position.set(10.2,-0.5, -17.5);
       book2Model.rotation.set(-0.4, 0.01, 0);
       
-      // Mark book2 as interactive for contact info
+      // Mark nteractive
       book2Model.userData = {
         type: 'book',
         interactive: true,
@@ -2576,7 +2354,6 @@ try {
       
       scene.add(book2Model);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('book2', gltf);
       
       loadedModels++;
@@ -2594,7 +2371,7 @@ try {
     }
   );
 
-  // Load Scroll Model (Interactive Feedback Form) - 🌍 WITH WORLD BUILDER REGISTRATION
+  //Scroll Model
   let scrollModel = null;
   loadModelOptimized(
     'scroll.glb',
@@ -2606,10 +2383,9 @@ try {
       const box = new THREE.Box3().setFromObject(scrollModel);
       const center = box.getCenter(new THREE.Vector3());
       
-            scrollModel.position.set(13, 1.4, -17.4); // Near desk area, elevated
+            scrollModel.position.set(13, 1.4, -17.4);
       scrollModel.rotation.set(0, Math.PI/2, 0);
       
-      // Mark scroll as interactive for feedback
       scrollModel.userData = {
         type: 'scroll',
         interactive: true,
@@ -2618,7 +2394,6 @@ try {
       
       scene.add(scrollModel);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('scroll', gltf);
       
       loadedModels++;
@@ -2636,7 +2411,7 @@ try {
     }
   );
 
-  // Load Portal Models (UPDATED TO ONLY ONE PORTAL - 3D ART) - 🌍 WITH WORLD BUILDER REGISTRATION
+  // Load Portal
   const portalModels = [];
   loadModelOptimized(
     'portal.glb',
@@ -2644,7 +2419,7 @@ try {
       console.log('Portal model loaded successfully');
       const originalPortal = gltf.scene;
       
-      // Create return portal for gallery
+      // return portal for gallery
       const returnPortal = originalPortal.clone();
       returnPortal.scale.set(0.5, 0.5, 0.5);
       
@@ -2667,7 +2442,7 @@ try {
       
       galleryScene.add(returnPortal);
 
-      // Create main scene portal (ONLY ONE PORTAL - 3D ART)
+      // main scene portal
       const portalModel = originalPortal.clone();
       portalModel.scale.set(0.5, 0.5, 0.5);
       
@@ -2684,8 +2459,8 @@ try {
       
       portalModel.userData = { 
         target: '3d', 
-        label: '3D ART',
-        destination: '3D SHOWCASE',
+        label: 'gallery1',
+        destination: '3d art maybe',
         position: new THREE.Vector3(0, 1, -12),
         teleport: true,
         sceneTarget: 'gallery3D'
@@ -2694,7 +2469,7 @@ try {
       scene.add(portalModel);
       portalModels.push(portalModel);
       
-      // Add floating text label above portal
+      //floating text label
       const canvas = document.createElement('canvas');
       canvas.width = 128;
       canvas.height = 32;
@@ -2704,7 +2479,7 @@ try {
       ctx.textAlign="center";
       ctx.shadowColor = "#000";
       ctx.shadowBlur = 2;
-      ctx.fillText('3D ART', 64, 24);
+      ctx.fillText('3d artt', 64, 24);
       const tex = new THREE.Texture(canvas); 
       tex.needsUpdate = true;
       tex.generateMipmaps = false;
@@ -2716,7 +2491,6 @@ try {
       textMesh.position.set(0, 3.5, -12);
       scene.add(textMesh);
       
-      // 🌍 REGISTER WITH WORLD BUILDER
       registerModelWithWorldBuilder('portal', gltf);
       
       loadedModels++;
@@ -2734,7 +2508,7 @@ try {
     }
   );
 
-  // Optimized lighting for main scene
+  // lighting
   const ambLight = new THREE.AmbientLight(0xffffff, 0.4); 
   scene.add(ambLight);
   
@@ -2743,17 +2517,17 @@ try {
   dirLight.castShadow = true;
   dirLight.shadow.camera.near = 1;
   dirLight.shadow.camera.far = 50;
-  dirLight.shadow.mapSize.setScalar(512); // Reduced shadow map size
+  dirLight.shadow.mapSize.setScalar(512);
   scene.add(dirLight);
 
-  // Mouse look controls
+  // Mouse look
   let mouseX = 0;
   let mouseY = 0;
   let targetRotationY = 0;
   let currentRotationX = 0;
   const MOUSE_SENSITIVITY = 0.002;
 
-  // Mouse movement only works when game is started and pointer is locked
+  // Mouse only work when game started and pointerlocked
   document.addEventListener('mousemove', (e) => {
     if (document.pointerLockElement && gameStarted && !paperReadingMode) {
       mouseX = e.movementX || 0;
@@ -2762,7 +2536,7 @@ try {
       targetRotationY -= mouseX * MOUSE_SENSITIVITY;
       currentRotationX -= mouseY * MOUSE_SENSITIVITY;
       
-      // Limit vertical rotation (more freedom in spectator mode)
+      //Limit vert rotation
       if (spectatorMode) {
         currentRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentRotationX));
       } else {
@@ -2771,10 +2545,8 @@ try {
     }
   });
 
-  // Movement and physics variables
   const keys = {};
 
-  // Separate handling for keydown and keyup to better manage Q key
   window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
     keys[key] = true;
@@ -2796,37 +2568,37 @@ try {
   const normalSpeed = 5;
   const spectatorSpeed = 15;
 
-  // Jump physics
+  // Jump
   let isJumping = false;
   let jumpVelocity = 0;
   const jumpForce = 8;
   const gravity = 20;
 
-  // Portal/interactive object detection variables
+  // Portal/interactive object var
   const raycaster = new THREE.Raycaster();
   const portalDetectionDistance = 3;
-  const paperDetectionDistance = 4; // Slightly larger for paper
-  const tombstoneDetectionDistance = 4; // Same as paper
-  const bookDetectionDistance = 4; // Same as paper
-  const scrollDetectionDistance = 4; // Same as paper
+  const paperDetectionDistance = 4; 
+  const tombstoneDetectionDistance = 4;
+  const bookDetectionDistance = 4; 
+  const scrollDetectionDistance = 4; 
   let currentPortalInView = null;
   let currentPaperInView = null;
   let currentTombstoneInView = null;
   let currentBookInView = null;
   let currentScrollInView = null;
 
-  // Scene switching functions (SIMPLIFIED - ONLY 3D GALLERY)
+  // Scene switching
   function switchToGallery() {
     portfolioAnalytics.trackSceneChange('gallery3D');
     currentScene = 'gallery';
     activeScene = galleryScene;
     spectatorMode = false;
     
-    // Move character to gallery scene
+    ///Move character to gallery
     scene.remove(characterGroup);
     galleryScene.add(characterGroup);
     
-    // Reset character position
+    //Reset character pos
     characterGroup.position.set(0, 0, 10);
     
     updateControlsDisplay();
@@ -2839,11 +2611,11 @@ try {
     activeScene = scene;
     spectatorMode = false;
     
-    // Move character back to main scene from gallery
+    // character back to main 
     galleryScene.remove(characterGroup);
     scene.add(characterGroup);
     
-    // Reset character position
+    // Reset pos
     characterGroup.position.set(0, 0, 5);
     
     updateControlsDisplay();
@@ -2864,14 +2636,14 @@ try {
     currentScene = `model-${artIndex}`;
     activeScene = sceneMap[artIndex];
     
-    // Remove character from gallery (spectator mode = no visible character)
+    //spectator mode
     galleryScene.remove(characterGroup);
     
-    // Position camera for good view of the model
+    //Pos cam
     camera.position.set(8, 5, 8);
     camera.lookAt(0, 0, 0);
     
-    // Reset camera rotation
+    // Reset cam rot
     targetRotationY = 0;
     currentRotationX = 0;
     
@@ -2884,11 +2656,11 @@ try {
     activeScene = galleryScene;
     spectatorMode = false;
     
-    // Add character back to gallery
+    //character back to gallery
     galleryScene.add(characterGroup);
     characterGroup.position.set(0, 0, 10);
     
-    // Reset camera rotation for normal mode
+    // Reset camera rot
     targetRotationY = 0;
     currentRotationX = 0;
     
@@ -2901,12 +2673,12 @@ try {
     paperReadingMode = true;
     paperOverlay.style.display = 'block';
     
-    // Exit pointer lock to allow mouse scrolling
+    //Ext pointer lock allow mouse scrolling
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
     
-    // Hide info windows
+    //hhide info windows
     portalInfoWindow.style.display = 'none';
     paperInfoWindow.style.display = 'none';
     tombstoneInfoWindow.style.display = 'none';
@@ -2921,15 +2693,13 @@ try {
 
   function openTombstone() {
     portfolioAnalytics.trackInteraction('tombstone', 'read', { name: 'Ancient Tombstone' });
-    paperReadingMode = true; // Use same state variable
+    paperReadingMode = true; 
     tombstoneOverlay.style.display = 'block';
     
-    // Exit pointer lock to allow mouse scrolling
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
     
-    // Hide info windows
     portalInfoWindow.style.display = 'none';
     paperInfoWindow.style.display = 'none';
     tombstoneInfoWindow.style.display = 'none';
@@ -2944,15 +2714,13 @@ try {
 
   function openBook() {
     portfolioAnalytics.trackInteraction('book', 'read', { name: 'Contact Grimoire' });
-    paperReadingMode = true; // Use same state variable
+    paperReadingMode = true; 
     bookOverlay.style.display = 'block';
     
-    // Exit pointer lock to allow mouse scrolling
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
     
-    // Hide info windows
     portalInfoWindow.style.display = 'none';
     paperInfoWindow.style.display = 'none';
     tombstoneInfoWindow.style.display = 'none';
@@ -2967,15 +2735,13 @@ try {
 
   function openScroll() {
     portfolioAnalytics.trackInteraction('scroll', 'open', { name: 'Feedback Scroll' });
-    paperReadingMode = true; // Use same state variable
+    paperReadingMode = true;
     scrollOverlay.style.display = 'block';
     
-    // Exit pointer lock to allow mouse scrolling
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
-    
-    // Hide info windows
+
     portalInfoWindow.style.display = 'none';
     paperInfoWindow.style.display = 'none';
     tombstoneInfoWindow.style.display = 'none';
@@ -2988,7 +2754,7 @@ try {
     currentScrollInView = null;
   }
 
-  // Function to check if crosshair is directly pointing at any portal or interactive element
+  //check if crosshair is directly pointing at any portal or interactive element
   function checkPortalView() {
     if (!gameStarted || paperReadingMode) return;
 
@@ -3003,7 +2769,7 @@ try {
     let scrollMeshes = [];
     
     if (currentScene === 'main') {
-      // Check portal models in main scene
+      // Check portal models main scene
       portalModels.forEach(portalModel => {
         portalModel.traverse((child) => {
           if (child.isMesh) {
@@ -3013,7 +2779,7 @@ try {
         });
       });
       
-      // Check paper model
+      //paper
       if (paperModel) {
         paperModel.traverse((child) => {
           if (child.isMesh) {
@@ -3023,7 +2789,7 @@ try {
         });
       }
 
-      // Check tombstone model
+      // tombstone 
       if (graveModel) {
         graveModel.traverse((child) => {
           if (child.isMesh) {
@@ -3033,7 +2799,7 @@ try {
         });
       }
 
-      // Check book2 model
+      //book2 
       if (book2Model) {
         book2Model.traverse((child) => {
           if (child.isMesh) {
@@ -3043,7 +2809,7 @@ try {
         });
       }
 
-      // Check scroll model
+      //scroll 
       if (scrollModel) {
         scrollModel.traverse((child) => {
           if (child.isMesh) {
@@ -3053,7 +2819,7 @@ try {
         });
       }
     } else if (currentScene === 'gallery') {
-      // Check return portal and gallery frames for 3D gallery
+      //return portal and gallery frames for gallery
       const returnPortal = galleryScene.children.find(child => 
         child.userData && child.userData.type === 'return-portal'
       );
@@ -3066,13 +2832,13 @@ try {
         });
       }
       
-      // Add interactive gallery frames
+      //interactive gallery frames
       allTargetMeshes.push(...interactiveAreas);
     }
 
-    // Priority system: Paper > Scroll > Book > Tombstone > Portals
+    //Prio system: Paper > Scroll > Book > Tombstone > Portals
     
-    // Check for paper intersections first (highest priority)
+    // Check for paper
     const paperIntersects = raycaster.intersectObjects(paperMeshes);
     let targetPaper = null;
     let paperDistance = Infinity;
@@ -3086,7 +2852,6 @@ try {
     }
 
     if (targetPaper) {
-      // Show paper info window
       paperInfoWindow.style.display = 'block';
       portalInfoWindow.style.display = 'none';
       tombstoneInfoWindow.style.display = 'none';
@@ -3097,13 +2862,13 @@ try {
       currentTombstoneInView = null;
       currentBookInView = null;
       currentScrollInView = null;
-      return; // Priority to paper, don't check others
+      return;
     } else {
       paperInfoWindow.style.display = 'none';
       currentPaperInView = null;
     }
 
-    // Check for scroll intersections second (very high priority)
+    // Check for scroll
     const scrollIntersects = raycaster.intersectObjects(scrollMeshes);
     let targetScroll = null;
     let scrollDistance = Infinity;
@@ -3117,7 +2882,6 @@ try {
     }
 
     if (targetScroll) {
-      // Show scroll info window
       scrollInfoWindow.style.display = 'block';
       portalInfoWindow.style.display = 'none';
       tombstoneInfoWindow.style.display = 'none';
@@ -3126,13 +2890,13 @@ try {
       currentPortalInView = null;
       currentTombstoneInView = null;
       currentBookInView = null;
-      return; // Priority to scroll, don't check others
+      return; 
     } else {
       scrollInfoWindow.style.display = 'none';
       currentScrollInView = null;
     }
 
-    // Check for book intersections third (high priority)
+    //book
     const bookIntersects = raycaster.intersectObjects(bookMeshes);
     let targetBook = null;
     let bookDistance = Infinity;
@@ -3146,20 +2910,20 @@ try {
     }
 
     if (targetBook) {
-      // Show book info window
+     
       bookInfoWindow.style.display = 'block';
       portalInfoWindow.style.display = 'none';
       tombstoneInfoWindow.style.display = 'none';
       currentBookInView = targetBook;
       currentPortalInView = null;
       currentTombstoneInView = null;
-      return; // Priority to book, don't check others
+      return;
     } else {
       bookInfoWindow.style.display = 'none';
       currentBookInView = null;
     }
 
-    // Check for tombstone intersections fourth (medium priority)
+    //Checktombstone
     const tombstoneIntersects = raycaster.intersectObjects(tombstoneMeshes);
     let targetTombstone = null;
     let tombstoneDistance = Infinity;
@@ -3173,18 +2937,18 @@ try {
     }
 
     if (targetTombstone) {
-      // Show tombstone info window
+      
       tombstoneInfoWindow.style.display = 'block';
       portalInfoWindow.style.display = 'none';
       currentTombstoneInView = targetTombstone;
       currentPortalInView = null;
-      return; // Priority to tombstone, don't check portals
+      return;
     } else {
       tombstoneInfoWindow.style.display = 'none';
       currentTombstoneInView = null;
     }
 
-    // Check for portal intersections last (lowest priority)
+    // portal 
     const intersects = raycaster.intersectObjects(allTargetMeshes);
     let targetObject = null;
     let targetDistance = Infinity;
@@ -3203,11 +2967,9 @@ try {
     }
 
     if (targetObject) {
-      // Show portal info window
       portalInfoWindow.style.display = 'block';
       currentPortalInView = targetObject;
       
-      // Update distance and destination display
       const distanceElement = document.getElementById('portal-distance');
       const destinationElement = document.getElementById('portal-destination');
       if (distanceElement) {
@@ -3223,15 +2985,14 @@ try {
         }
       }
     } else {
-      // Hide portal info window
       portalInfoWindow.style.display = 'none';
       currentPortalInView = null;
     }
   }
 
-  // Enhanced collision detection - only for main scene
+  // collision detection main scene
   function checkCollision(currentPosition, newPosition) {
-    if (currentScene !== 'main') return false; // No collisions in gallery or spectator mode
+    if (currentScene !== 'main') return false; //no collisions in gallery spectator 
     
     const characterRadius = 0.4;
     
@@ -3240,13 +3001,13 @@ try {
       const boxPosition = collisionBox.position;
       
       if (boxGeometry.type === 'CylinderGeometry') {
-        // Cylinder collision detection
+        // Cylinder 
         const cylinderRadius = boxGeometry.parameters.radiusTop;
         const cylinderHeight = boxGeometry.parameters.height;
         const cylinderTop = boxPosition.y + cylinderHeight/2;
         const cylinderBottom = boxPosition.y - cylinderHeight/2;
         
-        // Check horizontal distance for both current and new positions
+        //horizontal distance for both current n new positions
         const currentDx = currentPosition.x - boxPosition.x;
         const currentDz = currentPosition.z - boxPosition.z;
         const currentDistance = Math.sqrt(currentDx * currentDx + currentDz * currentDz);
@@ -3262,7 +3023,7 @@ try {
           return true;
         }
       } else {
-        // Box collision detection
+        // Box collision
         const boxWidth = boxGeometry.parameters.width;
         const boxHeight = boxGeometry.parameters.height;
         const boxDepth = boxGeometry.parameters.depth;
@@ -3296,9 +3057,9 @@ try {
     return false;
   }
 
-  // Function to get the ground level at a specific position
+  //get ground level at a specific position
   function getGroundLevel(position) {
-    if (currentScene !== 'main') return 0; // Gallery has flat ground
+    if (currentScene !== 'main') return 0; //Gallery flat ground
     
     let groundLevel = 0;
     
@@ -3344,10 +3105,10 @@ try {
     if (!gameStarted || paperReadingMode) return;
     
     if (spectatorMode) {
-      // Spectator mode movement (free flight)
+      // Spect mode movement
       const spectatorMoveSpeed = spectatorSpeed;
       
-      // Get movement directions
+      //movement directs
       const forward = new THREE.Vector3(0, 0, -1);
       forward.applyQuaternion(camera.quaternion);
       
@@ -3367,10 +3128,10 @@ try {
       
       camera.position.add(movement);
       
-      return; // Skip normal character movement in spectator mode
+      return;
     }
     
-    // Normal character movement
+    //Normal character movement
     const forward = new THREE.Vector3(0, 0, -1);
     forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), targetRotationY);
     
@@ -3401,27 +3162,27 @@ try {
       desiredVelocity.z += right.z * moveSpeed * dt;
     }
     
-    // Test movement in X direction
+    // Xdirection
     const testPositionX = characterGroup.position.clone();
     testPositionX.x += desiredVelocity.x;
     if (!checkCollision(characterGroup.position, testPositionX)) {
       characterGroup.position.x = testPositionX.x;
     }
     
-    // Test movement in Z direction
+    // Zdirection
     const testPositionZ = characterGroup.position.clone();
     testPositionZ.z += desiredVelocity.z;
     if (!checkCollision(characterGroup.position, testPositionZ)) {
       characterGroup.position.z = testPositionZ.z;
     }
     
-    // Jump logic
+    // Jump
     if (keys[' '] && !isJumping) {
       isJumping = true;
       jumpVelocity = jumpForce;
     }
     
-    // Interactive object activation (SIMPLIFIED FOR ONE GALLERY)
+    // Interactive object activation
     if (keys['e']) {
       if (currentPaperInView) {
         openPaper();
@@ -3433,7 +3194,7 @@ try {
         openTombstone();
       } else if (currentPortalInView) {
         if (currentScene === 'main' && currentPortalInView.userData.teleport) {
-          // Switch to 3D gallery
+          // Switch to gallery
           switchToGallery();
           portalInfoWindow.style.display = 'none';
           currentPortalInView = null;
@@ -3451,7 +3212,7 @@ try {
       }
     }
     
-    // Apply gravity and update vertical position
+    //gravity update vert pos
     if (isJumping || characterGroup.position.y > 0) {
       jumpVelocity -= gravity * dt;
       characterGroup.position.y += jumpVelocity * dt;
@@ -3470,7 +3231,7 @@ try {
       jumpVelocity = 0;
     }
     
-    // Clamp position to boundaries
+    //Clamp pos to boundaries
     characterGroup.position.x = Math.max(Math.min(characterGroup.position.x, 23), -23);
     characterGroup.position.z = Math.max(Math.min(characterGroup.position.z, 23), -18);
     
@@ -3479,16 +3240,11 @@ try {
 
   function updateCamera() {
     if (spectatorMode) {
-      // In spectator mode, camera position is controlled directly
-      // Just apply rotation
       camera.rotation.set(currentRotationX, targetRotationY, 0, 'YXZ');
     } else {
-      // Normal third-person camera
       const eyeHeight = 1.8;
-      
       camera.position.copy(characterGroup.position);
       camera.position.y += eyeHeight;
-      
       camera.rotation.set(currentRotationX, targetRotationY, 0, 'YXZ');
     }
   }
@@ -3497,13 +3253,13 @@ try {
     const showUI = gameStarted && document.pointerLockElement && !paperReadingMode;
     crosshair.style.display = showUI ? 'block' : 'none';
     controlsDisplay.style.display = showUI ? 'block' : 'none';
-    timeDisplay.style.display = showUI ? 'block' : 'none'; // Add time display
+    timeDisplay.style.display = showUI ? 'block' : 'none'; 
   }
 
-  // Pointer lock exit handler - RESTORED TO SHOW HOME OVERLAY
+  // Pointer lock exit 
   document.addEventListener('pointerlockchange', () => {
     if (!document.pointerLockElement && gameStarted && !paperReadingMode) {
-      // Show home overlay when exiting pointer lock (ESC key behavior)
+      // Show home overlay when exiting pointer lock
       openOverlay('home');
       gameStarted = false;
       portalInfoWindow.style.display = 'none';
@@ -3515,19 +3271,18 @@ try {
     updateUIVisibility();
   });
 
-  // ESC key handler - RESTORED TO EXIT POINTER LOCK
+  // ESC key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && gameStarted && document.pointerLockElement && !paperReadingMode) {
-      document.exitPointerLock(); // This will trigger the pointerlockchange event above
+      document.exitPointerLock();
     }
     
-    // Only allow Enter/Space to start game if models are loaded
+    // Only allow Enter/Space to start if models are loaded
     if(document.getElementById('overlay-home').classList.contains('visible') && (e.key==='Enter'||e.key===' ') && allModelsLoaded) {
       closeOverlay('home');
     }
   });
 
-  // Optimized render loop with performance monitoring
   let lastTime = performance.now();
   
   function animate() {
@@ -3535,11 +3290,7 @@ try {
     lastTime = now;
     
     updateUIVisibility();
-    
-    // Update day/night cycle
     updateDayNightCycle();
-    
-    // Update crow animation
     if (crowMixer) {
       crowMixer.update(dt);
     }
@@ -3549,13 +3300,13 @@ try {
       checkPortalView();
     }
     
-    // Rotate models in viewer scenes (optimized)
+    // Rotate models in viewer
     if (activeScene.userData && activeScene.userData.rotatingMesh) {
       activeScene.userData.rotatingMesh.rotation.y += dt * 0.5;
     }
     
     updateCamera();
-    renderer.render(activeScene, camera); // Render the active scene
+    renderer.render(activeScene, camera);
     requestAnimationFrame(animate);
   }
 
@@ -3567,21 +3318,20 @@ try {
     <div style="padding:20px;color:white;background:rgba(0,0,0,0.8)">
       <h2>Error Loading Scene</h2>
       <p>${error.message}</p>
-      <p>Please check the console for more details.</p>
+      <p>console for more details.</p>
     </div>
   `;
 }
 
-// ✅ Add Debug Helper Function
+//Debug
 window.debugWorldBuilder = function() {
   if (worldBuilder) {
     worldBuilder.debugWorldState();
   } else {
-    console.log('❌ World Builder not initialized');
+    console.log('World Builder not initialized');
   }
 };
-
-// ✅ GitHub Pages Compatible Analytics
+//   GitHub Pages Compatible Analytics
 class GitHubPagesAnalytics {
   constructor() {
     this.events = JSON.parse(localStorage.getItem('portfolio_analytics') || '[]');
@@ -3592,11 +3342,9 @@ class GitHubPagesAnalytics {
   generateSessionId() {
     return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
-  
   generateId() {
     return 'event_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
-  
   track(event, data = {}) {
     const eventData = {
       id: this.generateId(),
@@ -3609,21 +3357,16 @@ class GitHubPagesAnalytics {
       viewport: `${window.innerWidth}x${window.innerHeight}`,
       url: window.location.href
     };
-    
     this.events.push(eventData);
     
-    // Keep only last 1000 events (storage limit)
+    // Keep only last 1000 events storage limit
     if (this.events.length > 1000) {
       this.events = this.events.slice(-1000);
     }
-    
     localStorage.setItem('portfolio_analytics', JSON.stringify(this.events));
-    
-    // ✅ Optional: Send to external service (if you want)
     this.sendToExternalService(eventData);
   }
-  
-  // ✅ Can export data for manual review
+  // Can exportfor manual review
   exportData() {
     const blob = new Blob([JSON.stringify(this.events, null, 2)], 
       { type: 'application/json' });
@@ -3635,22 +3378,15 @@ class GitHubPagesAnalytics {
     URL.revokeObjectURL(url);
   }
   
-  // ✅ Optional: Use free external analytics
   sendToExternalService(eventData) {
-    // Google Analytics 4 (free)
+    // Google Analytics 4
     if (typeof gtag !== 'undefined') {
       gtag('event', eventData.event, eventData.data);
     }
-    
-    // Or simple webhook service (like Zapier, IFTTT)
-    // fetch('https://hooks.zapier.com/hooks/catch/YOUR_WEBHOOK/', {
-    //   method: 'POST',
-    //   body: JSON.stringify(eventData)
-    // }).catch(() => {}); // Fail silently
   }
 }
 
-// ✅ GitHub Pages Compatible Error Handling
+// Error Handling
 class StaticErrorReporter {
   constructor() {
     this.errors = JSON.parse(localStorage.getItem('portfolio_errors') || '[]');
@@ -3689,14 +3425,14 @@ class StaticErrorReporter {
     this.errors.push(error);
     console.error('Portfolio Error:', error);
     
-    // Keep last 100 errors
+    //Keep last 100 errors
     if (this.errors.length > 100) {
       this.errors = this.errors.slice(-100);
     }
     
     localStorage.setItem('portfolio_errors', JSON.stringify(this.errors));
     
-    // ✅ Show user-friendly message
+    // msg
     this.showErrorToUser(type, details);
   }
   
@@ -3706,7 +3442,7 @@ class StaticErrorReporter {
     }
   }
   
-  // ✅ Export for debugging
+  //Export debug
   exportErrors() {
     const blob = new Blob([JSON.stringify(this.errors, null, 2)], 
       { type: 'application/json' });
@@ -3718,9 +3454,5 @@ class StaticErrorReporter {
     URL.revokeObjectURL(url);
   }
 }
-
-// Initialize error reporting
 const errorReporter = new StaticErrorReporter();
-
-// Make available for debugging
 window.errorReporter = errorReporter;
