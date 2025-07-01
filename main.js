@@ -1450,13 +1450,19 @@ function closeDesk() {
 
 
 
-// CORS-Friendly Global Kudos System using JSONBin.io
+
+
+
+// Global Kudos System with CORS Proxy (like AO3)
 class DeskKudosSystem {
   constructor() {
     this.userStorageKey = 'finnb24_desk_user_kudos';
-    // Public JSONBin - no API key required for reading
-    this.binId = '676c8a12ad19ca34f8c8f8a1'; // Create this bin first
-    this.apiUrl = 'https://api.jsonbin.io/v3/b/' + this.binId;
+    
+    // Using CORS proxy + CountAPI for global counter
+    this.corsProxy = 'https://api.allorigins.win/raw?url=';
+    this.counterAPI = 'https://api.countapi.xyz';
+    this.namespace = 'finnb24-portfolio';
+    this.key = 'desk-kudos';
     
     this.totalKudos = 0;
     this.userHasGivenKudos = false;
@@ -1473,22 +1479,22 @@ class DeskKudosSystem {
   async loadGlobalKudosCount() {
     try {
       console.log('📊 Loading global kudos count...');
-      const response = await fetch(this.apiUrl + '/latest', {
-        headers: {
-          'X-Bin-Meta': 'false'
-        }
-      });
+      
+      // Use CORS proxy to bypass CORS restrictions
+      const url = `${this.corsProxy}${encodeURIComponent(`${this.counterAPI}/get/${this.namespace}/${this.key}`)}`;
+      const response = await fetch(url);
       
       if (response.ok) {
-        const data = await response.json();
-        this.totalKudos = data.kudos || 0;
+        const text = await response.text();
+        const data = JSON.parse(text);
+        this.totalKudos = data.value || 0;
         console.log(`✅ Global kudos loaded: ${this.totalKudos}`);
       } else {
         console.warn('⚠️ Could not load global kudos, starting at 0');
         this.totalKudos = 0;
       }
     } catch (error) {
-      console.warn('⚠️ JSONBin error, starting at 0:', error);
+      console.warn('⚠️ API error, starting at 0:', error);
       this.totalKudos = 0;
     }
   }
@@ -1537,45 +1543,38 @@ class DeskKudosSystem {
     }
     
     try {
-      // Update kudos count
-      const newCount = this.totalKudos + 1;
-      
-      const response = await fetch(this.apiUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Bin-Meta': 'false'
-        },
-        body: JSON.stringify({
-          kudos: newCount,
-          lastUpdated: new Date().toISOString(),
-          source: 'portfolio-desk'
-        })
-      });
+      // Increment global counter via CORS proxy
+      const url = `${this.corsProxy}${encodeURIComponent(`${this.counterAPI}/hit/${this.namespace}/${this.key}`)}`;
+      const response = await fetch(url);
       
       if (response.ok) {
-        this.totalKudos = newCount;
+        const text = await response.text();
+        const data = JSON.parse(text);
+        
+        // Update with the new global count
+        this.totalKudos = data.value;
         this.userHasGivenKudos = true;
         localStorage.setItem(this.userStorageKey, 'true');
+        
         this.updateDisplay();
         this.showStatus('Thank you for the kudos! 💖✨', 'success');
         
         if (typeof portfolioAnalytics !== 'undefined') {
           portfolioAnalytics.trackInteraction('desk', 'give_kudos', { 
             totalKudos: this.totalKudos,
-            method: 'jsonbin',
+            method: 'global_counter',
             timestamp: new Date().toISOString()
           });
         }
         
-        console.log('✅ Kudos successfully sent! New total:', this.totalKudos);
+        console.log('✅ Global kudos sent! New total:', this.totalKudos);
       } else {
-        throw new Error('JSONBin request failed');
+        throw new Error('Failed to increment global counter');
       }
     } catch (error) {
       console.error('❌ Error giving kudos:', error);
       
-      // Fallback to local storage
+      // Fallback to local increment
       this.totalKudos++;
       this.userHasGivenKudos = true;
       localStorage.setItem(this.userStorageKey, 'true');
@@ -1634,14 +1633,15 @@ class DeskKudosSystem {
       totalKudos: this.totalKudos,
       userHasGivenKudos: this.userHasGivenKudos,
       timestamp: new Date().toISOString(),
-      method: 'jsonbin'
+      method: 'global_counter',
+      isGlobal: true
     };
   }
   
-  async refreshFromAPI() {
+  async refreshFromGlobal() {
     await this.loadGlobalKudosCount();
     this.updateDisplay();
-    console.log('🔄 Refreshed kudos count from JSONBin');
+    console.log('🔄 Refreshed kudos count from global counter');
   }
   
   resetUserKudos() {
@@ -1650,7 +1650,23 @@ class DeskKudosSystem {
     this.updateDisplay();
     console.log('🔄 User kudos status reset');
   }
+  
+  // Test the global counter directly
+  async testGlobalCounter() {
+    try {
+      const url = `${this.corsProxy}${encodeURIComponent(`${this.counterAPI}/get/${this.namespace}/${this.key}`)}`;
+      const response = await fetch(url);
+      const text = await response.text();
+      const data = JSON.parse(text);
+      console.log('🌍 Global counter test:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Global counter test failed:', error);
+      return null;
+    }
+  }
 }
+
 
 
 
