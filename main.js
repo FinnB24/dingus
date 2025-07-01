@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { WorldBuilder } from './worldBuilder.js';
+import { WorldBuilder } from '/worldBuilder.js';
 
 // Portfolio Analytics System - Privacy-First
 class PortfolioAnalytics {
@@ -1447,22 +1447,14 @@ function closeDesk() {
   }
 }
 
-
-
-
-
-
-
-// Global Kudos System with CORS Proxy (like AO3)
+// GitHub Pages Compatible Global Kudos System
 class DeskKudosSystem {
   constructor() {
+    this.storageKey = 'finnb24_desk_kudos_global';
     this.userStorageKey = 'finnb24_desk_user_kudos';
-    
-    // Using CORS proxy + CountAPI for global counter
-    this.corsProxy = 'https://api.allorigins.win/raw?url=';
-    this.counterAPI = 'https://api.countapi.xyz';
-    this.namespace = 'finnb24-portfolio';
-    this.key = 'desk-kudos';
+    this.githubRepo = 'FinnB24/finco'; // Your repo
+    this.issueNumber = 1; // Create issue #1 for kudos storage
+    this.apiUrl = `https://api.github.com/repos/${this.githubRepo}/issues/${this.issueNumber}/comments`;
     
     this.totalKudos = 0;
     this.userHasGivenKudos = false;
@@ -1479,27 +1471,29 @@ class DeskKudosSystem {
   async loadGlobalKudosCount() {
     try {
       console.log('📊 Loading global kudos count...');
-      
-      // Use CORS proxy to bypass CORS restrictions
-      const url = `${this.corsProxy}${encodeURIComponent(`${this.counterAPI}/get/${this.namespace}/${this.key}`)}`;
-      const response = await fetch(url);
+      const response = await fetch(this.apiUrl);
       
       if (response.ok) {
-        const text = await response.text();
-        const data = JSON.parse(text);
-        this.totalKudos = data.value || 0;
+        const comments = await response.json();
+        
+        // Count comments that contain "KUDOS_VOTE"
+        this.totalKudos = comments.filter(comment => 
+          comment.body && comment.body.includes('KUDOS_VOTE')
+        ).length;
+        
         console.log(`✅ Global kudos loaded: ${this.totalKudos}`);
       } else {
-        console.warn('⚠️ Could not load global kudos, starting at 0');
-        this.totalKudos = 0;
+        console.warn('⚠️ Could not load global kudos, using local count');
+        this.totalKudos = parseInt(localStorage.getItem(this.storageKey) || '0');
       }
     } catch (error) {
-      console.warn('⚠️ API error, starting at 0:', error);
-      this.totalKudos = 0;
+      console.warn('⚠️ GitHub API error, using local storage:', error);
+      this.totalKudos = parseInt(localStorage.getItem(this.storageKey) || '0');
     }
   }
   
   loadUserKudosStatus() {
+    // Check if user has already given kudos (browser-specific)
     const userKudos = localStorage.getItem(this.userStorageKey);
     this.userHasGivenKudos = userKudos === 'true';
   }
@@ -1513,6 +1507,7 @@ class DeskKudosSystem {
     if (kudosButton) {
       kudosButton.addEventListener('click', () => this.giveKudos());
       
+      // Add hover effects
       kudosButton.addEventListener('mouseenter', () => {
         if (!this.userHasGivenKudos) {
           kudosButton.style.background = 'linear-gradient(145deg, #ffcc00, #d4af37)';
@@ -1535,55 +1530,99 @@ class DeskKudosSystem {
       return;
     }
     
+    // Show loading state
     this.showStatus('Sending kudos... ✨', 'info');
     const button = document.getElementById('kudos-button');
+    const originalText = button ? button.innerHTML : '';
     if (button) {
       button.innerHTML = '<span>⏳</span><span>Sending...</span>';
       button.disabled = true;
     }
     
     try {
-      // Increment global counter via CORS proxy
-      const url = `${this.corsProxy}${encodeURIComponent(`${this.counterAPI}/hit/${this.namespace}/${this.key}`)}`;
-      const response = await fetch(url);
+      // Send kudos to GitHub API
+      const success = await this.sendKudosToGitHub();
       
-      if (response.ok) {
-        const text = await response.text();
-        const data = JSON.parse(text);
-        
-        // Update with the new global count
-        this.totalKudos = data.value;
+      if (success) {
+        // Increment local count immediately for better UX
+        this.totalKudos++;
         this.userHasGivenKudos = true;
+        
+        // Save to localStorage as backup
+        localStorage.setItem(this.storageKey, this.totalKudos.toString());
         localStorage.setItem(this.userStorageKey, 'true');
         
+        // Update display
         this.updateDisplay();
+        
+        // Show success message
         this.showStatus('Thank you for the kudos! 💖✨', 'success');
         
+        // Track analytics
         if (typeof portfolioAnalytics !== 'undefined') {
           portfolioAnalytics.trackInteraction('desk', 'give_kudos', { 
             totalKudos: this.totalKudos,
-            method: 'global_counter',
+            method: 'github_api',
             timestamp: new Date().toISOString()
           });
         }
-        
-        console.log('✅ Global kudos sent! New total:', this.totalKudos);
       } else {
-        throw new Error('Failed to increment global counter');
+        throw new Error('Failed to send kudos');
       }
     } catch (error) {
       console.error('❌ Error giving kudos:', error);
       
-      // Fallback to local increment
+      // Fallback to local storage
       this.totalKudos++;
       this.userHasGivenKudos = true;
+      localStorage.setItem(this.storageKey, this.totalKudos.toString());
       localStorage.setItem(this.userStorageKey, 'true');
       this.updateDisplay();
+      
       this.showStatus('Kudos saved locally! (Network error) 💖', 'success');
     } finally {
+      // Reset button
       if (button) {
         button.disabled = false;
       }
+    }
+  }
+  
+  async sendKudosToGitHub() {
+    try {
+      const kudosData = {
+        body: `KUDOS_VOTE
+        
+🎨 **Portfolio Kudos Given!**
+
+- **Timestamp:** ${new Date().toISOString()}
+- **From:** Anonymous Visitor
+- **Type:** Workspace Appreciation
+- **Browser:** ${navigator.userAgent.substring(0, 50)}...
+- **Page:** ${window.location.href}
+
+*This kudos was given through the interactive 3D portfolio workspace.*`
+      };
+      
+      const response = await fetch(this.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify(kudosData)
+      });
+      
+      if (response.status === 201) {
+        console.log('✅ Kudos successfully sent to GitHub!');
+        return true;
+      } else {
+        console.warn('⚠️ GitHub API response:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ GitHub API error:', error);
+      return false;
     }
   }
   
@@ -1598,6 +1637,7 @@ class DeskKudosSystem {
     }
     
     if (buttonElement && this.userHasGivenKudos) {
+      // Update button to show already given state
       buttonElement.style.background = 'linear-gradient(145deg, #666, #444)';
       buttonElement.style.cursor = 'default';
       buttonElement.style.opacity = '0.7';
@@ -1620,6 +1660,7 @@ class DeskKudosSystem {
       statusElement.textContent = message;
       statusElement.style.color = colors[type] || colors.info;
       
+      // Clear after 4 seconds
       setTimeout(() => {
         if (statusElement) {
           statusElement.textContent = '';
@@ -1628,50 +1669,31 @@ class DeskKudosSystem {
     }
   }
   
+  // Get current stats
   getStats() {
     return {
       totalKudos: this.totalKudos,
       userHasGivenKudos: this.userHasGivenKudos,
       timestamp: new Date().toISOString(),
-      method: 'global_counter',
-      isGlobal: true
+      method: 'github_api'
     };
   }
   
-  async refreshFromGlobal() {
+  // Admin function to refresh count from GitHub
+  async refreshFromGitHub() {
     await this.loadGlobalKudosCount();
     this.updateDisplay();
-    console.log('🔄 Refreshed kudos count from global counter');
+    console.log('🔄 Refreshed kudos count from GitHub');
   }
   
+  // Admin function to reset local user status (for testing)
   resetUserKudos() {
     localStorage.removeItem(this.userStorageKey);
     this.userHasGivenKudos = false;
     this.updateDisplay();
     console.log('🔄 User kudos status reset');
   }
-  
-  // Test the global counter directly
-  async testGlobalCounter() {
-    try {
-      const url = `${this.corsProxy}${encodeURIComponent(`${this.counterAPI}/get/${this.namespace}/${this.key}`)}`;
-      const response = await fetch(url);
-      const text = await response.text();
-      const data = JSON.parse(text);
-      console.log('🌍 Global counter test:', data);
-      return data;
-    } catch (error) {
-      console.error('❌ Global counter test failed:', error);
-      return null;
-    }
-  }
 }
-
-
-
-
-
-      
 
 // Initialize kudos system
 const deskKudosSystem = new DeskKudosSystem();
