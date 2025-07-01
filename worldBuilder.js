@@ -4,42 +4,43 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 class WorldBuilder {
-  constructor(scene, camera, renderer) {
-    this.scene = scene;
-    this.camera = camera;
-    this.renderer = renderer;
-    
-    // World building state
-    this.isBuilderMode = false;
-    this.availableModels = new Map(); // filename -> model data
-    this.placedObjects = []; // objects placed in world
-    this.selectedModel = null;
-    this.selectedObject = null;
-    this.currentMode = 'select'; // select, place, rotate, scale, move
-    
-    // 🎯 ADD COLLISION BOX TRACKING
-    this.placedCollisionBoxes = []; // Track collision boxes separately
-    
-    // Controls
-    this.keys = {};
-    this.raycaster = new THREE.Raycaster();
-    this.mouse = new THREE.Vector2();
-    
-    // Loader setup
-    this.loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-    this.loader.setDRACOLoader(dracoLoader);
-    
-    // UI elements
-    this.rotationPanel = null;
-    this.queuedWorldData = null;
-    
-    // 🎯 ADD BUILT-IN COLLISION SHAPES
-    this.addBuiltInCollisionShapes();
-    
-    this.init();
-  }
+    constructor(scene, camera, renderer) {
+        this.scene = scene;
+        this.camera = camera;
+        this.renderer = renderer;
+
+        // World building state
+        this.isBuilderMode = false;
+        this.availableModels = new Map(); // filename -> model data
+        this.placedObjects = []; // objects placed in world
+        this.selectedModel = null;
+        this.selectedObject = null;
+        this.currentMode = 'select'; // select, place, rotate, scale, move
+
+        // ADD COLLISION BOX TRACKING
+        this.placedCollisionBoxes = []; // Track collision boxes separately
+
+        // Controls
+        this.keys = {};
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+
+        // Loader setup
+        this.loader = new GLTFLoader();
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+        this.loader.setDRACOLoader(dracoLoader);
+
+        // UI elements
+        this.rotationPanel = null;
+        this.queuedWorldData = null;
+
+        // ADD BUILT-IN COLLISION SHAPES
+        this.addBuiltInCollisionShapes();
+
+        this.init();
+    }
+}
   
   // 🎯 ADD BUILT-IN COLLISION SHAPES TO MODEL LIBRARY
   addBuiltInCollisionShapes() {
