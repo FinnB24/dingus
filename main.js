@@ -1452,7 +1452,7 @@ class DeskKudosSystem {
   constructor() {
     this.storageKey = 'finnb24_desk_kudos_global';
     this.userStorageKey = 'finnb24_desk_user_kudos';
-    this.githubRepo = 'FinnB24/finco'; // Your repo
+    this.githubRepo = 'FinnB24/dingus'; // Your repo
     this.issueNumber = 1; // Create issue #1 for kudos storage
     this.apiUrl = `https://api.github.com/repos/${this.githubRepo}/issues/${this.issueNumber}/comments`;
     
