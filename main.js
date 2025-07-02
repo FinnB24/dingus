@@ -6,440 +6,7 @@ import { InventorySystem } from './inventory.js';
 import { ModelLoader } from './modelLoader.js';
 import { InfoWindows } from './infoWindows.js';
 
-// Portfolio Analytics System Privacy-First
-class PortfolioAnalytics {
-  constructor() {
-    this.sessionId = this.generateSessionId();
-    this.sessionStart = Date.now();
-    this.events = [];
-    this.currentScene = 'main';
-    this.sceneStartTime = Date.now();
-    
-    // Initialize analytics
-    this.init();
-  }
-  
-  generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }
-  
-  init() {
-    //Track initial page load
-    this.track('portfolio_loaded', {
-      userAgent: navigator.userAgent,
-      screenSize: `${window.innerWidth}x${window.innerHeight}`,
-      platform: navigator.platform,
-      language: navigator.language,
-      timestamp: new Date().toISOString()
-    });
-    
-    //Track page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      this.track('visibility_change', { 
-        hidden: document.hidden,
-        timestamp: new Date().toISOString()
-      });
-    });
-    
-    //Track when user leaves
-    window.addEventListener('beforeunload', () => {
-      this.track('session_end', {
-        totalTime: Date.now() - this.sessionStart,
-        timestamp: new Date().toISOString()
-      });
-      this.saveToStorage();
-    });
-    
-    console.log('Portfolio Analytics initialized for FinnB24');
-  }
-  
-  track(event, data = {}) {
-    const eventData = {
-      sessionId: this.sessionId,
-      timestamp: Date.now(),
-      event,
-      data: {
-        ...data,
-        currentScene: this.currentScene,
-        sessionTime: Date.now() - this.sessionStart,
-        url: window.location.href
-      }
-    };
-    
-    this.events.push(eventData);
-    
-    //Auto-save every 10 events or immediately for important events
-    const importantEvents = ['portfolio_loaded', 'session_end', 'error_occurred'];
-    if (this.events.length >= 10 || importantEvents.includes(event)) {
-      this.saveToStorage();
-    }
-    
-    //Debug logging
-    console.log('Analytics:', event, data);
-  }
-  
-  trackSceneChange(newScene) {
-    const timeInPreviousScene = Date.now() - this.sceneStartTime;
-    
-    this.track('scene_change', {
-      fromScene: this.currentScene,
-      toScene: newScene,
-      timeSpentInPrevious: timeInPreviousScene,
-      timestamp: new Date().toISOString()
-    });
-    
-    this.currentScene = newScene;
-    this.sceneStartTime = Date.now();
-  }
-  
-  trackInteraction(element, action, details = {}) {
-    this.track('user_interaction', {
-      element,
-      action,
-      details,
-      timestamp: new Date().toISOString()
-    });
-  }
-  
-  saveToStorage() {
-    try {
-      const existingData = JSON.parse(localStorage.getItem('finnb24_portfolio_analytics') || '[]');
-      const allEvents = [...existingData, ...this.events];
-      
-      // Keep only last 500 events to prevent storage overflow
-      const recentEvents = allEvents.slice(-500);
-      
-      localStorage.setItem('finnb24_portfolio_analytics', JSON.stringify(recentEvents));
-      this.events = []; // Clear current events after saving
-      
-    } catch (error) {
-      console.error('Failed to save analytics:', error);
-    }
-  }
-  
-  // Get analytics data for viewing
-  getAnalytics() {
-    const stored = JSON.parse(localStorage.getItem('finnb24_portfolio_analytics') || '[]');
-    return [...stored, ...this.events];
-  }
-  
-  // Generate analytics summary
-  getSummary() {
-    const allEvents = this.getAnalytics();
-    const summary = {
-      totalSessions: new Set(allEvents.map(e => e.sessionId)).size,
-      totalEvents: allEvents.length,
-      scenesVisited: {},
-      interactions: {},
-      averageSessionTime: 0,
-      mostPopularScene: '',
-      deviceTypes: {},
-      timestamps: {
-        firstVisit: allEvents[0]?.timestamp || Date.now(),
-        lastActivity: allEvents[allEvents.length - 1]?.timestamp || Date.now()
-      }
-    };
-    
-    // Process events
-    allEvents.forEach(event => {
-      // Count scene visits
-      if (event.event === 'scene_change') {
-        const scene = event.data.toScene;
-        summary.scenesVisited[scene] = (summary.scenesVisited[scene] || 0) + 1;
-      }
-      
-      // Count interactions
-      if (event.event === 'user_interaction') {
-        const element = event.data.element;
-        summary.interactions[element] = (summary.interactions[element] || 0) + 1;
-      }
-      
-      // Track device types
-      if (event.event === 'portfolio_loaded') {
-        const isMobile = /Mobile|Android|iPhone|iPad/.test(event.data.userAgent);
-        const deviceType = isMobile ? 'mobile' : 'desktop';
-        summary.deviceTypes[deviceType] = (summary.deviceTypes[deviceType] || 0) + 1;
-      }
-    });
-    
-    // Find most popular scene
-    summary.mostPopularScene = Object.keys(summary.scenesVisited).reduce((a, b) => 
-      summary.scenesVisited[a] > summary.scenesVisited[b] ? a : b, 'main'
-    );
-    
-    return summary;
-  }
-  
-  // Clear all analytics data
-  clearData() {
-    localStorage.removeItem('finnb24_portfolio_analytics');
-    this.events = [];
-    console.log('Analytics data cleared');
-  }
-  
-  // Export analytics data
-  exportData() {
-    const data = {
-      summary: this.getSummary(),
-      events: this.getAnalytics(),
-      exportedAt: new Date().toISOString(),
-      portfolioOwner: 'FinnB24'
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `finnb24_portfolio_analytics_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-}
-
-
-
-const portfolioAnalytics = new PortfolioAnalytics();
-
-window.portfolioAnalytics = portfolioAnalytics;
-// Initialize InfoWindows after portfolioAnalytics is created
-const infoWindows = new InfoWindows(portfolioAnalytics);
-
-// Enhanced Analytics Dashboard
-if (window.location.search.includes('analytics=true')) {
-  setTimeout(() => {
-    const dashboard = document.createElement('div');
-    dashboard.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.95);
-      color: white;
-      font-family: 'Courier New', monospace;
-      padding: 20px;
-      overflow-y: auto;
-      z-index: 9999;
-      line-height: 1.4;
-    `;
-    
-    function generateDetailedAnalytics() {
-      const allEvents = window.portfolioAnalytics ? window.portfolioAnalytics.getAnalytics() : [];
-      const summary = window.portfolioAnalytics ? window.portfolioAnalytics.getSummary() : {};
-      
-      //  breakdown by category
-      const sceneStats = {};
-      const interactionStats = {};
-      const sessionStats = [];
-      const timeSpentInScenes = {};
-      
-      // Process all events for detailed stats
-      allEvents.forEach(event => {
-        // Scene statistics
-        if (event.event === 'scene_change') {
-          const scene = event.data.toScene;
-          if (!sceneStats[scene]) {
-            sceneStats[scene] = {
-              visits: 0,
-              totalTimeSpent: 0,
-              averageTime: 0,
-              lastVisited: null
-            };
-          }
-          sceneStats[scene].visits++;
-          sceneStats[scene].lastVisited = event.timestamp;
-          
-          if (event.data.timeSpentInPrevious) {
-            const prevScene = event.data.fromScene;
-            if (!timeSpentInScenes[prevScene]) timeSpentInScenes[prevScene] = [];
-            timeSpentInScenes[prevScene].push(event.data.timeSpentInPrevious);
-          }
-        }
-        
-        // Interaction statistics
-        if (event.event === 'user_interaction') {
-          const element = event.data.element;
-          const action = event.data.action;
-          const key = `${element}_${action}`;
-          
-          if (!interactionStats[key]) {
-            interactionStats[key] = {
-              count: 0,
-              element: element,
-              action: action,
-              details: [],
-              lastInteraction: null
-            };
-          }
-          interactionStats[key].count++;
-          interactionStats[key].lastInteraction = event.timestamp;
-          if (event.data.details) {
-            interactionStats[key].details.push(event.data.details);
-          }
-        }
-        
-        // Session data
-        if (event.event === 'portfolio_loaded') {
-          sessionStats.push({
-            sessionId: event.sessionId,
-            timestamp: event.timestamp,
-            userAgent: event.data.userAgent,
-            screenSize: event.data.screenSize,
-            platform: event.data.platform,
-            language: event.data.language
-          });
-        }
-      });
-      
-      // average time spent in each scene
-      Object.keys(timeSpentInScenes).forEach(scene => {
-        if (sceneStats[scene]) {
-          const times = timeSpentInScenes[scene];
-          const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
-          sceneStats[scene].averageTime = avgTime;
-          sceneStats[scene].totalTimeSpent = times.reduce((a, b) => a + b, 0);
-        }
-      });
-      
-      return {
-        summary,
-        sceneStats,
-        interactionStats,
-        sessionStats,
-        recentEvents: allEvents.slice(-20)
-      };
-    }
-    
-    function formatTime(milliseconds) {
-      const seconds = Math.floor(milliseconds / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      
-      if (hours > 0) return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
-      if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-      return `${seconds}s`;
-    }
-    
-    function formatDate(timestamp) {
-      return new Date(timestamp).toLocaleString();
-    }
-    
-    function refreshDashboard() {
-      const analytics = generateDetailedAnalytics();
-      
-      dashboard.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #00ffff; padding-bottom: 10px;">
-          <h1 style="color: #00ffff; margin: 0;">Analytics Dashboard</h1>
-          <div>
-            <button onclick="refreshDashboard()" style="margin-right: 10px; padding: 8px 15px; background: #004455; color: white; border: 1px solid #00ffff; border-radius: 4px; cursor: pointer;">Refresh</button>
-            <button onclick="window.portfolioAnalytics.exportData()" style="margin-right: 10px; padding: 8px 15px; background: #004455; color: white; border: 1px solid #00ffff; border-radius: 4px; cursor: pointer;">Export</button>
-            <button onclick="window.portfolioAnalytics.clearData(); refreshDashboard();" style="margin-right: 10px; padding: 8px 15px; background: #440000; color: white; border: 1px solid #ff0000; border-radius: 4px; cursor: pointer;">Clear</button>
-            <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 8px 15px; background: #333; color: white; border: 1px solid #666; border-radius: 4px; cursor: pointer;">✕ Close</button>
-          </div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-          <!-- Summary Stats -->
-          <div style="background: rgba(0,255,255,0.1); padding: 15px; border-radius: 8px; border: 1px solid #00ffff;">
-            <h2 style="color: #00ffff; margin-top: 0;">📈 Overview Summary</h2>
-            <div><strong>Total Sessions:</strong> ${analytics.summary.totalSessions || 0}</div>
-            <div><strong>Total Events:</strong> ${analytics.summary.totalEvents || 0}</div>
-            <div><strong>Most Popular Scene:</strong> ${analytics.summary.mostPopularScene || 'main'}</div>
-            <div><strong>Total Interactions:</strong> ${Object.keys(analytics.interactionStats).length}</div>
-            <div><strong>Last Activity:</strong> ${analytics.summary.timestamps ? formatDate(analytics.summary.timestamps.lastActivity) : 'None'}</div>
-          </div>
-          
-          <!-- Device Stats -->
-          <div style="background: rgba(255,255,0,0.1); padding: 15px; border-radius: 8px; border: 1px solid #ffff00;">
-            <h2 style="color: #ffff00; margin-top: 0;">Device Statistics</h2>
-            ${Object.entries(analytics.summary.deviceTypes || {}).map(([device, count]) => 
-              `<div><strong>${device.charAt(0).toUpperCase() + device.slice(1)}:</strong> ${count} visits</div>`
-            ).join('')}
-            ${analytics.sessionStats.length > 0 ? `
-              <div style="margin-top: 10px; font-size: 12px; color: #ccc;">
-                <strong>Latest Session:</strong><br>
-                Platform: ${analytics.sessionStats[analytics.sessionStats.length - 1].platform}<br>
-                Screen: ${analytics.sessionStats[analytics.sessionStats.length - 1].screenSize}<br>
-                Language: ${analytics.sessionStats[analytics.sessionStats.length - 1].language}
-              </div>
-            ` : ''}
-          </div>
-        </div>
-        
-        <!-- Scene Statistics -->
-        <div style="background: rgba(0,255,0,0.1); padding: 15px; border-radius: 8px; border: 1px solid #00ff00; margin-bottom: 20px;">
-          <h2 style="color: #00ff00; margin-top: 0;">Scene/Gallery Statistics</h2>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-            ${Object.entries(analytics.sceneStats).map(([scene, stats]) => `
-              <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">
-                <h3 style="margin: 0 0 8px 0; color: #90ee90;">${scene.replace('gallery', '').replace('3D', '3D Art Gallery')}</h3>
-                <div><strong>Visits:</strong> ${stats.visits}</div>
-                <div><strong>Avg Time:</strong> ${formatTime(stats.averageTime || 0)}</div>
-                <div><strong>Total Time:</strong> ${formatTime(stats.totalTimeSpent || 0)}</div>
-                <div style="font-size: 11px; color: #aaa;"><strong>Last Visit:</strong> ${stats.lastVisited ? formatDate(stats.lastVisited) : 'Never'}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        
-        <!-- Interaction Statistics -->
-        <div style="background: rgba(255,0,255,0.1); padding: 15px; border-radius: 8px; border: 1px solid #ff00ff; margin-bottom: 20px;">
-          <h2 style="color: #ff00ff; margin-top: 0;">Interactive Elements Usage</h2>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
-            ${Object.entries(analytics.interactionStats).map(([key, stats]) => {
-              const elementNames = {
-                'paper': 'Creative Journey Letter',
-                'book': 'Contact Grimoire', 
-                'scroll': 'Feedback Scroll',
-                'tombstone': 'Ancient Tombstone',
-                'feedback_form': 'Feedback Form'
-              };
-              const displayName = elementNames[stats.element] || stats.element;
-              
-              return `
-                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">
-                  <h3 style="margin: 0 0 8px 0; color: #ff99ff;">${displayName}</h3>
-                  <div><strong>Action:</strong> ${stats.action}</div>
-                  <div><strong>Count:</strong> ${stats.count}</div>
-                  <div style="font-size: 11px; color: #aaa;"><strong>Last Used:</strong> ${stats.lastInteraction ? formatDate(stats.lastInteraction) : 'Never'}</div>
-                  ${stats.details.length > 0 ? `
-                    <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
-                      <strong>Details:</strong> ${JSON.stringify(stats.details[stats.details.length - 1])}
-                    </div>
-                  ` : ''}
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-        
-        <!-- Recent Events -->
-        <div style="background: rgba(255,165,0,0.1); padding: 15px; border-radius: 8px; border: 1px solid #ffa500;">
-          <h2 style="color: #ffa500; margin-top: 0;">⏰ Recent Events (Last 20)</h2>
-          <div style="max-height: 400px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;">
-            <pre style="margin: 0; font-size: 11px; white-space: pre-wrap;">${JSON.stringify(analytics.recentEvents, null, 2)}</pre>
-          </div>
-        </div>
-        
-        <!-- Raw Summary Data -->
-        <div style="background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; border: 1px solid #808080; margin-top: 20px;">
-          <h2 style="color: #808080; margin-top: 0;">Raw Summary Data</h2>
-          <div style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;">
-            <pre style="margin: 0; font-size: 11px; white-space: pre-wrap;">${JSON.stringify(analytics.summary, null, 2)}</pre>
-          </div>
-        </div>
-      `;
-    }
-    
-    // refresh function globally available
-    window.refreshDashboard = refreshDashboard;
-    
-    // Initial dashboard load
-    refreshDashboard();
-    
-    document.body.appendChild(dashboard);
-  }, 1000);
-}
+const infoWindows = new InfoWindows();
 
 let gameStarted = false;
 let currentScene = 'main'; // Track  scene 
@@ -2130,7 +1697,7 @@ try {
 
   // Scene switching
   function switchToGallery() {
-    portfolioAnalytics.trackSceneChange('gallery3D');
+    
     currentScene = 'gallery';
     activeScene = galleryScene;
     spectatorMode = false;
@@ -2147,7 +1714,7 @@ try {
   }
 
   function switchToMain() {
-    portfolioAnalytics.trackSceneChange('main');
+    
     currentScene = 'main';
     activeScene = scene;
     spectatorMode = false;
@@ -2164,7 +1731,7 @@ try {
   }
 
   function switchToModelViewer(artIndex) {
-    portfolioAnalytics.trackSceneChange(`modelViewer_${artPieces[artIndex].name}`);
+    
     spectatorMode = true;
     
     const sceneMap = {
@@ -2210,7 +1777,7 @@ try {
   }
 
   function openPaper() {
-    portfolioAnalytics.trackInteraction('paper', 'read', { name: 'Creative Journey Letter' });
+    
     paperReadingMode = true;
     paperOverlay.style.display = 'block';
     
@@ -2233,7 +1800,7 @@ try {
   }
 
   function openTombstone() {
-    portfolioAnalytics.trackInteraction('tombstone', 'read', { name: 'Ancient Tombstone' });
+    
     paperReadingMode = true; 
     tombstoneOverlay.style.display = 'block';
     
@@ -2254,7 +1821,7 @@ try {
   }
 
   function openBook() {
-    portfolioAnalytics.trackInteraction('book', 'read', { name: 'Contact Grimoire' });
+    
     paperReadingMode = true; 
     bookOverlay.style.display = 'block';
     
@@ -2275,7 +1842,7 @@ try {
   }
 
   function openScroll() {
-    portfolioAnalytics.trackInteraction('scroll', 'open', { name: 'Feedback Scroll' });
+    
     paperReadingMode = true;
     scrollOverlay.style.display = 'block';
     
@@ -2925,60 +2492,6 @@ window.debugWorldBuilder = function() {
     console.log('World Builder not initialized');
   }
 };
-//   GitHub Pages Compatible Analytics
-class GitHubPagesAnalytics {
-  constructor() {
-    this.events = JSON.parse(localStorage.getItem('portfolio_analytics') || '[]');
-    this.sessionId = this.generateSessionId();
-    this.startTime = Date.now();
-  }
-  
-  generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }
-  generateId() {
-    return 'event_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }
-  track(event, data = {}) {
-    const eventData = {
-      id: this.generateId(),
-      timestamp: new Date().toISOString(),
-      event,
-      data,
-      sessionId: this.sessionId,
-      sessionTime: Date.now() - this.startTime,
-      userAgent: navigator.userAgent,
-      viewport: `${window.innerWidth}x${window.innerHeight}`,
-      url: window.location.href
-    };
-    this.events.push(eventData);
-    
-    // Keep only last 1000 events storage limit
-    if (this.events.length > 1000) {
-      this.events = this.events.slice(-1000);
-    }
-    localStorage.setItem('portfolio_analytics', JSON.stringify(this.events));
-    this.sendToExternalService(eventData);
-  }
-  // Can exportfor manual review
-  exportData() {
-    const blob = new Blob([JSON.stringify(this.events, null, 2)], 
-      { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `portfolio-analytics-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-  
-  sendToExternalService(eventData) {
-    // Google Analytics 4
-    if (typeof gtag !== 'undefined') {
-      gtag('event', eventData.event, eventData.data);
-    }
-  }
-}
 
 // Error Handling
 class StaticErrorReporter {
