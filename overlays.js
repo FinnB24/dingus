@@ -1,10 +1,7 @@
-/**
- * Handles all overlay windows in the 3D portfolio
- */
 class Overlays {
   constructor(portfolioAnalytics = null) {
     this.portfolioAnalytics = portfolioAnalytics || {
-      trackInteraction: () => {} // No-op function if analytics not provided
+      trackInteraction: () => {}
     };
     
     this.paperReadingMode = false;
@@ -13,19 +10,19 @@ class Overlays {
     this.bookOverlay = null;
     this.scrollOverlay = null;
     
-    // Create all overlays
+    //all overlays
     this.createPaperOverlay();
     this.createTombstoneOverlay();
     this.createBookOverlay();
     this.createScrollOverlay();
     
-    // Setup form submission handling
+    //form submission
     this.formSubmissionSetup = false;
     
-    // Keyboard handler for ESC key
+    //Keyboard handler for ESC
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.paperReadingMode) {
-        // Close any open overlay when ESC is pressed
+        //close any open overlay when pressed
         if (this.paperOverlay.style.display === 'block') this.closePaper();
         if (this.tombstoneOverlay.style.display === 'block') this.closeTombstone();
         if (this.bookOverlay.style.display === 'block') this.closeBook();
@@ -34,13 +31,11 @@ class Overlays {
     });
   }
   
-  
   isPaperReadingMode() {
     return this.paperReadingMode;
   }
   
    createPaperOverlay() {
-    // Paper overlay creation remains the same
     this.paperOverlay = document.createElement('div');
     this.paperOverlay.id = 'paper-overlay';
     this.paperOverlay.style.cssText = `
@@ -106,7 +101,6 @@ class Overlays {
 
     closeButton.addEventListener('click', () => {
       this.closePaper();
-      // Call the global callback function after closing
       if (typeof window.onOverlayClose === 'function') {
         window.onOverlayClose();
       }
@@ -136,7 +130,6 @@ class Overlays {
   }
   
   createTombstoneOverlay() {
-    // Tombstone overlay creation remains the same
     this.tombstoneOverlay = document.createElement('div');
     this.tombstoneOverlay.id = 'tombstone-overlay';
     this.tombstoneOverlay.style.cssText = `
@@ -208,7 +201,6 @@ class Overlays {
 
     tombstoneCloseButton.addEventListener('click', () => {
       this.closeTombstone();
-      // Call the global callback function after closing
       if (typeof window.onOverlayClose === 'function') {
         window.onOverlayClose();
       }
@@ -240,7 +232,6 @@ class Overlays {
 
   
   createBookOverlay() {
-    // Book overlay creation remains the same
     this.bookOverlay = document.createElement('div');
     this.bookOverlay.id = 'book-overlay';
     this.bookOverlay.style.cssText = `
@@ -312,7 +303,6 @@ class Overlays {
 
     bookCloseButton.addEventListener('click', () => {
       this.closeBook();
-      // Call the global callback function after closing
       if (typeof window.onOverlayClose === 'function') {
         window.onOverlayClose();
       }
@@ -343,7 +333,6 @@ class Overlays {
   
   
   createScrollOverlay() {
-    // Scroll overlay creation remains the same
     this.scrollOverlay = document.createElement('div');
     this.scrollOverlay.id = 'scroll-overlay';
     this.scrollOverlay.style.cssText = `
@@ -411,7 +400,6 @@ class Overlays {
 
     scrollCloseButton.addEventListener('click', () => {
       this.closeScroll();
-      // Call the global callback function after closing
       if (typeof window.onOverlayClose === 'function') {
         window.onOverlayClose();
       }
@@ -504,8 +492,7 @@ class Overlays {
           console.log('Form already submitting, ignoring duplicate submission');
           return;
         }
-        
-        // Get form data
+        //form data
         const formData = new FormData(form);
         const message = formData.get('message').trim();
         
@@ -521,8 +508,7 @@ class Overlays {
           formStatus.style.display = 'block';
           return;
         }
-        
-        // Set submitting flag
+        //submitting flag
         isSubmitting = true;
         
         // Update button
@@ -583,7 +569,7 @@ class Overlays {
             </div>
           `;
         } finally {
-          // Reset submitting flag
+          //Reset submitting flag
           isSubmitting = false;
           submitBtn.innerHTML = 'yeet.';
           submitBtn.disabled = false;
@@ -676,7 +662,6 @@ class Overlays {
       this.portfolioAnalytics.trackInteraction('overlay', 'open_scroll');
     }
     
-    // Make sure form submission is setup when the scroll is opened
     this.setupFormSubmission();
   }
   
