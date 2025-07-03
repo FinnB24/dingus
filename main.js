@@ -758,6 +758,12 @@ try {
 } catch (error) {
   console.error('Failed to initialize ModelLoader:', error);
 }
+
+
+
+
+
+
   // 3d galleyy scene=======================================
   
   //sky
@@ -1230,11 +1236,11 @@ try {
     console.log('Returned to gallery from model viewer');
   }
 
- function checkPortalView() {
-if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && inventorySystem.isOpen)) return;
+function checkPortalView() {
+  if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && inventorySystem.isOpen)) return;
   const cameraDirection = new THREE.Vector3(0, 0, -1);
   cameraDirection.applyQuaternion(camera.quaternion);
-  raycaster.setFromCamera(cameraDirection, camera);
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
 
   // Get all interactive meshes
   let allMeshes = {
@@ -1300,7 +1306,7 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     }
 
     // Get key meshes
-    if (modelLoader.models.key && inventorySystem) {
+    if (modelLoader.models.key) {
       modelLoader.models.key.traverse((child) => {
         if (child.isMesh) {
           child.userData.parentKey = modelLoader.models.key;
@@ -1310,7 +1316,7 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     }
 
     // Get door meshes
-    if (modelLoader.models.door && inventorySystem) {
+    if (modelLoader.models.door) {
       modelLoader.models.door.traverse((child) => {
         if (child.isMesh) {
           child.userData.parentDoor = modelLoader.models.door;
@@ -1340,9 +1346,14 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
   
   // 1. Check for key interaction
   const keyIntersects = raycaster.intersectObjects(allMeshes.keyMeshes);
-  let targetKey = null;
-  let keyDistance = Infinity;
+let targetKey = null;
+let keyDistance = Infinity;
 
+// Skip key detection if the key has been collected (not in scene anymore)
+if (modelLoader.models.key && !modelLoader.models.key.parent) {
+  // Key has been removed from scene, skip detection
+  window.currentKeyInView = null;
+} else {
   for (const intersect of keyIntersects) {
     const distance = intersect.distance;
     if (distance <= 3 && distance < keyDistance) {
@@ -1351,11 +1362,12 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     }
   }
 
-  if (targetKey && targetKey.userData.collectible) {
+  if (targetKey) {
     infoWindows.showKeyInfo(targetKey);
     window.currentKeyInView = targetKey;
     return;
   }
+}
 
   // 2. Check for door interaction
   const doorIntersects = raycaster.intersectObjects(allMeshes.doorMeshes);
@@ -1370,20 +1382,19 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     }
   }
 
-  if (targetDoor && inventorySystem) {
-    const hint = inventorySystem.getInteractionHint(targetDoor);
-    if (hint) {
-      infoWindows.showDoorInfo(targetDoor, hint);
-      window.currentDoorInView = targetDoor;
-      return;
+  if (targetDoor) {
+    // Get hint if inventory system exists, otherwise use default hint
+    let hint = "Requires a golden key";
+    if (inventorySystem) {
+      const inventoryHint = inventorySystem.getInteractionHint(targetDoor);
+      if (inventoryHint) {
+        hint = inventoryHint;
+      }
     }
+    infoWindows.showDoorInfo(targetDoor, hint);
+    window.currentDoorInView = targetDoor;
+    return;
   }
-
-  // If no key or door interaction, hide those windows
-  if (infoWindows.windows.key) infoWindows.windows.key.style.display = 'none';
-  if (infoWindows.windows.door) infoWindows.windows.door.style.display = 'none';
-  window.currentKeyInView = null;
-  window.currentDoorInView = null;
 
   // 3. Check for paper
   const paperIntersects = raycaster.intersectObjects(allMeshes.paperMeshes);
@@ -1405,6 +1416,8 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     currentTombstoneInView = null;
     currentBookInView = null;
     currentScrollInView = null;
+    window.currentKeyInView = null;
+    window.currentDoorInView = null;
     return;
   }
 
@@ -1427,6 +1440,8 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     currentPortalInView = null;
     currentTombstoneInView = null;
     currentBookInView = null;
+    window.currentKeyInView = null;
+    window.currentDoorInView = null;
     return; 
   }
 
@@ -1448,6 +1463,8 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     currentBookInView = targetBook;
     currentPortalInView = null;
     currentTombstoneInView = null;
+    window.currentKeyInView = null;
+    window.currentDoorInView = null;
     return;
   }
 
@@ -1468,6 +1485,8 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     infoWindows.showTombstoneInfo(targetTombstone);
     currentTombstoneInView = targetTombstone;
     currentPortalInView = null;
+    window.currentKeyInView = null;
+    window.currentDoorInView = null;
     return;
   }
 
@@ -1492,6 +1511,8 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
   if (targetPortal) {
     infoWindows.showPortalInfo(targetPortal, portalDistance);
     currentPortalInView = targetPortal;
+    window.currentKeyInView = null;
+    window.currentDoorInView = null;
   } else {
     // If no interactions were found, hide all info windows
     infoWindows.hideAllWindows();
@@ -1500,9 +1521,10 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
     currentTombstoneInView = null;
     currentBookInView = null;
     currentScrollInView = null;
+    window.currentKeyInView = null;
+    window.currentDoorInView = null;
   }
 }
-
   // collision detection main scene
   function checkCollision(currentPosition, newPosition) {
     if (currentScene !== 'main') return false; //no collisions in gallery spectator 
@@ -1695,17 +1717,26 @@ if (!gameStarted || overlays.isPaperReadingMode() || (inventorySystem && invento
       jumpVelocity = jumpForce;
     }
     
-    // Interactive object activation
-    if (keys['e']) {
-      if (window.currentKeyInView && inventorySystem) {
+ if (keys['e']) {
+  if (window.currentKeyInView && inventorySystem) {
     const keyData = window.currentKeyInView.userData.itemData;
     if (inventorySystem.addItem(keyData)) {
+      // Remove the key from the scene
       scene.remove(window.currentKeyInView);
+      
+      // Hide the key info window immediately
+      if (infoWindows && infoWindows.windows.key) {
+        infoWindows.windows.key.style.display = 'none';
+      }
+      
+      // Clear the reference to avoid phantom detection
       window.currentKeyInView = null;
+      
+      // Remove any temporary key info elements that might exist
       document.querySelectorAll('#key-info-temp').forEach(el => el.remove());
     }
   }
-  // Door interaction
+  // Door interaction and other interactions remain the same...
   else if (window.currentDoorInView && inventorySystem) {
     if (inventorySystem.useItemOn(window.currentDoorInView)) {
       document.querySelectorAll('#door-info-temp').forEach(el => el.remove());
