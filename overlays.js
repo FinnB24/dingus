@@ -30,9 +30,6 @@ class Overlays {
         if (this.tombstoneOverlay.style.display === 'block') this.closeTombstone();
         if (this.bookOverlay.style.display === 'block') this.closeBook();
         if (this.scrollOverlay.style.display === 'block') this.closeScroll();
-        
-        // Force pointer lock after a short delay
-        this.forcePointerLock();
       }
     });
   }
@@ -109,7 +106,10 @@ class Overlays {
 
     closeButton.addEventListener('click', () => {
       this.closePaper();
-      this.forcePointerLock();
+      // Call the global callback function after closing
+      if (typeof window.onOverlayClose === 'function') {
+        window.onOverlayClose();
+      }
     });
 
     const paperContent = document.createElement('div');
@@ -206,9 +206,12 @@ class Overlays {
       tombstoneCloseButton.style.color = '#ccc';
     });
 
-        tombstoneCloseButton.addEventListener('click', () => {
+    tombstoneCloseButton.addEventListener('click', () => {
       this.closeTombstone();
-      this.forcePointerLock();
+      // Call the global callback function after closing
+      if (typeof window.onOverlayClose === 'function') {
+        window.onOverlayClose();
+      }
     });
 
     const tombstoneContent = document.createElement('div');
@@ -309,7 +312,10 @@ class Overlays {
 
     bookCloseButton.addEventListener('click', () => {
       this.closeBook();
-      this.forcePointerLock();
+      // Call the global callback function after closing
+      if (typeof window.onOverlayClose === 'function') {
+        window.onOverlayClose();
+      }
     });
 
     const bookContent = document.createElement('div');
@@ -405,7 +411,10 @@ class Overlays {
 
     scrollCloseButton.addEventListener('click', () => {
       this.closeScroll();
-      this.forcePointerLock();
+      // Call the global callback function after closing
+      if (typeof window.onOverlayClose === 'function') {
+        window.onOverlayClose();
+      }
     });
 
     const scrollContent = document.createElement('div');
@@ -555,7 +564,10 @@ class Overlays {
             // Auto-close scroll after submission
             setTimeout(() => {
               this.closeScroll();
-              this.requestPointerLockWithDelay();
+              // Call the global callback function after closing
+              if (typeof window.onOverlayClose === 'function') {
+                window.onOverlayClose();
+              }
             }, 3000);
             
           } else {
@@ -676,78 +688,6 @@ class Overlays {
       this.portfolioAnalytics.trackInteraction('overlay', 'close_scroll');
     }
   }
-  
-  forcePointerLock() {
-    if (typeof window.gameStarted === 'undefined' || !window.gameStarted) {
-      console.log('Game not started, not requesting pointer lock');
-      return;
-    }
-    
-    // Clear any existing timers
-    if (this._pointerLockTimer) {
-      clearTimeout(this._pointerLockTimer);
-      this._pointerLockTimer = null;
-    }
-    
-    // Schedule multiple attempts with increasing delays
-    const attemptPointerLock = (attempt = 1) => {
-      console.log(`Attempting pointer lock (try ${attempt})`);
-      
-      const container = document.getElementById('three-canvas');
-      if (!container) {
-        console.warn('Cannot find three-canvas element');
-        return;
-      }
-      
-      if (document.pointerLockElement) {
-        console.log('Pointer already locked');
-        return;
-      }
-      
-      try {
-        // Before requesting, ensure we're in a good state
-        this.paperReadingMode = false;
-        
-        // Use a user activation event to request pointer lock
-        window.focus(); // Ensure window has focus
-        container.focus();
-        
-        // Request pointer lock
-        container.requestPointerLock();
-        console.log(`Pointer lock requested (attempt ${attempt})`);
-      } catch (e) {
-        console.warn(`Error requesting pointer lock: ${e.message}`);
-      }
-      
-      // Schedule another attempt if needed
-      if (attempt < 4 && !document.pointerLockElement) {
-        this._pointerLockTimer = setTimeout(() => {
-          attemptPointerLock(attempt + 1);
-        }, attempt * 300); // Increasing delays: 300ms, 600ms, 900ms
-      }
-    };
-    
-    // First attempt after a short delay to ensure DOM updates
-    this._pointerLockTimer = setTimeout(() => attemptPointerLock(), 200);
-  }
-  
-  // New method to manually force pointer lock via global function
-  static requestPointerLock() {
-    const container = document.getElementById('three-canvas');
-    if (container && !document.pointerLockElement && window.gameStarted) {
-      try {
-        container.requestPointerLock();
-        console.log('Manual pointer lock requested');
-      } catch (e) {
-        console.warn('Failed to manually request pointer lock:', e);
-      }
-    }
-  }
 }
-
-// Make pointer lock requestable globally
-window.requestGamePointerLock = function() {
-  Overlays.requestPointerLock();
-};
 
 export { Overlays };
