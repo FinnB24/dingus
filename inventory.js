@@ -6,18 +6,18 @@ class InventorySystem {
     this.camera = camera;
     this.portfolioAnalytics = portfolioAnalytics;
     
-    // Inventory state
+    //Inv state
     this.isOpen = false;
-    this.items = []; // Array of collected items
+    this.items = []; //Array of collected
     this.selectedItem = null;
     this.selectedSlot = null;
-    this.maxSlots = 12; // 3x4 grid
+    this.maxSlots = 12; // 3x4
     
-    // Interactive objects in world
-    this.collectibleItems = []; // Items that can be picked up
-    this.interactiveObjects = []; // Objects that can be used with items
+    //Interactive objects in world
+    this.collectibleItems = []; //can be picked up
+    this.interactiveObjects = []; // Objects  used with items
     
-    // UI elements
+    //UI
     this.inventoryOverlay = null;
     this.itemTooltip = null;
     this.selectedItemDisplay = null;
@@ -32,7 +32,7 @@ class InventorySystem {
   }
   
   createInventoryUI() {
-    // Main inventory overlay
+    //Main inv overlay
     this.inventoryOverlay = document.createElement('div');
     this.inventoryOverlay.id = 'inventory-overlay';
     this.inventoryOverlay.style.cssText = `
@@ -48,7 +48,7 @@ class InventorySystem {
       align-items: center;
     `;
     
-    // Inventory container
+    // Inv
     const inventoryContainer = document.createElement('div');
     inventoryContainer.style.cssText = `
       background: rgba(36, 41, 59, 0.95);
@@ -62,7 +62,7 @@ class InventorySystem {
       position: relative;
     `;
     
-    // Title
+    //title
     const title = document.createElement('h2');
     title.textContent = 'INVENTORY';
     title.style.cssText = `
@@ -79,9 +79,9 @@ class InventorySystem {
       color: #888;
       font-size: 12px;
     `;
-    instructions.innerHTML = 'Click items to select • Hover for details • Press I to close';
+    instructions.innerHTML = 'Click items to select • Hover for details';
     
-    // Inventory grid
+    //Inv grid
     const inventoryGrid = document.createElement('div');
     inventoryGrid.id = 'inventory-grid';
     inventoryGrid.style.cssText = `
@@ -95,7 +95,7 @@ class InventorySystem {
       margin-right: auto;
     `;
     
-    // Create inventory slots
+    //inv slots
     for (let i = 0; i < this.maxSlots; i++) {
       const slot = document.createElement('div');
       slot.className = 'inventory-slot';
@@ -135,14 +135,14 @@ class InventorySystem {
     `;
     this.selectedItemDisplay.textContent = 'Selected Item: None';
     
-    // Close instruction
+    // Close
     const closeInstr = document.createElement('div');
     closeInstr.style.cssText = `
       color: rgb(194, 194, 194);
       font-size: 16px;
       font-weight: bold;
     `;
-    closeInstr.innerHTML = 'Press <kbd style="background: #333; padding: 2px 6px; border-radius: 3px;">I</kbd> to close';
+    closeInstr.innerHTML = '<kbd style="background: #333; padding: 2px 6px; border-radius: 3px;">I</kbd> to close';
     
     // Assemble UI
     inventoryContainer.appendChild(title);
@@ -178,7 +178,7 @@ class InventorySystem {
   }
   
   setupEventListeners() {
-    // Inventory toggle
+    //Inventry toggle
     document.addEventListener('keydown', (e) => {
       if (e.key.toLowerCase() === 'i') {
         e.preventDefault();
@@ -201,34 +201,40 @@ class InventorySystem {
     this.isOpen = true;
     this.inventoryOverlay.style.display = 'flex';
     
-    // Free mouse cursor
+    //Free mouse cursor
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
     
-    // Update inventory display
+    //Update inv display
     this.updateInventoryDisplay();
     
     this.portfolioAnalytics.trackInteraction('inventory', 'open');
     console.log('Inventory opened');
   }
   
-  closeInventory() {
-    this.isOpen = false;
-    this.inventoryOverlay.style.display = 'none';
-    this.hideItemTooltip();
+
+closeInventory() {
+  this.isOpen = false;
+  this.inventoryOverlay.style.display = 'none';
+  this.hideItemTooltip();
+  
+  // Re-enable pointer lock if game is active
+  if (document.getElementById('three-canvas')) {
+    // Request pointer lock immediately
+    document.getElementById('three-canvas').requestPointerLock();
     
-    // Re-enable pointer lock if game is active
-    if (window.gameStarted && !window.paperReadingMode) {
-      const container = document.getElementById('three-canvas');
-      if (container) {
-        container.requestPointerLock();
+    // As a backup, try again after a short delay
+    setTimeout(() => {
+      if (!document.pointerLockElement) {
+        document.getElementById('three-canvas').requestPointerLock();
       }
-    }
-    
-    this.portfolioAnalytics.trackInteraction('inventory', 'close');
-    console.log('Inventory closed');
+    }, 50);
   }
+  
+  this.portfolioAnalytics.trackInteraction('inventory', 'close');
+  console.log('Inventory closed');
+}
   
   updateInventoryDisplay() {
     const slots = document.querySelectorAll('.inventory-slot');
@@ -297,7 +303,7 @@ class InventorySystem {
     this.updateInventoryDisplay();
   }
   
-  // Add item to inventory
+  //add item to inventory
   addItem(item) {
     if (this.items.length >= this.maxSlots) {
       console.log('Inventory full!');
@@ -308,13 +314,13 @@ class InventorySystem {
     this.portfolioAnalytics.trackInteraction('inventory', 'add_item', { itemName: item.name });
     console.log('Added item to inventory:', item.name);
     
-    // Show collection message
+    //collection msg
     this.showCollectionMessage(item.name);
     
     return true;
   }
   
-  // Remove item from inventory
+  //Remove item from inventory
   removeItem(itemName) {
     const index = this.items.findIndex(item => item.name === itemName);
     if (index !== -1) {
@@ -353,21 +359,21 @@ class InventorySystem {
       top: 20%;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 200, 0, 0.9);
+      background: rgba(105, 105, 105, 0.9);
       color: white;
       font-family: 'Courier New', monospace;
       font-size: 16px;
       padding: 15px 25px;
       border-radius: 10px;
-      border: 2px solid #00ff00;
+      border: 2px solid rgb(1, 1, 1);
       z-index: 6000;
       animation: fadeInOut 3s ease-in-out forwards;
     `;
     
-    message.textContent = `✓ Collected: ${itemName}`;
+    message.textContent = `${itemName} picked up`;
     document.body.appendChild(message);
     
-    // Add fade animation
+    //fade animation
     const style = document.createElement('style');
     style.textContent = `
       @keyframes fadeInOut {
@@ -385,7 +391,7 @@ class InventorySystem {
     }, 3000);
   }
   
-  // Register a collectible item in the world
+  //regst collectible item in world
   registerCollectibleItem(object, itemData) {
     object.userData.collectible = true;
     object.userData.itemData = itemData;
@@ -393,7 +399,7 @@ class InventorySystem {
     console.log('Registered collectible item:', itemData.name);
   }
   
-  // Register an interactive object that can be used with items
+  // Register interactive object that can be used with items
   registerInteractiveObject(object, requiredItem, onUse) {
     object.userData.interactive = true;
     object.userData.requiredItem = requiredItem;
@@ -403,7 +409,7 @@ class InventorySystem {
     console.log('Registered interactive object requiring:', requiredItem);
   }
   
-  // Check if player can interact with an object
+  // Check if player can interact with  object
   canInteractWith(object) {
     if (!object.userData.interactive) return false;
     if (!object.userData.isLocked) return false;
@@ -412,14 +418,14 @@ class InventorySystem {
     return this.selectedItem && this.selectedItem.name === requiredItem;
   }
   
-  // Use selected item on an object
+  // Use selected item on  object
   useItemOn(object) {
     if (!this.canInteractWith(object)) return false;
     
     const requiredItem = object.userData.requiredItem;
     const onUse = object.userData.onUse;
     
-    // Execute the use action
+    // Execute use action
     if (onUse) {
       onUse(object, this.selectedItem);
     }
@@ -439,7 +445,7 @@ class InventorySystem {
     return true;
   }
   
-  // Get interaction hint for an object
+  //interaction hint for object
   getInteractionHint(object) {
     if (!object.userData.interactive) return null;
     
