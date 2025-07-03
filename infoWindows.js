@@ -34,6 +34,12 @@ class InfoWindows {
     
     // Scroll info window
     this.windows.scroll = document.getElementById('scroll-info') || this.createScrollInfoWindow();
+    
+    // Key info window - Create at initialization instead of dynamically
+    this.windows.key = document.getElementById('key-info') || this.createKeyInfoWindow();
+    
+    // Door info window - Create at initialization instead of dynamically
+    this.windows.door = document.getElementById('door-info') || this.createDoorInfoWindow();
   }
   
   createPortalInfoWindow() {
@@ -201,60 +207,120 @@ class InfoWindows {
     return window;
   }
   
-  // Show key info window (dynamically created)
-  showKeyInfo(key) {
-    if (!this.windows.key) {
-      this.windows.key = document.createElement('div');
-      this.windows.key.id = 'key-info-temp';
-      this.windows.key.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: rgba(139, 69, 19, 0.95);
-        border: 2px solid #d4af37;
-        padding: 15px;
-        color: white;
-        font-family: 'Courier New', monospace;
-        border-radius: 10px;
-      `;
-      document.body.appendChild(this.windows.key);
-    }
-    
-    this.windows.key.innerHTML = `
-      <div style="color: #d4af37; font-weight: bold;">🗝️ ${key.userData.itemData.name}</div>
-      <div style="color: #90ee90; font-size: 12px; margin-top: 5px;">Press E to collect</div>
+  // Create permanent key info window
+  createKeyInfoWindow() {
+    const window = document.createElement('div');
+    window.id = 'key-info';
+    window.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 250px;
+      height: 120px;
+      background: rgba(212, 175, 55, 0.95);
+      border: 2px solid #ffd700;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      padding: 15px;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+      transition: opacity 0.3s ease;
     `;
-    this.windows.key.style.display = 'block';
-    
-    this.portfolioAnalytics.trackInteraction('key', 'view', { name: key.userData.itemData.name });
+    window.innerHTML = `
+      <div style="color: #ffd700; font-weight: bold; margin-bottom: 10px;">🗝️ GOLDEN KEY</div>
+      <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Artifact</span></div>
+      <div style="margin-bottom: 5px;">Material: <span style="color: #ffd700;">Pure Gold</span></div>
+      <div style="margin-bottom: 10px;">Purpose: <span style="color: #87ceeb;">Unlocks something</span></div>
+      <div style="color: #90ee90; font-size: 12px;">Press E to collect</div>
+    `;
+    document.body.appendChild(window);
+    return window;
   }
   
-  // Show door info window (dynamically created)
-  showDoorInfo(door, hint) {
-    if (!this.windows.door) {
-      this.windows.door = document.createElement('div');
-      this.windows.door.id = 'door-info-temp';
-      this.windows.door.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: rgba(64, 64, 64, 0.95);
-        border: 2px solid #888;
-        padding: 15px;
-        color: white;
-        font-family: 'Courier New', monospace;
-        border-radius: 10px;
-      `;
-      document.body.appendChild(this.windows.door);
-    }
-    
-    this.windows.door.innerHTML = `
-      <div style="color: #888; font-weight: bold;">🚪 Locked Door</div>
-      <div style="color: #90ee90; font-size: 12px; margin-top: 5px;">${hint}</div>
+  // Create permanent door info window
+  createDoorInfoWindow() {
+    const window = document.createElement('div');
+    window.id = 'door-info';
+    window.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 250px;
+      height: 120px;
+      background: rgba(64, 64, 64, 0.95);
+      border: 2px solid #a0a0a0;
+      border-radius: 10px;
+      color: #ddd;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      padding: 15px;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 0 20px rgba(160, 160, 160, 0.5);
+      transition: opacity 0.3s ease;
     `;
-    this.windows.door.style.display = 'block';
-    
-    this.portfolioAnalytics.trackInteraction('door', 'view', { hint: hint });
+    window.innerHTML = `
+      <div style="color: #a0a0a0; font-weight: bold; margin-bottom: 10px;">🚪 LOCKED DOOR</div>
+      <div style="margin-bottom: 5px;">Status: <span style="color: #ff6b6b;">Locked</span></div>
+      <div style="margin-bottom: 5px;">Material: <span style="color: #daa520;">Ancient Wood</span></div>
+      <div id="door-hint" style="margin-bottom: 10px;">Hint: <span style="color: #87ceeb;">Requires a key</span></div>
+      <div style="color: #90ee90; font-size: 12px;" id="door-action">Find the key</div>
+    `;
+    document.body.appendChild(window);
+    return window;
+  }
+  
+  // Show key info window
+  showKeyInfo(key) {
+    if (this.windows.key) {
+      this.windows.key.style.display = 'block';
+      this.hideAllExcept('key');
+      
+      // Update key name if available
+      if (key.userData.itemData && key.userData.itemData.name) {
+        const keyTitle = this.windows.key.querySelector('div');
+        if (keyTitle) {
+          keyTitle.textContent = `🗝️ ${key.userData.itemData.name}`;
+        }
+      }
+      
+      this.portfolioAnalytics.trackInteraction('key', 'view', { 
+        name: key.userData.itemData?.name || 'Golden Key' 
+      });
+    }
+  }
+  
+  // Show door info window
+  showDoorInfo(door, hint) {
+    if (this.windows.door) {
+      this.windows.door.style.display = 'block';
+      this.hideAllExcept('door');
+      
+      // Update hint text if provided
+      if (hint) {
+        const doorHint = document.getElementById('door-hint');
+        const doorAction = document.getElementById('door-action');
+        
+        if (doorHint) {
+          doorHint.innerHTML = `Hint: <span style="color: #87ceeb;">${hint}</span>`;
+        }
+        
+        if (doorAction) {
+          if (hint.includes('Press E')) {
+            doorAction.textContent = 'Press E to unlock';
+            doorAction.style.color = '#00ff00';
+          } else {
+            doorAction.textContent = 'Find the key';
+            doorAction.style.color = '#90ee90';
+          }
+        }
+      }
+      
+      this.portfolioAnalytics.trackInteraction('door', 'view', { hint: hint || 'Requires a key' });
+    }
   }
   
   // Show paper info window
