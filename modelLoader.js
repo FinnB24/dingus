@@ -265,85 +265,105 @@ class ModelLoader {
     });
   }
   
-  // Load Key Model
-  loadKeyModel(inventorySystem) {
-    return new Promise((resolve) => {
-      this.loadModelOptimized(
-        'key.glb',
-        (gltf) => {
-          console.log('Key model loaded successfully');
-          this.models.key = gltf.scene;
-          this.models.key.scale.set(0.1, 0.1, 0.1);
-          
-          this.models.key.position.set(-10, 1, 5);
-          this.models.key.rotation.set(0, Math.PI/4, 0);
-          
-          // Register as collectible item
-          if (inventorySystem) {
-            inventorySystem.registerCollectibleItem(this.models.key, {
-              name: 'Golden Key',
-              description: 'An ornate golden key. Looks like it might unlock something important.',
-              id: 'golden_key'
-            });
-          }
-          
-          this.scene.add(this.models.key);
-          this.registerModelWithWorldBuilder('key', gltf);
-          
-          this.updateLoadingProgress(resolve);
-        },
-        (xhr) => {
-          if (xhr.lengthComputable) {
-            console.log('Key: ' + (xhr.loaded / xhr.total * 100) + '% loaded');
-          }
-        },
-        (error) => {
-          console.error('Error loading key model:', error);
-          this.updateLoadingProgress(resolve);
+// Load Key Model
+loadKeyModel(inventorySystem) {
+  return new Promise((resolve) => {
+    this.loadModelOptimized(
+      'key.glb',
+      (gltf) => {
+        console.log('Key model loaded successfully');
+        this.models.key = gltf.scene;
+        this.models.key.scale.set(0.1, 0.1, 0.1);
+        
+        this.models.key.position.set(-10, 1, 5);
+        this.models.key.rotation.set(0, Math.PI/4, 0);
+        
+        // Register as collectible item and set metadata
+        const itemData = {
+          name: 'Golden Key',
+          description: 'An ornate golden key. Looks like it might unlock something important.',
+          id: 'golden_key'
+        };
+        
+        // Set userData directly on the model too
+        this.models.key.userData = {
+          type: 'key',
+          interactive: true,
+          collectible: true,
+          name: 'Golden Key',
+          itemData: itemData
+        };
+        
+        if (inventorySystem) {
+          inventorySystem.registerCollectibleItem(this.models.key, itemData);
         }
-      );
-    });
-  }
-  
-  // Load Door Model
-  loadDoorModel(inventorySystem) {
-    return new Promise((resolve) => {
-      this.loadModelOptimized(
-        'door.glb',
-        (gltf) => {
-          console.log('Door model loaded successfully');
-          this.models.door = gltf.scene;
-          this.models.door.scale.set(0.4, 0.4, 0.4);
-          
-          this.models.door.position.set(15, 0, -10);
-          this.models.door.rotation.set(0, 0, 0);
-          
-          // Register as interactive object
-          if (inventorySystem) {
-            inventorySystem.registerInteractiveObject(this.models.door, 'Golden Key', function(door, item) {
-              // Move door backwards on Y-axis as unlock animation
-              door.position.y -= 2;
-              console.log('Door unlocked with', item.name);
-            });
-          }
-          
-          this.scene.add(this.models.door);
-          this.registerModelWithWorldBuilder('door', gltf);
-          
-          this.updateLoadingProgress(resolve);
-        },
-        (xhr) => {
-          if (xhr.lengthComputable) {
-            console.log('Door: ' + (xhr.loaded / xhr.total * 100) + '% loaded');
-          }
-        },
-        (error) => {
-          console.error('Error loading door model:', error);
-          this.updateLoadingProgress(resolve);
+        
+        this.scene.add(this.models.key);
+        this.registerModelWithWorldBuilder('key', gltf);
+        
+        this.updateLoadingProgress(resolve);
+      },
+      (xhr) => {
+        if (xhr.lengthComputable) {
+          console.log('Key: ' + (xhr.loaded / xhr.total * 100) + '% loaded');
         }
-      );
-    });
-  }
+      },
+      (error) => {
+        console.error('Error loading key model:', error);
+        this.updateLoadingProgress(resolve);
+      }
+    );
+  });
+}
+
+// Load Door Model
+loadDoorModel(inventorySystem) {
+  return new Promise((resolve) => {
+    this.loadModelOptimized(
+      'door.glb',
+      (gltf) => {
+        console.log('Door model loaded successfully');
+        this.models.door = gltf.scene;
+        this.models.door.scale.set(0.4, 0.4, 0.4);
+        
+        this.models.door.position.set(15, 0, -10);
+        this.models.door.rotation.set(0, 0, 0);
+        
+        // Set userData directly on the model
+        this.models.door.userData = {
+          type: 'door',
+          interactive: true,
+          isLocked: true,
+          requiredItem: 'Golden Key',
+          name: 'Ancient Door'
+        };
+        
+        // Register as interactive object
+        if (inventorySystem) {
+          inventorySystem.registerInteractiveObject(this.models.door, 'Golden Key', function(door, item) {
+            // Move door backwards on Y-axis as unlock animation
+            door.position.y -= 2;
+            console.log('Door unlocked with', item.name);
+          });
+        }
+        
+        this.scene.add(this.models.door);
+        this.registerModelWithWorldBuilder('door', gltf);
+        
+        this.updateLoadingProgress(resolve);
+      },
+      (xhr) => {
+        if (xhr.lengthComputable) {
+          console.log('Door: ' + (xhr.loaded / xhr.total * 100) + '% loaded');
+        }
+      },
+      (error) => {
+        console.error('Error loading door model:', error);
+        this.updateLoadingProgress(resolve);
+      }
+    );
+  });
+}
   
   // Load Crow Model
   loadCrowModel() {
