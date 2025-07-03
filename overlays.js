@@ -21,13 +21,29 @@ class Overlays {
     
     // Setup form submission handling
     this.formSubmissionSetup = false;
+    
+    // Keyboard handler for ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.paperReadingMode) {
+        // Close any open overlay when ESC is pressed
+        if (this.paperOverlay.style.display === 'block') this.closePaper();
+        if (this.tombstoneOverlay.style.display === 'block') this.closeTombstone();
+        if (this.bookOverlay.style.display === 'block') this.closeBook();
+        if (this.scrollOverlay.style.display === 'block') this.closeScroll();
+        
+        // Force pointer lock after a short delay
+        this.forcePointerLock();
+      }
+    });
   }
+  
   
   isPaperReadingMode() {
     return this.paperReadingMode;
   }
   
-  createPaperOverlay() {
+   createPaperOverlay() {
+    // Paper overlay creation remains the same
     this.paperOverlay = document.createElement('div');
     this.paperOverlay.id = 'paper-overlay';
     this.paperOverlay.style.cssText = `
@@ -91,7 +107,10 @@ class Overlays {
       closeButton.style.transform = 'scale(1)';
     });
 
-    closeButton.addEventListener('click', () => this.closePaper());
+    closeButton.addEventListener('click', () => {
+      this.closePaper();
+      this.forcePointerLock();
+    });
 
     const paperContent = document.createElement('div');
     paperContent.style.cssText = `
@@ -113,10 +132,11 @@ class Overlays {
     paperContainer.appendChild(paperContent);
     this.paperOverlay.appendChild(paperContainer);
     this.paperOverlay.appendChild(closeButton);
-    document.body.appendChild(this.paperOverlay);
+        document.body.appendChild(this.paperOverlay);
   }
   
   createTombstoneOverlay() {
+    // Tombstone overlay creation remains the same
     this.tombstoneOverlay = document.createElement('div');
     this.tombstoneOverlay.id = 'tombstone-overlay';
     this.tombstoneOverlay.style.cssText = `
@@ -186,7 +206,10 @@ class Overlays {
       tombstoneCloseButton.style.color = '#ccc';
     });
 
-    tombstoneCloseButton.addEventListener('click', () => this.closeTombstone());
+        tombstoneCloseButton.addEventListener('click', () => {
+      this.closeTombstone();
+      this.forcePointerLock();
+    });
 
     const tombstoneContent = document.createElement('div');
     tombstoneContent.style.cssText = `
@@ -208,10 +231,13 @@ class Overlays {
     tombstoneContainer.appendChild(tombstoneContent);
     this.tombstoneOverlay.appendChild(tombstoneContainer);
     this.tombstoneOverlay.appendChild(tombstoneCloseButton);
-    document.body.appendChild(this.tombstoneOverlay);
+     document.body.appendChild(this.tombstoneOverlay);
   }
+
+
   
   createBookOverlay() {
+    // Book overlay creation remains the same
     this.bookOverlay = document.createElement('div');
     this.bookOverlay.id = 'book-overlay';
     this.bookOverlay.style.cssText = `
@@ -281,7 +307,10 @@ class Overlays {
       bookCloseButton.style.color = '#f4e4c1';
     });
 
-    bookCloseButton.addEventListener('click', () => this.closeBook());
+    bookCloseButton.addEventListener('click', () => {
+      this.closeBook();
+      this.forcePointerLock();
+    });
 
     const bookContent = document.createElement('div');
     bookContent.style.cssText = `
@@ -306,7 +335,9 @@ class Overlays {
     document.body.appendChild(this.bookOverlay);
   }
   
+  
   createScrollOverlay() {
+    // Scroll overlay creation remains the same
     this.scrollOverlay = document.createElement('div');
     this.scrollOverlay.id = 'scroll-overlay';
     this.scrollOverlay.style.cssText = `
@@ -372,7 +403,10 @@ class Overlays {
       scrollCloseButton.style.color = '#f4e4c1';
     });
 
-    scrollCloseButton.addEventListener('click', () => this.closeScroll());
+    scrollCloseButton.addEventListener('click', () => {
+      this.closeScroll();
+      this.forcePointerLock();
+    });
 
     const scrollContent = document.createElement('div');
     scrollContent.style.cssText = `
@@ -521,6 +555,7 @@ class Overlays {
             // Auto-close scroll after submission
             setTimeout(() => {
               this.closeScroll();
+              this.requestPointerLockWithDelay();
             }, 3000);
             
           } else {
@@ -568,16 +603,6 @@ class Overlays {
     this.paperOverlay.style.display = 'none';
     this.paperReadingMode = false;
     
-    // Always attempt to restore pointer lock if game is started
-    if (window.gameStarted) {
-      setTimeout(() => {
-        const container = document.getElementById('three-canvas');
-        if (container && !document.pointerLockElement) {
-          container.requestPointerLock();
-        }
-      }, 100); // Small delay to ensure the DOM has updated
-    }
-    
     if (this.portfolioAnalytics) {
       this.portfolioAnalytics.trackInteraction('overlay', 'close_paper');
     }
@@ -600,16 +625,6 @@ class Overlays {
     this.tombstoneOverlay.style.display = 'none';
     this.paperReadingMode = false;
     
-    // Always attempt to restore pointer lock if game is started
-    if (window.gameStarted) {
-      setTimeout(() => {
-        const container = document.getElementById('three-canvas');
-        if (container && !document.pointerLockElement) {
-          container.requestPointerLock();
-        }
-      }, 100); // Small delay to ensure the DOM has updated
-    }
-    
     if (this.portfolioAnalytics) {
       this.portfolioAnalytics.trackInteraction('overlay', 'close_tombstone');
     }
@@ -631,16 +646,6 @@ class Overlays {
   closeBook() {
     this.bookOverlay.style.display = 'none';
     this.paperReadingMode = false;
-    
-    // Always attempt to restore pointer lock if game is started
-    if (window.gameStarted) {
-      setTimeout(() => {
-        const container = document.getElementById('three-canvas');
-        if (container && !document.pointerLockElement) {
-          container.requestPointerLock();
-        }
-      }, 100); // Small delay to ensure the DOM has updated
-    }
     
     if (this.portfolioAnalytics) {
       this.portfolioAnalytics.trackInteraction('overlay', 'close_book');
@@ -667,20 +672,82 @@ class Overlays {
     this.scrollOverlay.style.display = 'none';
     this.paperReadingMode = false;
     
-    // Always attempt to restore pointer lock if game is started
-    if (window.gameStarted) {
-      setTimeout(() => {
-        const container = document.getElementById('three-canvas');
-        if (container && !document.pointerLockElement) {
-          container.requestPointerLock();
-        }
-      }, 100); // Small delay to ensure the DOM has updated
-    }
-    
     if (this.portfolioAnalytics) {
       this.portfolioAnalytics.trackInteraction('overlay', 'close_scroll');
     }
   }
+  
+  forcePointerLock() {
+    if (typeof window.gameStarted === 'undefined' || !window.gameStarted) {
+      console.log('Game not started, not requesting pointer lock');
+      return;
+    }
+    
+    // Clear any existing timers
+    if (this._pointerLockTimer) {
+      clearTimeout(this._pointerLockTimer);
+      this._pointerLockTimer = null;
+    }
+    
+    // Schedule multiple attempts with increasing delays
+    const attemptPointerLock = (attempt = 1) => {
+      console.log(`Attempting pointer lock (try ${attempt})`);
+      
+      const container = document.getElementById('three-canvas');
+      if (!container) {
+        console.warn('Cannot find three-canvas element');
+        return;
+      }
+      
+      if (document.pointerLockElement) {
+        console.log('Pointer already locked');
+        return;
+      }
+      
+      try {
+        // Before requesting, ensure we're in a good state
+        this.paperReadingMode = false;
+        
+        // Use a user activation event to request pointer lock
+        window.focus(); // Ensure window has focus
+        container.focus();
+        
+        // Request pointer lock
+        container.requestPointerLock();
+        console.log(`Pointer lock requested (attempt ${attempt})`);
+      } catch (e) {
+        console.warn(`Error requesting pointer lock: ${e.message}`);
+      }
+      
+      // Schedule another attempt if needed
+      if (attempt < 4 && !document.pointerLockElement) {
+        this._pointerLockTimer = setTimeout(() => {
+          attemptPointerLock(attempt + 1);
+        }, attempt * 300); // Increasing delays: 300ms, 600ms, 900ms
+      }
+    };
+    
+    // First attempt after a short delay to ensure DOM updates
+    this._pointerLockTimer = setTimeout(() => attemptPointerLock(), 200);
+  }
+  
+  // New method to manually force pointer lock via global function
+  static requestPointerLock() {
+    const container = document.getElementById('three-canvas');
+    if (container && !document.pointerLockElement && window.gameStarted) {
+      try {
+        container.requestPointerLock();
+        console.log('Manual pointer lock requested');
+      } catch (e) {
+        console.warn('Failed to manually request pointer lock:', e);
+      }
+    }
+  }
 }
+
+// Make pointer lock requestable globally
+window.requestGamePointerLock = function() {
+  Overlays.requestPointerLock();
+};
 
 export { Overlays };
