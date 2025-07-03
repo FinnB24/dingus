@@ -19,7 +19,7 @@ class WorldBuilder {
     //COLISION BOX TRACKING
     this.placedCollisionBoxes = []; //Trackseparately
     
-    //Controls
+    //Contrls
     this.keys = {};
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
