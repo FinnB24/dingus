@@ -8,18 +8,18 @@ class ModelLoader {
     this.loadingManager = loadingManager || new THREE.LoadingManager();
     this.worldBuilder = worldBuilder;
     
-    // Set up the loaders
+    //loaders
     this.loader = new GLTFLoader(this.loadingManager);
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
     this.loader.setDRACOLoader(dracoLoader);
     
-    // Cache for loaded models
+    //Cache loaded models
     this.modelCache = new Map();
     this.loadedModels = 0;
     this.totalModelsToLoad = 0;
     
-    // Model references
+    //ref
     this.models = {
       church: null,
       grave: null,
@@ -36,7 +36,7 @@ class ModelLoader {
       door: null
     };
     
-    // Mixers for animations
+    //animations
     this.mixers = {
       crow: null
     };
@@ -46,7 +46,6 @@ class ModelLoader {
     this.totalModelsToLoad = count;
   }
   
-  // Register model with WorldBuilder if available
   registerModelWithWorldBuilder(modelName, gltf) {
     if (this.worldBuilder) {
       this.worldBuilder.registerModel(modelName, {
@@ -56,26 +55,23 @@ class ModelLoader {
     }
   }
   
-  // Optimized model loading with caching
   loadModelOptimized(url, callback, progressCallback, errorCallback) {
     if (this.modelCache.has(url)) {
-      // Return cached model
       callback(this.modelCache.get(url));
       return;
     }
     
     this.loader.load(url, 
       (gltf) => {
-        // Cache model
+        // Cache
         this.modelCache.set(url, gltf);
         
-        // Optimize loaded model
+        //Optimize
         gltf.scene.traverse((node) => {
           if (node.isMesh) {
             node.castShadow = true;
             node.receiveShadow = true;
             
-            // Optimize materials
             if (node.material) {
               node.material.needsUpdate = false;
               if (node.material.map) {
@@ -101,7 +97,6 @@ class ModelLoader {
     }
   }
   
-  // Load Church Model
   loadChurchModel(inventorySystem) {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -123,7 +118,7 @@ class ModelLoader {
           this.models.church.rotation.set(0, 30, 0);
           this.scene.add(this.models.church);
           
-          // Register with WorldBuilder
+          // Register WorldBuilder
           this.registerModelWithWorldBuilder('church', gltf);
           
           this.updateLoadingProgress(resolve);
@@ -141,7 +136,6 @@ class ModelLoader {
     });
   }
   
-  // Load Grave Model
   loadGraveModel(inventorySystem) {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -157,7 +151,7 @@ class ModelLoader {
           this.models.grave.position.set(16, 0, 10);
           this.models.grave.rotation.set(0, 10, 0);
           
-          // Set up grave as interactive
+          //grave as interactive
           this.models.grave.userData = {
             type: 'tombstone',
             interactive: true,
@@ -166,7 +160,7 @@ class ModelLoader {
           
           this.scene.add(this.models.grave);
           
-          // Register
+          //Register
           this.registerModelWithWorldBuilder('grave', gltf);
           
           this.updateLoadingProgress(resolve);
@@ -184,7 +178,6 @@ class ModelLoader {
     });
   }
   
-  // Load Altar Model
   loadAltarModel() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -224,7 +217,6 @@ class ModelLoader {
     });
   }
   
-  // Load Paper Model
   loadPaperModel() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -247,9 +239,7 @@ class ModelLoader {
           };
           
           this.scene.add(this.models.paper);
-          
           this.registerModelWithWorldBuilder('paper', gltf);
-          
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
@@ -265,7 +255,6 @@ class ModelLoader {
     });
   }
   
-// Load Key Model
 loadKeyModel(inventorySystem) {
   return new Promise((resolve) => {
     this.loadModelOptimized(
@@ -273,24 +262,21 @@ loadKeyModel(inventorySystem) {
       (gltf) => {
         console.log('Key model loaded successfully');
         this.models.key = gltf.scene;
-        this.models.key.scale.set(0.1, 0.1, 0.1);
+        this.models.key.scale.set(0.005, 0.005, 0.005);
         
-        this.models.key.position.set(-10, 1, 5);
+        this.models.key.position.set(-10, 3, 5);
         this.models.key.rotation.set(0, Math.PI/4, 0);
-        
-        // Register as collectible item and set metadata
         const itemData = {
-          name: 'Golden Key',
-          description: 'An ornate golden key. Looks like it might unlock something important.',
+          name: 'Key',
+          description: 'can unlock something',
           id: 'golden_key'
         };
         
-        // Set userData directly on the model too
         this.models.key.userData = {
           type: 'key',
           interactive: true,
           collectible: true,
-          name: 'Golden Key',
+          name: 'Key',
           itemData: itemData
         };
         
@@ -316,7 +302,6 @@ loadKeyModel(inventorySystem) {
   });
 }
 
-// Load Door Model
 loadDoorModel(inventorySystem) {
   return new Promise((resolve) => {
     this.loadModelOptimized(
@@ -324,25 +309,23 @@ loadDoorModel(inventorySystem) {
       (gltf) => {
         console.log('Door model loaded successfully');
         this.models.door = gltf.scene;
-        this.models.door.scale.set(0.4, 0.4, 0.4);
+        this.models.door.scale.set(0.03, 0.03, 0.03);
         
-        this.models.door.position.set(15, 0, -10);
+        this.models.door.position.set(15, 1, -10);
         this.models.door.rotation.set(0, 0, 0);
         
-        // Set userData directly on the model
         this.models.door.userData = {
           type: 'door',
           interactive: true,
           isLocked: true,
-          requiredItem: 'Golden Key',
-          name: 'Ancient Door'
+          requiredItem: 'Key',
+          name: 'Door'
         };
         
-        // Register as interactive object
         if (inventorySystem) {
-          inventorySystem.registerInteractiveObject(this.models.door, 'Golden Key', function(door, item) {
-            // Move door backwards on Y-axis as unlock animation
-            door.position.y -= 2;
+          inventorySystem.registerInteractiveObject(this.models.door, 'Key', function(door, item) {
+            //move door backwards on z-axis as unlock animation
+            door.position.z -= 3;
             console.log('Door unlocked with', item.name);
           });
         }
@@ -365,7 +348,6 @@ loadDoorModel(inventorySystem) {
   });
 }
   
-  // Load Crow Model
   loadCrowModel() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -380,16 +362,14 @@ loadDoorModel(inventorySystem) {
           });
           
           this.models.crow = gltf.scene;
-          this.models.crow.scale.set(1.1, 1.1, 1.1); // bigger
+          this.models.crow.scale.set(1.1, 1.1, 1.1);
           
           const box = new THREE.Box3().setFromObject(this.models.crow);
           const center = box.getCenter(new THREE.Vector3());
           
-          // Position
           this.models.crow.position.set(14, 1.4, -18);
           this.models.crow.rotation.set(0, 10, 0);
           
-          // Mark crow as interactive
           this.models.crow.userData = {
             type: 'crow',
             interactive: true,
@@ -432,7 +412,6 @@ loadDoorModel(inventorySystem) {
     });
   }
   
-  // Load Desk Model
   loadDeskModel() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -465,8 +444,7 @@ loadDoorModel(inventorySystem) {
       );
     });
   }
-  
-  // Load Desk2 Model
+
   loadDesk2Model() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -500,7 +478,6 @@ loadDoorModel(inventorySystem) {
     });
   }
   
-  // Load Book1 Model
   loadBook1Model() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -534,7 +511,6 @@ loadDoorModel(inventorySystem) {
     });
   }
   
-  // Load Book2 Model
   loadBook2Model() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -550,7 +526,6 @@ loadDoorModel(inventorySystem) {
           this.models.book2.position.set(10.2, -0.5, -17.5);
           this.models.book2.rotation.set(-0.4, 0.01, 0);
           
-          // Mark as interactive
           this.models.book2.userData = {
             type: 'book',
             interactive: true,
@@ -575,7 +550,6 @@ loadDoorModel(inventorySystem) {
     });
   }
   
-  // Load Scroll Model
   loadScrollModel() {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -615,7 +589,6 @@ loadDoorModel(inventorySystem) {
     });
   }
   
-  // Load Portal Models
   loadPortalModels(scene, galleryScene) {
     return new Promise((resolve) => {
       this.loadModelOptimized(
@@ -624,7 +597,7 @@ loadDoorModel(inventorySystem) {
           console.log('Portal model loaded successfully');
           const originalPortal = gltf.scene;
           
-          // Create return portal for gallery
+          //return portal for gallery
           const returnPortal = originalPortal.clone();
           returnPortal.scale.set(0.5, 0.5, 0.5);
           
@@ -647,7 +620,7 @@ loadDoorModel(inventorySystem) {
           
           galleryScene.add(returnPortal);
 
-          // Create main scene portal
+          //main scene portal
           const portalModel = originalPortal.clone();
           portalModel.scale.set(0.5, 0.5, 0.5);
           
@@ -674,7 +647,7 @@ loadDoorModel(inventorySystem) {
           scene.add(portalModel);
           this.models.portal.push(portalModel);
           
-          // Create floating text label
+          //floating text label
           const canvas = document.createElement('canvas');
           canvas.width = 128;
           canvas.height = 32;
@@ -713,7 +686,7 @@ loadDoorModel(inventorySystem) {
     });
   }
   
-  // Load all models
+  // Load all
   async loadAllModels(scene, galleryScene, inventorySystem) {
     const promises = [
       this.loadChurchModel(),
@@ -734,14 +707,12 @@ loadDoorModel(inventorySystem) {
     return Promise.all(promises);
   }
   
-  // Update animation mixers
   update(dt) {
     if (this.mixers.crow) {
       this.mixers.crow.update(dt);
     }
   }
   
-  // Get all portal models
   getPortalModels() {
     return this.models.portal;
   }
