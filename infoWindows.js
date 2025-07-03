@@ -4,7 +4,7 @@ class InfoWindows {
   constructor(portfolioAnalytics) {
     this.portfolioAnalytics = portfolioAnalytics;
     
-    // Store references to all info windows
+    //references to all info windows
     this.windows = {
       portal: null,
       paper: null,
@@ -15,7 +15,7 @@ class InfoWindows {
       door: null
     };
     
-    // Create info windows
+    //info windows
     this.createInfoWindows();
   }
   
@@ -29,16 +29,16 @@ class InfoWindows {
     // Tombstone info window
     this.windows.tombstone = document.getElementById('tombstone-info') || this.createTombstoneInfoWindow();
     
-    // Book info window
+    //book info window
     this.windows.book = document.getElementById('book-info') || this.createBookInfoWindow();
     
     // Scroll info window
     this.windows.scroll = document.getElementById('scroll-info') || this.createScrollInfoWindow();
     
-    // Key info window - Create at initialization instead of dynamically
+    // Key info window
     this.windows.key = document.getElementById('key-info') || this.createKeyInfoWindow();
     
-    // Door info window - Create at initialization instead of dynamically
+    //Door info window
     this.windows.door = document.getElementById('door-info') || this.createDoorInfoWindow();
   }
   
@@ -207,7 +207,6 @@ class InfoWindows {
     return window;
   }
   
-  // Create permanent key info window
   createKeyInfoWindow() {
     const window = document.createElement('div');
     window.id = 'key-info';
@@ -216,8 +215,8 @@ class InfoWindows {
       top: 20px;
       left: 20px;
       width: 250px;
-      height: 120px;
-      background: rgba(212, 175, 55, 0.95);
+      height: 90px;
+      background: rgba(98, 90, 65, 0.95);
       border: 2px solid #ffd700;
       border-radius: 10px;
       color: #fff;
@@ -230,17 +229,15 @@ class InfoWindows {
       transition: opacity 0.3s ease;
     `;
     window.innerHTML = `
-      <div style="color: #ffd700; font-weight: bold; margin-bottom: 10px;">🗝️ GOLDEN KEY</div>
-      <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Artifact</span></div>
-      <div style="margin-bottom: 5px;">Material: <span style="color: #ffd700;">Pure Gold</span></div>
-      <div style="margin-bottom: 10px;">Purpose: <span style="color: #87ceeb;">Unlocks something</span></div>
-      <div style="color: #90ee90; font-size: 12px;">Press E to collect</div>
+      <div style="color: #ffd700; font-weight: bold; margin-bottom: 10px;"> Key </div>
+      <div style="margin-bottom: 5px;">Type: <span style="color: #f4e4c1;">Collectible</span></div>
+      <div style="margin-bottom: 10px;">Purpose: <span style="color: #87ceeb;">can unlock something</span></div>
+      <div style="color: #90ee90; font-size: 12px;">E to collect</div>
     `;
     document.body.appendChild(window);
     return window;
   }
   
-  // Create permanent door info window
   createDoorInfoWindow() {
     const window = document.createElement('div');
     window.id = 'door-info';
@@ -263,17 +260,15 @@ class InfoWindows {
       transition: opacity 0.3s ease;
     `;
     window.innerHTML = `
-      <div style="color: #a0a0a0; font-weight: bold; margin-bottom: 10px;">🚪 LOCKED DOOR</div>
-      <div style="margin-bottom: 5px;">Status: <span style="color: #ff6b6b;">Locked</span></div>
+      <div style="color: #a0a0a0; font-weight: bold; margin-bottom: 10px;">Door</div>
+      <div style="margin-bottom: 5px;">Status: <span style="color: #ff6b6b;"> Interactable </span></div>
       <div style="margin-bottom: 5px;">Material: <span style="color: #daa520;">Ancient Wood</span></div>
-      <div id="door-hint" style="margin-bottom: 10px;">Hint: <span style="color: #87ceeb;">Requires a key</span></div>
-      <div style="color: #90ee90; font-size: 12px;" id="door-action">Find the key</div>
+      <div id="door-hint" style="margin-bottom: 10px;"><span style="color: #87ceeb;">can be unlocked</span></div>
     `;
     document.body.appendChild(window);
     return window;
   }
   
-  // Show key info window
   showKeyInfo(key) {
     if (this.windows.key) {
       this.windows.key.style.display = 'block';
@@ -283,17 +278,16 @@ class InfoWindows {
       if (key.userData.itemData && key.userData.itemData.name) {
         const keyTitle = this.windows.key.querySelector('div');
         if (keyTitle) {
-          keyTitle.textContent = `🗝️ ${key.userData.itemData.name}`;
+          keyTitle.textContent = `${key.userData.itemData.name}`;
         }
       }
       
       this.portfolioAnalytics.trackInteraction('key', 'view', { 
-        name: key.userData.itemData?.name || 'Golden Key' 
+        name: key.userData.itemData?.name || 'Key' 
       });
     }
   }
   
-  // Show door info window
   showDoorInfo(door, hint) {
     if (this.windows.door) {
       this.windows.door.style.display = 'block';
@@ -305,25 +299,24 @@ class InfoWindows {
         const doorAction = document.getElementById('door-action');
         
         if (doorHint) {
-          doorHint.innerHTML = `Hint: <span style="color: #87ceeb;">${hint}</span>`;
+          doorHint.innerHTML = `<span style="color: #87ceeb;">${hint}</span>`;
         }
         
         if (doorAction) {
           if (hint.includes('Press E')) {
-            doorAction.textContent = 'Press E to unlock';
+            doorAction.textContent = 'E to unlock';
             doorAction.style.color = '#00ff00';
           } else {
-            doorAction.textContent = 'Find the key';
+            doorAction.textContent = 'Find key';
             doorAction.style.color = '#90ee90';
           }
         }
       }
       
-      this.portfolioAnalytics.trackInteraction('door', 'view', { hint: hint || 'Requires a key' });
+      this.portfolioAnalytics.trackInteraction('door', 'view', { hint: hint || 'key' });
     }
   }
   
-  // Show paper info window
   showPaperInfo(paper) {
     if (this.windows.paper) {
       this.windows.paper.style.display = 'block';
@@ -332,7 +325,6 @@ class InfoWindows {
     }
   }
   
-  // Show tombstone info window
   showTombstoneInfo(tombstone) {
     if (this.windows.tombstone) {
       this.windows.tombstone.style.display = 'block';
@@ -341,7 +333,6 @@ class InfoWindows {
     }
   }
   
-  // Show book info window
   showBookInfo(book) {
     if (this.windows.book) {
       this.windows.book.style.display = 'block';
@@ -350,7 +341,6 @@ class InfoWindows {
     }
   }
   
-  // Show scroll info window
   showScrollInfo(scroll) {
     if (this.windows.scroll) {
       this.windows.scroll.style.display = 'block';
@@ -359,7 +349,6 @@ class InfoWindows {
     }
   }
   
-  // Show portal info window with distance
   showPortalInfo(portal, distance) {
     if (this.windows.portal) {
       this.windows.portal.style.display = 'block';
@@ -381,7 +370,7 @@ class InfoWindows {
         }
       }
       
-      // Track interaction
+      //Track interact
       const destination = portal.userData.type === 'gallery-frame' ? 
         portal.userData.artName : (portal.userData.destination || 'unknown');
       
@@ -392,7 +381,6 @@ class InfoWindows {
     }
   }
   
-  // Hide all info windows except the specified one
   hideAllExcept(exceptType) {
     Object.keys(this.windows).forEach(type => {
       if (type !== exceptType && this.windows[type]) {
@@ -401,7 +389,6 @@ class InfoWindows {
     });
   }
   
-  // Hide all info windows
   hideAllWindows() {
     Object.values(this.windows).forEach(window => {
       if (window) {
