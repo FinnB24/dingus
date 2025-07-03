@@ -568,11 +568,14 @@ class Overlays {
     this.paperOverlay.style.display = 'none';
     this.paperReadingMode = false;
     
+    // Always attempt to restore pointer lock if game is started
     if (window.gameStarted) {
-      const container = document.getElementById('three-canvas');
-      if (container) {
-        container.requestPointerLock();
-      }
+      setTimeout(() => {
+        const container = document.getElementById('three-canvas');
+        if (container && !document.pointerLockElement) {
+          container.requestPointerLock();
+        }
+      }, 100); // Small delay to ensure the DOM has updated
     }
     
     if (this.portfolioAnalytics) {
@@ -597,11 +600,14 @@ class Overlays {
     this.tombstoneOverlay.style.display = 'none';
     this.paperReadingMode = false;
     
+    // Always attempt to restore pointer lock if game is started
     if (window.gameStarted) {
-      const container = document.getElementById('three-canvas');
-      if (container) {
-        container.requestPointerLock();
-      }
+      setTimeout(() => {
+        const container = document.getElementById('three-canvas');
+        if (container && !document.pointerLockElement) {
+          container.requestPointerLock();
+        }
+      }, 100); // Small delay to ensure the DOM has updated
     }
     
     if (this.portfolioAnalytics) {
@@ -626,11 +632,14 @@ class Overlays {
     this.bookOverlay.style.display = 'none';
     this.paperReadingMode = false;
     
+    // Always attempt to restore pointer lock if game is started
     if (window.gameStarted) {
-      const container = document.getElementById('three-canvas');
-      if (container) {
-        container.requestPointerLock();
-      }
+      setTimeout(() => {
+        const container = document.getElementById('three-canvas');
+        if (container && !document.pointerLockElement) {
+          container.requestPointerLock();
+        }
+      }, 100); // Small delay to ensure the DOM has updated
     }
     
     if (this.portfolioAnalytics) {
@@ -658,11 +667,14 @@ class Overlays {
     this.scrollOverlay.style.display = 'none';
     this.paperReadingMode = false;
     
+    // Always attempt to restore pointer lock if game is started
     if (window.gameStarted) {
-      const container = document.getElementById('three-canvas');
-      if (container) {
-        container.requestPointerLock();
-      }
+      setTimeout(() => {
+        const container = document.getElementById('three-canvas');
+        if (container && !document.pointerLockElement) {
+          container.requestPointerLock();
+        }
+      }, 100); // Small delay to ensure the DOM has updated
     }
     
     if (this.portfolioAnalytics) {
