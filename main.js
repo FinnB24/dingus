@@ -1961,3 +1961,21 @@ class StaticErrorReporter {
 }
 const errorReporter = new StaticErrorReporter();
 window.errorReporter = errorReporter;
+
+// Add this to the end of main.js to handle overlay close events
+window.onOverlayClose = function() {
+  console.log('Overlay closed via button, requesting pointer lock');
+  if (gameStarted) {
+    const container = document.getElementById('three-canvas');
+    if (container) {
+      setTimeout(() => {
+        try {
+          container.focus();
+          container.requestPointerLock();
+        } catch (e) {
+          console.warn('Error requesting pointer lock:', e);
+        }
+      }, 50);
+    }
+  }
+};
