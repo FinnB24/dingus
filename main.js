@@ -8,16 +8,15 @@ import { InfoWindows } from './infoWindows.js';
 import { Overlays } from './overlays.js';
 import { portfolioAnalytics } from './analytics.js';
 
-// Initialize core systems
+//Init core systems
 const infoWindows = new InfoWindows(portfolioAnalytics);
 const overlays = new Overlays(portfolioAnalytics);
 
 let gameStarted = false;
-let currentScene = 'main'; // Track scene 
-let spectatorMode = false; // Track if in spectator mode
-let allModelsLoaded = false; // Track if all models are loaded
+let currentScene = 'main';
+let spectatorMode = false;
+let allModelsLoaded = false;
 
-// Loading manager for better performance
 const loadingManager = new THREE.LoadingManager();
 let totalModelsToLoad = 11; // portal.glb, church.glb, grave.glb, altar.glb, paper.glb, crow.glb, desk.glb, book1.glb, book2.glb, scroll.glb, desk2.glb
 let loadedModels = 0;
@@ -73,14 +72,11 @@ function closeScroll() {
   overlays.closeScroll();
 }
 
-// Hide all overlays
 function hideAllOverlays() {
   document.querySelectorAll('.overlay').forEach(overlay => {
     overlay.style.display = 'none';
   });
 }
-
-// ... rest of your main.js file ...
 
 // Home overlay after loading complete
 function showHomeOverlay() {
@@ -274,6 +270,7 @@ try {
         <div><span style="color: #ffff00;">Shift</span> - sprint</div>
         <div><span style="color: #ffff00;">ESC</span> - Menu</div>
         <div><span style="color: #ffff00;">E</span> - interact with stuff</div>
+        <div><span style="color: #ffff00;">I</span> - Inventory</div>
       `;
     }
   }
@@ -281,7 +278,7 @@ try {
   updateControlsDisplay();
   document.body.appendChild(controlsDisplay);
 
-  // Create portal info window
+  //portal info window
   const portalInfoWindow = document.createElement('div');
   portalInfoWindow.id = 'portal-info';
   portalInfoWindow.style.cssText = `
@@ -312,7 +309,7 @@ try {
   `;
   document.body.appendChild(portalInfoWindow);
 
-  // Create paper info window
+  //paper info window
   const paperInfoWindow = document.createElement('div');
   paperInfoWindow.id = 'paper-info';
   paperInfoWindow.style.cssText = `
@@ -343,7 +340,7 @@ try {
   `;
   document.body.appendChild(paperInfoWindow);
 
-  // Create tombstone info window
+  //tombstone info window
   const tombstoneInfoWindow = document.createElement('div');
   tombstoneInfoWindow.id = 'tombstone-info';
   tombstoneInfoWindow.style.cssText = `
@@ -374,7 +371,7 @@ try {
   `;
   document.body.appendChild(tombstoneInfoWindow);
 
-  // Create book info window
+  //book info window
   const bookInfoWindow = document.createElement('div');
   bookInfoWindow.id = 'book-info';
   bookInfoWindow.style.cssText = `
@@ -405,7 +402,7 @@ try {
   `;
   document.body.appendChild(bookInfoWindow);
 
-  // Create scroll info window
+  //scroll info window
   const scrollInfoWindow = document.createElement('div');
   scrollInfoWindow.id = 'scroll-info';
   scrollInfoWindow.style.cssText = `
@@ -436,8 +433,7 @@ try {
   `;
   document.body.appendChild(scrollInfoWindow);
 
-  
-  //main scenee =======================================
+//main scenee =======================================
   
   // sky 
   const skyGeo = new THREE.SphereGeometry(60, 16, 16); //rreduced segments
@@ -457,7 +453,7 @@ try {
   //config
   const dayNightConfig = {
     speedMultiplier: 360, //Real time 60 for fast cycle
-    transitionDuration: 0.3, // smooth transitions (0-1)
+    transitionDuration: 0.3, // smooth transitions 0-1
     
     //Time periods
     sunrise: 6,
@@ -726,8 +722,7 @@ try {
     console.error('failed to initialize World Builder:', error);
   }
 
-
-  // Initialize Inventory System
+  // Init  Inventory System
 let inventorySystem;
 try {
   inventorySystem = new InventorySystem(scene, camera, portfolioAnalytics);
@@ -736,7 +731,7 @@ try {
   console.error('Failed to initialize Inventory System:', error);
 }
 
-// Initialize ModelLoader
+// Init ModelLoader
 let modelLoader;
 try {
   modelLoader = new ModelLoader(scene, loadingManager, worldBuilder);
@@ -764,7 +759,7 @@ try {
 
 
 
-  // 3d galleyy scene=======================================
+// 3d galleyy scene=======================================
   
   //sky
   const gallerySky = new THREE.Mesh(skyGeo.clone(), new THREE.MeshBasicMaterial({ color:0x2a1810, side:THREE.BackSide }));
@@ -896,7 +891,7 @@ try {
     interactiveAreas.push(interactiveArea);
   });
 
-  // modell viewer =======================================
+// modell viewer =======================================
   
   const sharedGeometries = {
     cube: new THREE.BoxGeometry(4, 4, 4),
@@ -980,7 +975,7 @@ try {
   const collisionBoxes = [];
 
 
-  //colision boxes =======================================
+//colision boxes =======================================
   // blue wirefram
   const randomCollisionBox = new THREE.Mesh(
     new THREE.BoxGeometry(3, 2, 1.5),
@@ -1012,7 +1007,7 @@ try {
   collisionBoxes.push(cylinderCollisionBox);
 
 
-  //model load==================================
+  //model load============================
   
   //optimized loaders
   const loader = new GLTFLoader(loadingManager);
@@ -1119,7 +1114,7 @@ try {
     const key = e.key.toLowerCase();
     keys[key] = true;
     
-    // Handle Q key press immediately for spectator mode return
+    //Q key press immediately for spectator mode return
     if (key === 'q' && spectatorMode && currentScene.startsWith('model-')) {
       returnToGallery();
       console.log('Q key pressed - returning to gallery');
@@ -1242,7 +1237,7 @@ function checkPortalView() {
   cameraDirection.applyQuaternion(camera.quaternion);
   raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
 
-  // Get all interactive meshes
+  // Get interactive meshes
   let allMeshes = {
     portalMeshes: [],
     paperMeshes: [],
@@ -1254,7 +1249,7 @@ function checkPortalView() {
   };
   
   if (currentScene === 'main') {
-    // Get portal meshes
+    //  portal meshes
     const portalModels = modelLoader.getPortalModels();
     portalModels.forEach(portalModel => {
       portalModel.traverse((child) => {
@@ -1265,7 +1260,7 @@ function checkPortalView() {
       });
     });
     
-    // Get paper meshes
+    //  paper meshes
     if (modelLoader.models.paper) {
       modelLoader.models.paper.traverse((child) => {
         if (child.isMesh) {
@@ -1275,7 +1270,7 @@ function checkPortalView() {
       });
     }
 
-    // Get tombstone meshes
+    //tombstone meshes
     if (modelLoader.models.grave) {
       modelLoader.models.grave.traverse((child) => {
         if (child.isMesh) {
@@ -1285,7 +1280,7 @@ function checkPortalView() {
       });
     }
 
-    // Get book meshes
+    //book
     if (modelLoader.models.book2) {
       modelLoader.models.book2.traverse((child) => {
         if (child.isMesh) {
@@ -1295,7 +1290,7 @@ function checkPortalView() {
       });
     }
 
-    // Get scroll meshes
+    // scroll meshes
     if (modelLoader.models.scroll) {
       modelLoader.models.scroll.traverse((child) => {
         if (child.isMesh) {
@@ -1305,7 +1300,7 @@ function checkPortalView() {
       });
     }
 
-    // Get key meshes
+    //  key meshes
     if (modelLoader.models.key) {
       modelLoader.models.key.traverse((child) => {
         if (child.isMesh) {
@@ -1315,7 +1310,7 @@ function checkPortalView() {
       });
     }
 
-    // Get door meshes
+    //  door meshes
     if (modelLoader.models.door) {
       modelLoader.models.door.traverse((child) => {
         if (child.isMesh) {
@@ -1325,7 +1320,7 @@ function checkPortalView() {
       });
     }
   } else if (currentScene === 'gallery') {
-    // Get return portal and gallery frames for gallery
+    // return portal and gallery frames for gallery
     const returnPortal = galleryScene.children.find(child => 
       child.userData && child.userData.type === 'return-portal'
     );
@@ -1338,7 +1333,7 @@ function checkPortalView() {
       });
     }
     
-    // Add interactive gallery frames
+    //interactive gallery frames
     allMeshes.portalMeshes.push(...interactiveAreas);
   }
 
@@ -1384,7 +1379,7 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
 
   if (targetDoor) {
     // Get hint if inventory system exists, otherwise use default hint
-    let hint = "Requires a golden key";
+    let hint = "can be unlocked";
     if (inventorySystem) {
       const inventoryHint = inventorySystem.getInteractionHint(targetDoor);
       if (inventoryHint) {
@@ -1421,7 +1416,7 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
     return;
   }
 
-  // 4. Check for scroll
+  // 4. scroll
   const scrollIntersects = raycaster.intersectObjects(allMeshes.scrollMeshes);
   let targetScroll = null;
   let scrollDistance = Infinity;
@@ -1445,7 +1440,7 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
     return; 
   }
 
-  // 5. Check for book
+  // 5.book
   const bookIntersects = raycaster.intersectObjects(allMeshes.bookMeshes);
   let targetBook = null;
   let bookDistance = Infinity;
@@ -1468,7 +1463,7 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
     return;
   }
 
-  // 6. Check for tombstone
+  // 6.tombstone
   const tombstoneIntersects = raycaster.intersectObjects(allMeshes.tombstoneMeshes);
   let targetTombstone = null;
   let tombstoneDistance = Infinity;
@@ -1490,7 +1485,7 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
     return;
   }
 
-  // 7. Check for portal
+  // 7.portal
   const portalIntersects = raycaster.intersectObjects(allMeshes.portalMeshes);
   let targetPortal = null;
   let portalDistance = Infinity;
@@ -1721,22 +1716,19 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
   if (window.currentKeyInView && inventorySystem) {
     const keyData = window.currentKeyInView.userData.itemData;
     if (inventorySystem.addItem(keyData)) {
-      // Remove the key from the scene
+      // Remove the key from scene
       scene.remove(window.currentKeyInView);
       
-      // Hide the key info window immediately
+      // Hide key info window immediately
       if (infoWindows && infoWindows.windows.key) {
         infoWindows.windows.key.style.display = 'none';
       }
       
-      // Clear the reference to avoid phantom detection
+      // Clear reference cuz phantom detection
       window.currentKeyInView = null;
-      
-      // Remove any temporary key info elements that might exist
       document.querySelectorAll('#key-info-temp').forEach(el => el.remove());
     }
   }
-  // Door interaction and other interactions remain the same...
   else if (window.currentDoorInView && inventorySystem) {
     if (inventorySystem.useItemOn(window.currentDoorInView)) {
       document.querySelectorAll('#door-info-temp').forEach(el => el.remove());
@@ -1753,7 +1745,7 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
         overlays.openTombstone();
       } else if (currentPortalInView) {
         if (currentScene === 'main' && currentPortalInView.userData.teleport) {
-          // Switch to gallery
+          //Switch  gallery
           switchToGallery();
           portalInfoWindow.style.display = 'none';
           currentPortalInView = null;
@@ -1817,20 +1809,21 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
 
   // Pointer lock exit 
   document.addEventListener('pointerlockchange', () => {
-    if (!document.pointerLockElement && gameStarted && !overlays.isPaperReadingMode()) {
-      // Show home overlay when exiting pointer lock
-      openOverlay('home');
-      gameStarted = false;
-      portalInfoWindow.style.display = 'none';
-      paperInfoWindow.style.display = 'none';
-      tombstoneInfoWindow.style.display = 'none';
-      bookInfoWindow.style.display = 'none';
-      scrollInfoWindow.style.display = 'none';
-    }
-    updateUIVisibility();
-  });
+  //on't show home overlay if inventory is open
+  if (!document.pointerLockElement && gameStarted && !overlays.isPaperReadingMode() && !(inventorySystem && inventorySystem.isOpen)) {
+    //home overlay when exiting pointer lock
+    openOverlay('home');
+    gameStarted = false;
+    portalInfoWindow.style.display = 'none';
+    paperInfoWindow.style.display = 'none';
+    tombstoneInfoWindow.style.display = 'none';
+    bookInfoWindow.style.display = 'none';
+    scrollInfoWindow.style.display = 'none';
+  }
+  updateUIVisibility();
+});
 
-  // ESC key
+  //ESC
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && gameStarted && document.pointerLockElement && !overlays.isPaperReadingMode()) {
       document.exitPointerLock();
@@ -1851,7 +1844,6 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
   updateUIVisibility();
   updateDayNightCycle();
   
-  // Model animation updates (including crow) are now handled by modelLoader
   modelLoader.update(dt);
   
   if(gameStarted && !document.getElementById('overlay-home').classList.contains('visible') && !overlays.isPaperReadingMode()) {
@@ -1891,7 +1883,7 @@ window.debugWorldBuilder = function() {
   }
 };
 
-// Error Handling
+// Error Hand
 class StaticErrorReporter {
   constructor() {
     this.errors = JSON.parse(localStorage.getItem('portfolio_errors') || '[]');
@@ -1962,7 +1954,7 @@ class StaticErrorReporter {
 const errorReporter = new StaticErrorReporter();
 window.errorReporter = errorReporter;
 
-// Add this to the end of main.js to handle overlay close events
+//overlay close
 window.onOverlayClose = function() {
   console.log('Overlay closed via button, requesting pointer lock');
   if (gameStarted) {
