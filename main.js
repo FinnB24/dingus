@@ -8,6 +8,7 @@ import { InfoWindows } from './infoWindows.js';
 import { Overlays } from './overlays.js';
 import { portfolioAnalytics } from './analytics.js';
 import { EagleVision } from '/EagleVision.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
 //Init core systems
 const infoWindows = new InfoWindows(portfolioAnalytics);
 const overlays = new Overlays(portfolioAnalytics);
@@ -708,6 +709,29 @@ try {
   floor.receiveShadow = true;
   scene.add(floor);
 
+  // MIRROR
+  const mirrorGeometry = new THREE.PlaneGeometry(2, 3); // width, height
+  const mirror = new Reflector(mirrorGeometry, {
+    clipBias: 0.003,
+    textureWidth: window.innerWidth * window.devicePixelRatio,
+    textureHeight: window.innerHeight * window.devicePixelRatio,
+    color: 0x889999
+  });
+  mirror.position.set(3, 1, -12);
+  mirror.rotation.y = 0;
+  scene.add(mirror);
+
+  const mirrorBackMaterial = new THREE.MeshPhongMaterial({
+  color: 0x222222,
+  side: THREE.FrontSide
+});
+const mirrorBack = new THREE.Mesh(mirrorGeometry, mirrorBackMaterial);
+mirrorBack.position.z = -0.001;
+mirrorBack.rotation.y = Math.PI;
+mirror.add(mirrorBack);
+
+
+
   //Initialize World Builder
   let worldBuilder;
   try {
@@ -968,13 +992,7 @@ try {
   characterBody.position.y = 1.1;
   characterGroup.add(characterBody);
 
-  const characterHead = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 12, 12),
-    new THREE.MeshPhongMaterial({ color: 0x6ce1ff, shininess: 60 })
-  );
-  characterHead.position.set(0, 1.9, 0);
-  characterHead.castShadow = true;
-  characterGroup.add(characterHead);
+  
 
   characterGroup.position.set(0, 0, 5);
   scene.add(characterGroup); // Character added to main scene initially
@@ -1119,12 +1137,12 @@ try {
   const keys = {};
 
   window.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    keys[key] = true;
-    if (key === 'v' && !eagleVision?.isActive && gameStarted && !overlays.isPaperReadingMode() && 
+  const key = e.key.toLowerCase();
+  keys[key] = true;
+  if (key === 'v' && !eagleVision?.isActive && gameStarted && !overlays.isPaperReadingMode() && 
     !(inventorySystem && inventorySystem.isOpen) && !spectatorMode) {
-  eagleVision?.activate(currentScene);
-}
+    eagleVision?.activate(currentScene);
+  }
     //Q key press immediately for spectator mode return
     if (key === 'q' && spectatorMode && currentScene.startsWith('model-')) {
       returnToGallery();
