@@ -1905,9 +1905,9 @@ if (window.currentKeyInView && inventorySystem) {
   requestAnimationFrame(animate);
 }
 
-  animate();
+    animate();
 
-} catch (error) {
+} catch (error) {  // Add this closing brace and catch block
   console.error('Fatal error in initialization:', error);
   document.body.innerHTML = `
     <div style="padding:20px;color:white;background:rgba(0,0,0,0.8)">
