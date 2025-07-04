@@ -266,23 +266,103 @@ loadKeyModel(inventorySystem) {
         
         this.models.key.position.set(-10, 3, 5);
         this.models.key.rotation.set(0, Math.PI/4, 0);
+        
+        // Store original position for hover animation
+        const originalY = this.models.key.position.y;
+        
+        // Animation data attached directly to the key model
+        this.models.key.userData = {
+          type: 'key',
+          interactive: true,
+          collectible: true,
+          name: 'Key',
+          animation: {
+            originalY: originalY,
+            time: 0,
+            speed: 0.6,
+            amplitude: 0.2,
+            rotationSpeed: 0.5 // Rotation speed in radians per second
+          }
+        };
+        
         const itemData = {
           name: 'Key',
           description: 'can unlock something',
           id: 'golden_key'
         };
         
-        this.models.key.userData = {
-          type: 'key',
-          interactive: true,
-          collectible: true,
-          name: 'Key',
-          itemData: itemData
-        };
+        this.models.key.userData.itemData = itemData;
         
         if (inventorySystem) {
           inventorySystem.registerCollectibleItem(this.models.key, itemData);
         }
+        
+        // Create particle system for smoke effect
+        const particleCount = 20;
+        const particles = new THREE.BufferGeometry();
+        
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        const lifetimes = new Float32Array(particleCount);
+        
+        const color = new THREE.Color(0x88ccff);
+        
+        for (let i = 0; i < particleCount; i++) {
+          // Random position around key
+          positions[i * 3] = (Math.random() - 0.5) * 0.2;
+          positions[i * 3 + 1] = (Math.random() - 0.5) * 0.2;
+          positions[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
+          
+          // Particle color with slight variations
+          colors[i * 3] = color.r + (Math.random() - 0.5) * 0.1;
+          colors[i * 3 + 1] = color.g + (Math.random() - 0.5) * 0.1;
+          colors[i * 3 + 2] = color.b + (Math.random() - 0.5) * 0.1;
+          
+          // Random sizes
+          sizes[i] = Math.random() * 0.05 + 0.02;
+          
+          // Random lifetime offset for continuous emission
+          lifetimes[i] = Math.random();
+        }
+        
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        particles.setAttribute('lifetime', new THREE.BufferAttribute(lifetimes, 1));
+        
+        // Load smoke texture
+        const textureLoader = new THREE.TextureLoader();
+        const smokeTexture = textureLoader.load('https://threejs.org/examples/textures/sprites/disc.png', function() {
+          console.log('Smoke texture loaded');
+        });
+        
+        const particleMaterial = new THREE.PointsMaterial({
+          size: 0.1,
+          map: smokeTexture,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          transparent: true,
+          vertexColors: true,
+          opacity: 0.7
+        });
+        
+        const particleSystem = new THREE.Points(particles, particleMaterial);
+        particleSystem.sortParticles = true;
+        particleSystem.position.copy(this.models.key.position);
+        
+        particleSystem.userData = {
+          particles: particles,
+          lifetimes: lifetimes,
+          positions: positions,
+          keyReference: this.models.key  // Reference to follow the key
+        };
+        
+        // Add particle system directly to scene
+        this.scene.add(particleSystem);
+        
+        // Store reference to particles
+        this.models.keyParticles = particleSystem;
         
         this.scene.add(this.models.key);
         this.registerModelWithWorldBuilder('key', gltf);
@@ -301,6 +381,7 @@ loadKeyModel(inventorySystem) {
     );
   });
 }
+
 
 loadDoorModel(inventorySystem) {
   return new Promise((resolve) => {
@@ -708,10 +789,68 @@ loadDoorModel(inventorySystem) {
   }
   
   update(dt) {
-    if (this.mixers.crow) {
-      this.mixers.crow.update(dt);
+  if (this.mixers.crow) {
+    this.mixers.crow.update(dt);
+  }
+  
+  // Update key hover and spin animation
+  if (this.models.key && this.models.key.parent) { // Check if key exists and is in the scene
+    const keyModel = this.models.key;
+    const animation = keyModel.userData.animation;
+    
+    if (animation) {
+      // Hover animation
+      animation.time += dt * animation.speed;
+      const newY = animation.originalY + Math.sin(animation.time) * animation.amplitude;
+      keyModel.position.y = newY;
+      
+      // Spin animation
+      keyModel.rotation.y += dt * animation.rotationSpeed;
     }
   }
+  
+  // Update key particles if they exist
+  if (this.models.keyParticles) {
+    const particles = this.models.keyParticles;
+    const keyRef = particles.userData.keyReference;
+    
+    // Only update particles if key still exists in scene
+    if (keyRef && keyRef.parent) {
+      // Update particle system position to follow key
+      particles.position.copy(keyRef.position);
+      
+      const positionArray = particles.userData.positions;
+      const lifetimeArray = particles.userData.lifetimes;
+      const particleCount = lifetimeArray.length;
+      
+      for (let i = 0; i < particleCount; i++) {
+        // Update lifetime
+        lifetimeArray[i] += dt * 0.5;
+        if (lifetimeArray[i] > 1.0) {
+          lifetimeArray[i] = 0.0;
+          
+          // Reset position when particle restarts
+          positionArray[i * 3] = (Math.random() - 0.5) * 0.2;
+          positionArray[i * 3 + 1] = (Math.random() - 0.5) * 0.2; 
+          positionArray[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
+        }
+        
+        // Move particles upward
+        positionArray[i * 3 + 1] += dt * 0.3;
+        
+        // Add some wiggle
+        positionArray[i * 3] += (Math.random() - 0.5) * dt * 0.1;
+        positionArray[i * 3 + 2] += (Math.random() - 0.5) * dt * 0.1;
+      }
+      
+      particles.geometry.attributes.position.needsUpdate = true;
+    } else {
+      // Remove particle system if key is gone
+      this.scene.remove(particles);
+      this.models.keyParticles = null;
+    }
+  }
+}
   
   getPortalModels() {
     return this.models.portal;
