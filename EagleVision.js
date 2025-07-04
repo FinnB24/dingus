@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+// Batch size for highlighting per frame to avoid lag
+const HIGHLIGHT_BATCH_SIZE = 5;
+
 class EagleVision {
   constructor(scene, galleryScene, renderer, modelLoader, portfolioAnalytics) {
     this.scene = scene;
@@ -17,7 +20,11 @@ class EagleVision {
     this.overlay = null;
     this.originalMaterials = new Map();
     this.highlightedObjects = [];
-    
+    this._highlightQueue = [];
+    this._isHighlighting = false;
+    this.currentScene = null;
+    this.glowMaterial = null; // Shared material if you want to use one
+
     this.init();
   }
   
@@ -81,6 +88,7 @@ class EagleVision {
     }, 10);
   }
   
+  // Batch highlighting to avoid lag
   highlightInteractiveObjects() {
     const objectsToHighlight = [];
     
@@ -111,18 +119,36 @@ class EagleVision {
         }
       });
     }
-    
-    // Apply green glow to objects
-    objectsToHighlight.forEach(obj => {
-      if (obj) {
-        this.addGreenGlow(obj);
-      }
-    });
+
+    // Clear old highlights before adding new ones
+    this.removeHighlights();
+
+    // Prepare queue for batch processing
+    this._highlightQueue = objectsToHighlight.slice();
+    this._isHighlighting = true;
+    this._processHighlightBatch();
   }
-  
+
+  // Process a few highlight objects per frame
+  _processHighlightBatch() {
+    let count = 0;
+    while (this._highlightQueue.length && count < HIGHLIGHT_BATCH_SIZE) {
+      const obj = this._highlightQueue.shift();
+      if (obj) this.addGreenGlow(obj);
+      count++;
+    }
+    if (this._highlightQueue.length) {
+      requestAnimationFrame(() => this._processHighlightBatch());
+    } else {
+      this._isHighlighting = false;
+    }
+  }
+
   addGreenGlow(object) {
+  let foundMesh = false;
   object.traverse((child) => {
-    if (child.isMesh) {
+    if (child.isMesh && !foundMesh) {
+      foundMesh = true;
       // Store original material
       if (!this.originalMaterials.has(child)) {
         this.originalMaterials.set(child, {
@@ -132,38 +158,32 @@ class EagleVision {
           depthWrite: child.material.depthWrite
         });
       }
-      
-      // Create glowing green material with X-ray properties
+      // Set white glow
       const glowMaterial = child.material.clone();
-      glowMaterial.emissive = new THREE.Color(0x00ff00);
+      glowMaterial.emissive = new THREE.Color(0xffffff); // white, not green
       glowMaterial.emissiveIntensity = 0.5;
-      
-      // Make it render through walls
       glowMaterial.depthTest = false;
       glowMaterial.depthWrite = false;
       glowMaterial.transparent = true;
       glowMaterial.opacity = 0.8;
-      
-      // Ensure it renders on top
       child.renderOrder = 9999;
-      
-      // Add wireframe outline for extra visibility
+
+      // White wireframe
       const wireframeGeometry = new THREE.WireframeGeometry(child.geometry);
       const wireframeMaterial = new THREE.LineBasicMaterial({ 
-        color: 0x00ff00,
-        linewidth: 3,
+        color: 0xffffff, // white
+        linewidth: 2,
         transparent: true,
         opacity: 0.9,
-        depthTest: false,  // X-ray vision
+        depthTest: false,
         depthWrite: false
       });
       const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
       wireframe.name = 'eagle-vision-wireframe';
-      wireframe.renderOrder = 10000; // Even higher render order
-      
+      wireframe.renderOrder = 10000;
+
       child.material = glowMaterial;
       child.add(wireframe);
-      
       this.highlightedObjects.push(child);
     }
   });
@@ -214,7 +234,9 @@ class EagleVision {
     if (!this.isActive) return;
     
     this.isActive = false;
-    
+    this._highlightQueue = [];
+    this._isHighlighting = false;
+
     // Remove visual effects
     this.stopVisualEffects();
     this.removeHighlights();
@@ -227,6 +249,13 @@ class EagleVision {
     }
     
     console.log('Eagle Vision deactivated');
+  }
+
+  forceDeactivate() {
+    // Forcibly deactivate (used when switching scenes)
+    if (this.isActive) {
+      this.deactivate();
+    }
   }
   
   stopVisualEffects() {
@@ -243,25 +272,26 @@ class EagleVision {
   }
   
   removeHighlights() {
-  this.highlightedObjects.forEach(child => {
-    // Restore original material and properties
-    if (this.originalMaterials.has(child)) {
-      const original = this.originalMaterials.get(child);
-      child.material = original.material;
-      child.renderOrder = original.renderOrder;
-      child.material.depthTest = original.depthTest;
-      child.material.depthWrite = original.depthWrite;
-    }
+    this.highlightedObjects.forEach(child => {
+      // Restore original material and properties
+      if (this.originalMaterials.has(child)) {
+        const original = this.originalMaterials.get(child);
+        child.material = original.material;
+        child.renderOrder = original.renderOrder;
+        child.material.depthTest = original.depthTest;
+        child.material.depthWrite = original.depthWrite;
+      }
+      
+      // Remove wireframe
+      const wireframe = child.getObjectByName('eagle-vision-wireframe');
+      if (wireframe) {
+        child.remove(wireframe);
+      }
+    });
     
-    // Remove wireframe
-    const wireframe = child.getObjectByName('eagle-vision-wireframe');
-    if (wireframe) {
-      child.remove(wireframe);
-    }
-  });
-  
-  this.highlightedObjects = [];
-  this.originalMaterials.clear();
-}}
+    this.highlightedObjects = [];
+    this.originalMaterials.clear();
+  }
+}
 
 export { EagleVision };
