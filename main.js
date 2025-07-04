@@ -1713,22 +1713,25 @@ if (modelLoader.models.key && !modelLoader.models.key.parent) {
     }
     
  if (keys['e']) {
-  if (window.currentKeyInView && inventorySystem) {
-    const keyData = window.currentKeyInView.userData.itemData;
-    if (inventorySystem.addItem(keyData)) {
-      // Remove the key from scene
-      scene.remove(window.currentKeyInView);
-      
-      // Hide key info window immediately
-      if (infoWindows && infoWindows.windows.key) {
-        infoWindows.windows.key.style.display = 'none';
-      }
-      
-      // Clear reference cuz phantom detection
-      window.currentKeyInView = null;
-      document.querySelectorAll('#key-info-temp').forEach(el => el.remove());
+  // Replace the key interaction code in main.js with this:
+if (window.currentKeyInView && inventorySystem) {
+  const keyData = window.currentKeyInView.userData.itemData;
+  if (inventorySystem.addItem(keyData)) {
+    // Remove the key from scene
+    scene.remove(window.currentKeyInView);
+    
+    // Hide key info window immediately
+    if (infoWindows && infoWindows.windows.key) {
+      infoWindows.windows.key.style.display = 'none';
     }
+    
+    // Clear reference to prevent phantom detection
+    window.currentKeyInView = null;
+    document.querySelectorAll('#key-info-temp').forEach(el => el.remove());
+    
+    // The particles will be auto-removed in the next update cycle
   }
+}
   else if (window.currentDoorInView && inventorySystem) {
     if (inventorySystem.useItemOn(window.currentDoorInView)) {
       document.querySelectorAll('#door-info-temp').forEach(el => el.remove());
