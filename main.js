@@ -7,7 +7,7 @@ import { ModelLoader } from './modelLoader.js';
 import { InfoWindows } from './infoWindows.js';
 import { Overlays } from './overlays.js';
 import { portfolioAnalytics } from './analytics.js';
-
+import { EagleVision } from '/EagleVision.js';
 //Init core systems
 const infoWindows = new InfoWindows(portfolioAnalytics);
 const overlays = new Overlays(portfolioAnalytics);
@@ -16,6 +16,7 @@ let gameStarted = false;
 let currentScene = 'main';
 let spectatorMode = false;
 let allModelsLoaded = false;
+let eagleVision = null;
 
 const loadingManager = new THREE.LoadingManager();
 let totalModelsToLoad = 11; // portal.glb, church.glb, grave.glb, altar.glb, paper.glb, crow.glb, desk.glb, book1.glb, book2.glb, scroll.glb, desk2.glb
@@ -251,29 +252,30 @@ try {
   `;
 
   function updateControlsDisplay() {
-    if (spectatorMode) {
-      controlsDisplay.innerHTML = `
-        <div style="color: rgb(192, 195, 195); font-weight: bold; margin-bottom: 8px;">spect. mode</div>
-        <div><span style="color: #ffff00;">WASD</span> - Fly</div>
-        <div><span style="color: #ffff00;">Mouse</span> - Free</div>
-        <div><span style="color: #ffff00;">Space</span> - up</div>
-        <div><span style="color: #ffff00;">Shift</span> - down</div>
-        <div><span style="color: #ffff00;">Q</span> - Return to gallery</div>
-        <div><span style="color: #ffff00;">ESC</span> - Menu</div>
-      `;
-    } else {
-      controlsDisplay.innerHTML = `
-        <div style="color: rgb(192, 195, 195); font-weight: bold; margin-bottom: 8px;">controls</div>
-        <div><span style="color: #ffff00;">WASD</span> - Move</div>
-        <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
-        <div><span style="color: #ffff00;">Space</span> - jump</div>
-        <div><span style="color: #ffff00;">Shift</span> - sprint</div>
-        <div><span style="color: #ffff00;">ESC</span> - Menu</div>
-        <div><span style="color: #ffff00;">E</span> - interact with stuff</div>
-        <div><span style="color: #ffff00;">I</span> - Inventory</div>
-      `;
-    }
+  if (spectatorMode) {
+    controlsDisplay.innerHTML = `
+      <div style="color: rgb(192, 195, 195); font-weight: bold; margin-bottom: 8px;">spect. mode</div>
+      <div><span style="color: #ffff00;">WASD</span> - Fly</div>
+      <div><span style="color: #ffff00;">Mouse</span> - Free</div>
+      <div><span style="color: #ffff00;">Space</span> - up</div>
+      <div><span style="color: #ffff00;">Shift</span> - down</div>
+      <div><span style="color: #ffff00;">Q</span> - Return to gallery</div>
+      <div><span style="color: #ffff00;">ESC</span> - Menu</div>
+    `;
+  } else {
+    controlsDisplay.innerHTML = `
+      <div style="color: rgb(192, 195, 195); font-weight: bold; margin-bottom: 8px;">controls</div>
+      <div><span style="color: #ffff00;">WASD</span> - Move</div>
+      <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
+      <div><span style="color: #ffff00;">Space</span> - jump</div>
+      <div><span style="color: #ffff00;">Shift</span> - sprint</div>
+      <div><span style="color: #ffff00;">ESC</span> - Menu</div>
+      <div><span style="color: #ffff00;">E</span> - interact with stuff</div>
+      <div><span style="color: #ffff00;">I</span> - Inventory</div>
+      <div><span style="color: #ffff00;">V</span> - Eagle Vision</div>
+    `;
   }
+}
 
   updateControlsDisplay();
   document.body.appendChild(controlsDisplay);
@@ -756,6 +758,12 @@ try {
 
 
 
+try {
+  eagleVision = new EagleVision(scene, galleryScene, renderer, modelLoader, portfolioAnalytics);
+  console.log('Eagle Vision system initialized');
+} catch (error) {
+  console.error('Failed to initialize Eagle Vision:', error);
+}
 
 
 
@@ -1113,7 +1121,10 @@ try {
   window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
     keys[key] = true;
-    
+    if (key === 'v' && !eagleVision?.isActive && gameStarted && !overlays.isPaperReadingMode() && 
+    !(inventorySystem && inventorySystem.isOpen) && !spectatorMode) {
+  eagleVision?.activate(currentScene);
+}
     //Q key press immediately for spectator mode return
     if (key === 'q' && spectatorMode && currentScene.startsWith('model-')) {
       returnToGallery();
@@ -1152,7 +1163,9 @@ try {
 
   // Scene switching
   function switchToGallery() {
-    
+      if (eagleVision) {
+    eagleVision.forceDeactivate();
+  }
     currentScene = 'gallery';
     activeScene = galleryScene;
     spectatorMode = false;
@@ -1173,7 +1186,9 @@ try {
     currentScene = 'main';
     activeScene = scene;
     spectatorMode = false;
-    
+    if (eagleVision) {
+    eagleVision.forceDeactivate();
+  }
     // character back to main 
     galleryScene.remove(characterGroup);
     scene.add(characterGroup);
@@ -1186,7 +1201,10 @@ try {
   }
 
   function switchToModelViewer(artIndex) {
-    
+    if (eagleVision) {
+    eagleVision.forceDeactivate();
+  }
+  
     spectatorMode = true;
     
     const sceneMap = {
@@ -1215,6 +1233,9 @@ try {
   }
 
   function returnToGallery() {
+    if (eagleVision) {
+    eagleVision.forceDeactivate();
+  }
     currentScene = 'gallery';
     activeScene = galleryScene;
     spectatorMode = false;
@@ -1843,7 +1864,9 @@ if (window.currentKeyInView && inventorySystem) {
   function animate() {
   let now = performance.now(), dt = (now-lastTime)/1000;
   lastTime = now;
-  
+  if (eagleVision) {
+  eagleVision.update();
+}
   updateUIVisibility();
   updateDayNightCycle();
   
