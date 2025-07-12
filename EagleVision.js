@@ -15,8 +15,14 @@ class EagleVision {
     this.startTime = 0;
     this.duration = 3000;
     
-    this.windowSize = { width: 300, height: 300 };
-    
+
+  const isMobile = window.innerWidth <= 768 || window.innerHeight <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+if (isMobile) {
+  this.windowSize = { width: 400, height: 250 };
+} else {
+  this.windowSize = { width: 500, height: 400 };
+}
     this.visionWindow = null;
     this.windowFrame = null;
     this.originalMaterials = new Map();
