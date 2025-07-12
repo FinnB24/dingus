@@ -36,75 +36,73 @@ class CharacterSystem {
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
     this.loader.setDRACOLoader(dracoLoader);
-    
     this.characterGroup.position.set(0, 0, 5);
     this.scene.add(this.characterGroup);
   }
   
   async loadCharacter() {
-    try {
-      const baseCharacter = await this.loadModelWithFallback('./characters/SKM_Manny.glb');
+  try {
+    console.log('Attempting to load Manny character...');
+    const baseCharacter = await this.loadModelWithFallback('./characters/SKM_Manny.glb');
+    
+    if (baseCharacter) {
+      console.log('Base character loaded!');
+      this.character = baseCharacter.scene;
+      this.character.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
       
-      if (baseCharacter) {
-        this.character = baseCharacter.scene;
-        
-        this.character.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-        
-        const bbox = new THREE.Box3().setFromObject(this.character);
-        const size = bbox.getSize(new THREE.Vector3());
+      const bbox = new THREE.Box3().setFromObject(this.character);
+      const size = bbox.getSize(new THREE.Vector3());
 
-        if (size.y < 0.5) {
-          this.character.scale.set(100, 100, 100);
-        } else if (size.y > 10) {
-          this.character.scale.set(0.01, 0.01, 0.01);
-        } else {
-          this.character.scale.set(1, 1, 1);
-        }
-        
-        this.character.position.set(0, 0, 0);
-        this.character.rotation.y = Math.PI;
-        this.characterGroup.add(this.character);
-        
-        this.mixer = new THREE.AnimationMixer(this.character);
-        
-        await this.loadAvailableAnimations();
-        
-        this.playAnimation('idle', 'default');
-        
-        this.usesFallback = false;
-        if (this.character) {
-          setTimeout(() => {
-            this.headBone = this.findHeadBone();
-          }, 100);
-        }
+      if (size.y < 0.5) {
+        this.character.scale.set(100, 100, 100);
+      } else if (size.y > 10) {
+        this.character.scale.set(0.01, 0.01, 0.01);
       } else {
-        throw new Error('Failed to load base character model');
+        this.character.scale.set(1, 1, 1);
       }
       
-      this.isLoaded = true;
+      this.character.position.set(0, 0, 0);
+      this.character.rotation.y = Math.PI;
+      this.characterGroup.add(this.character);
+      this.mixer = new THREE.AnimationMixer(this.character);
+      await this.loadAvailableAnimations();
+      this.playAnimation('idle', 'MM_Unarmed_Idle_Ready');
+      console.log('Character system ready with essential animations:', this.animations.size);
+      this.usesFallback = false;
+      setTimeout(() => {
+        this.headBone = this.findHeadBone();
+        if (this.headBone) {
+          console.log('Head bone found and ready for camera mounting');
+        }
+      }, 100);
       
-      if (this.portfolioAnalytics) {
-        this.portfolioAnalytics.trackInteraction('character', 'loaded', {
-          animationCount: this.animations.size,
-          usesFallback: this.usesFallback
-        });
-      }
-      
-    } catch (error) {
-      this.createFallbackCharacter();
+    } else {
+      throw new Error('Failed to load base character model');
     }
+    
+    this.isLoaded = true;
+    
+    if (this.portfolioAnalytics) {
+      this.portfolioAnalytics.trackInteraction('character', 'loaded', {
+        animationCount: this.animations.size,
+        usesFallback: this.usesFallback
+      });
+    }
+    
+  } catch (error) {
+    console.warn('Character loading failed, creating fallback:', error);
+    this.createFallbackCharacter();
   }
+}
 
   findHeadBone() {
     if (!this.character) return null;
-    
     let headBone = null;
-    
     this.character.traverse((child) => {
       if (child.isBone || child.isObject3D) {
         const name = child.name.toLowerCase();
@@ -121,7 +119,6 @@ class CharacterSystem {
     if (!headBone) {
       return this.character;
     }
-    
     return headBone;
   }
 
@@ -150,58 +147,128 @@ class CharacterSystem {
   }
   
   async loadAvailableAnimations() {
-    const animationFiles = [
-      './characters/idle/MM_Unarmed_Idle_Ready.glb',
-      './characters/idle/MM_Unarmed_IdleBreak_Fidget.glb',
-      './characters/idle/MM_Unarmed_IdleBreak_Scan.glb',
+  const essentialAnimations = [
+    './characters/idle/MM_Unarmed_Idle_Ready.glb',
+    './characters/walk/MM_Unarmed_Walk_Fwd.glb',
+    './characters/run/MM_Unarmed_Jog_Fwd.glb',
+    './characters/jump/MM_Jump.glb',
+    './characters/jump/MM_Fall_Loop.glb',
+    './characters/jump/MM_Land.glb'
+  ];
+  
+  const remainingAnimations = [
+    './characters/idle/MM_Unarmed_IdleBreak_Fidget.glb',
+    './characters/idle/MM_Unarmed_IdleBreak_Scan.glb',
+    './characters/idle/MM_Unarmed_Crouch_Idle.glb',
 
-      './characters/jump/MM_Jump.glb',
-      './characters/jump/MM_Fall_Loop.glb', 
-      './characters/jump/MM_Land.glb',
-      './characters/walk/MM_Unarmed_Walk_Fwd.glb',
-      './characters/walk/MM_Unarmed_Walk_Bwd.glb',
-      './characters/walk/MM_Unarmed_Walk_Left.glb',
-      './characters/walk/MM_Unarmed_Walk_Right.glb',
-      './characters/walk/MM_Unarmed_Walk_Fwd_Left.glb',
-      './characters/walk/MM_Unarmed_Walk_Fwd_Right.glb',
-      './characters/walk/MM_Unarmed_Walk_Bwd_Left.glb',
-      './characters/walk/MM_Unarmed_Walk_Bwd_Right.glb',
-      './characters/Run/MM_Unarmed_Jog_Fwd.glb',
-      './characters/Run/MM_Unarmed_Jog_Bwd.glb',
-      './characters/Run/MM_Unarmed_Jog_Left.glb',
-      './characters/Run/MM_Unarmed_Jog_Right.glb',
-      './characters/Run/MM_Unarmed_Jog_Fwd_Left.glb',
-      './characters/Run/MM_Unarmed_Jog_Fwd_Right.glb',
-      './characters/Run/MM_Unarmed_Jog_Bwd_left.glb',
-      './characters/Run/MM_Unarmed_Jog_Bwd_Right.glb',
-      './characters/idle/MM_Unarmed_Crouch_Idle.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Fwd.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Bwd.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Left.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Right.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Fwd_Left.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Fwd_Right.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Bwd_Left.glb',
-      './characters/crouch/MM_Unarmed_Crouch_Walk_Bwd_Right.glb',
-      './characters/crouch/MM_Unarmed_Crouch_TurnLeft_90.glb',
-      './characters/crouch/MM_Unarmed_Crouch_TurnRight_90.glb'
-    ];
+    './characters/walk/MM_Unarmed_Walk_Bwd.glb',
+    './characters/walk/MM_Unarmed_Walk_Left.glb',
+    './characters/walk/MM_Unarmed_Walk_Right.glb',
+    './characters/walk/MM_Unarmed_Walk_Fwd_Left.glb',
+    './characters/walk/MM_Unarmed_Walk_Fwd_Right.glb',
+    './characters/walk/MM_Unarmed_Walk_Bwd_Left.glb',
+    './characters/walk/MM_Unarmed_Walk_Bwd_Right.glb',
     
-    let loadedCount = 0;
+    './characters/run/MM_Unarmed_Jog_Bwd.glb',
+    './characters/run/MM_Unarmed_Jog_Left.glb',
+    './characters/run/MM_Unarmed_Jog_Right.glb',
+    './characters/run/MM_Unarmed_Jog_Fwd_Left.glb',
+    './characters/run/MM_Unarmed_Jog_Fwd_Right.glb',
+    './characters/run/MM_Unarmed_Jog_Bwd_left.glb',
+    './characters/run/MM_Unarmed_Jog_Bwd_Right.glb',
     
-    for (let i = 0; i < animationFiles.length; i++) {
-      const file = animationFiles[i];
-      const gltf = await this.loadModelWithFallback(file);
-      
-      if (gltf && gltf.animations && gltf.animations.length > 0) {
-        const animationName = this.getAnimationName(file);
-        this.animations.set(animationName, gltf.animations[0]);
-        loadedCount++;
-      }
-      
-      this.loadingProgress = ((i + 1) / animationFiles.length) * 100;
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Fwd.glb',
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Bwd.glb',
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Left.glb',
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Right.glb',
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Fwd_Left.glb',
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Fwd_Right.glb',
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Bwd_Left.glb',
+    './characters/crouch/MM_Unarmed_Crouch_Walk_Bwd_Right.glb',
+    './characters/crouch/MM_Unarmed_Crouch_TurnLeft_90.glb',
+    './characters/crouch/MM_Unarmed_Crouch_TurnRight_90.glb'
+  ];
+  
+  console.log(`Loading ${essentialAnimations.length} essential animations first...`);
+  let loadedCount = 0;
+  
+  for (let i = 0; i < essentialAnimations.length; i++) {
+    const file = essentialAnimations[i];
+    const gltf = await this.loadModelWithFallback(file);
+    
+    if (gltf && gltf.animations && gltf.animations.length > 0) {
+      const animationName = this.getAnimationName(file);
+      this.animations.set(animationName, gltf.animations[0]);
+      loadedCount++;
+      console.log(`Loaded essential animation: ${animationName}`);
+    } else {
+      console.warn(`Failed to load essential animation: ${file}`);
+    }
+    
+    this.loadingProgress = ((i + 1) / (essentialAnimations.length + remainingAnimations.length)) * 100;
+    if (i < essentialAnimations.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
+  
+  console.log(`Essential animations loaded: ${loadedCount}/${essentialAnimations.length}`);
+  console.log('Available essential animations:', Array.from(this.animations.keys()));
+  setTimeout(() => {
+    this.loadRemainingAnimations(remainingAnimations, loadedCount);
+  }, 1000);
+  
+  return Promise.resolve();
+}
+
+async loadRemainingAnimations(remainingAnimations, initialLoadedCount) {
+  console.log(`Loading ${remainingAnimations.length} remaining animations in background`);
+  let loadedCount = initialLoadedCount;
+  
+  for (let i = 0; i < remainingAnimations.length; i++) {
+    const file = remainingAnimations[i];
+    const gltf = await this.loadModelWithFallback(file);
+    
+    if (gltf && gltf.animations && gltf.animations.length > 0) {
+      const animationName = this.getAnimationName(file);
+      this.animations.set(animationName, gltf.animations[0]);
+      loadedCount++;
+      console.log(`Background loaded: ${animationName} (${loadedCount} total)`);
+    } else {
+      console.warn(`Failed to background load: ${file}`);
+    }
+    
+    this.loadingProgress = ((loadedCount) / (remainingAnimations.length + 6)) * 100;
+    if (i < remainingAnimations.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
+  }
+  
+  console.log(`ANIMATIONS LOADED: ${loadedCount} total`);
+  console.log('Final animation list:', Array.from(this.animations.keys()).sort());
+  
+  const problemAnimations = [
+    'MM_Unarmed_Crouch_Walk_Fwd_Left',
+    'MM_Unarmed_Crouch_Walk_Fwd_Right', 
+    'MM_Unarmed_Walk_Bwd_Right',
+    'MM_Unarmed_Jog_Bwd_Right',
+    'MM_Unarmed_Crouch_Walk_Bwd_Right'
+  ];
+
+  console.log('CHECKING PROBLEM ANIMATIONS:');
+  problemAnimations.forEach(name => {
+    console.log(`  ${name}: ${this.animations.has(name) ? 'EXISTS' : 'MISSING'}`);
+  });
+   
+  console.log('JUMP ANIMATIONS CHECK:');
+  const jumpAnimations = ['MM_Jump', 'MM_Fall_Loop', 'MM_Land'];
+  jumpAnimations.forEach(name => {
+    console.log(`  ${name}: ${this.animations.has(name) ? 'EXISTS' : 'MISSING'}`);
+  });
+  
+  if (typeof this.onAllAnimationsLoaded === 'function') {
+    this.onAllAnimationsLoaded();
+  }
+}
   
   loadModel(url) {
     return new Promise((resolve, reject) => {
@@ -215,18 +282,15 @@ class CharacterSystem {
   
   createFallbackCharacter() {
     this.characterGroup.clear();
-    
     const geometry = new THREE.CapsuleGeometry(0.3, 1.2, 4, 8);
     const material = new THREE.MeshPhongMaterial({ 
       color: 0x00ff88,
       shininess: 60 
     });
     const fallbackCharacter = new THREE.Mesh(geometry, material);
-    
     fallbackCharacter.castShadow = true;
     fallbackCharacter.receiveShadow = true;
     fallbackCharacter.position.set(0, 1.1, 0);
-    
     this.characterGroup.add(fallbackCharacter);
     this.isLoaded = true;
     this.usesFallback = true;
@@ -235,7 +299,6 @@ class CharacterSystem {
   updateMovementState(newMovementState) {
     const previousMovementState = { ...this.movementState };
     this.movementState = { ...newMovementState };
-    
     if (!this.isLoaded) return;
     
     if (this.mixer && this.animations.size > 0) {
@@ -301,7 +364,6 @@ class CharacterSystem {
     if (moving) {
       return sprinting ? 'run' : 'walk';
     }
-    
     return 'idle';
   }
   
@@ -648,4 +710,4 @@ class CharacterSystem {
   }
 }
 
-export { CharacterSystem };
+export { CharacterSystem }; 
