@@ -7,19 +7,13 @@ class ModelLoader {
     this.scene = scene;
     this.loadingManager = loadingManager || new THREE.LoadingManager();
     this.worldBuilder = worldBuilder;
-    
-    // Setup loaders
     this.loader = new GLTFLoader(this.loadingManager);
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
     this.loader.setDRACOLoader(dracoLoader);
-    
-    // Cache for loaded models
     this.modelCache = new Map();
     this.loadedModels = 0;
     this.totalModelsToLoad = 0;
-    
-    // Model references
     this.models = {
       church: null,
       grave: null,
@@ -35,8 +29,6 @@ class ModelLoader {
       key: null,
       door: null
     };
-    
-    // Animation mixers
     this.mixers = {
       crow: null
     };
@@ -63,10 +55,7 @@ class ModelLoader {
     
     this.loader.load(url, 
       (gltf) => {
-        // Cache model
         this.modelCache.set(url, gltf);
-        
-        // Optimize meshes
         gltf.scene.traverse((node) => {
           if (node.isMesh) {
             node.castShadow = true;
@@ -116,7 +105,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -147,7 +135,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -163,10 +150,8 @@ class ModelLoader {
         (gltf) => {
           this.models.altar = gltf.scene;
           this.models.altar.scale.set(0.3, 0.3, 0.3);
-          
           const box = new THREE.Box3().setFromObject(this.models.altar);
           const center = box.getCenter(new THREE.Vector3());
-          
           this.models.altar.position.set(
             -15 - center.x * 0.3,
             0,
@@ -179,7 +164,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -211,7 +195,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -259,7 +242,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -275,7 +257,6 @@ class ModelLoader {
         (gltf) => {
           this.models.door = gltf.scene;
           this.models.door.scale.set(0.03, 0.03, 0.03);
-          
           this.models.door.position.set(15, 1, -10);
           this.models.door.rotation.set(0, 0, 0);
           
@@ -297,7 +278,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -322,8 +302,6 @@ class ModelLoader {
             interactive: true,
             name: 'Messenger Crow'
           };
-          
-          // Animation setup
           if (gltf.animations && gltf.animations.length > 0) {
             this.mixers.crow = new THREE.AnimationMixer(this.models.crow);
             
@@ -343,7 +321,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -368,7 +345,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -393,7 +369,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -418,7 +393,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -449,7 +423,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -481,7 +454,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -496,8 +468,6 @@ class ModelLoader {
         'portal.glb',
         (gltf) => {
           const originalPortal = gltf.scene;
-          
-          // Return portal for gallery
           const returnPortal = originalPortal.clone();
           returnPortal.scale.set(0.5, 0.5, 0.5);
           const box = new THREE.Box3().setFromObject(returnPortal);
@@ -508,21 +478,16 @@ class ModelLoader {
             15 - center.z * 0.5
           );
           returnPortal.rotation.set(0, Math.PI, 0);
-          
           returnPortal.userData = { 
             type: 'return-portal',
             destination: 'MAIN WORLD',
             position: new THREE.Vector3(0, 1, 15)
           };
           galleryScene.add(returnPortal);
-          
-          // Main scene portal
           const portalModel = originalPortal.clone();
           portalModel.scale.set(0.5, 0.5, 0.5);
-          
           const portalBox = new THREE.Box3().setFromObject(portalModel);
           const portalCenter = portalBox.getCenter(new THREE.Vector3());
-          
           portalModel.position.set(
             0 - portalCenter.x * 0.5,
             1,
@@ -539,8 +504,6 @@ class ModelLoader {
           };
           scene.add(portalModel);
           this.models.portal.push(portalModel);
-          
-          // Create floating text label
           const canvas = document.createElement('canvas');
           canvas.width = 128;
           canvas.height = 32;
@@ -566,7 +529,6 @@ class ModelLoader {
           this.updateLoadingProgress(resolve);
         },
         (xhr) => {
-          // Progress callback
         },
         (error) => {
           this.updateLoadingProgress(resolve);
@@ -576,47 +538,59 @@ class ModelLoader {
   }
   
   async loadAllModels(scene, galleryScene, inventorySystem) {
-    const promises = [
-      this.loadChurchModel(),
-      this.loadGraveModel(),
-      this.loadAltarModel(),
-      this.loadPaperModel(),
-      this.loadKeyModel(inventorySystem),
-      this.loadDoorModel(inventorySystem),
-      this.loadCrowModel(),
-      this.loadDeskModel(),
-      this.loadDesk2Model(),
-      this.loadBook1Model(),
-      this.loadBook2Model(),
-      this.loadScrollModel(),
-      this.loadPortalModels(scene, galleryScene)
-    ];
-    
-    return Promise.all(promises);
+  const criticalModels = [
+    () => this.loadKeyModel(inventorySystem),
+    () => this.loadDoorModel(inventorySystem)
+  ];
+  
+  const secondaryModels = [
+    () => this.loadChurchModel(),
+    () => this.loadGraveModel(),
+    () => this.loadAltarModel(),
+    () => this.loadPaperModel()
+  ];
+  
+  const tertiaryModels = [
+    () => this.loadCrowModel(),
+    () => this.loadDeskModel(),
+    () => this.loadDesk2Model(),
+    () => this.loadBook1Model(),
+    () => this.loadBook2Model(),
+    () => this.loadScrollModel(),
+    () => this.loadPortalModels(scene, galleryScene)
+  ];
+  
+  for (const loadFn of criticalModels) {
+    await loadFn();
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
   
+  for (const loadFn of secondaryModels) {
+    await loadFn();
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  Promise.all(tertiaryModels.map(fn => fn()));
+}
+  
   update(dt) {
-    // Update crow animation
     if (this.mixers.crow) {
       this.mixers.crow.update(dt);
     }
     
-    // Update key animation
     if (this.models.key && this.models.key.parent) {
       const keyModel = this.models.key;
       const animation = keyModel.userData.animation;
       
       if (animation) {
-        // Hovering animation
         animation.time += dt * animation.speed;
         const newY = animation.originalY + Math.sin(animation.time) * animation.amplitude;
         keyModel.position.y = newY;
-        // Spinning animation
         keyModel.rotation.y += dt * animation.rotationSpeed;
       }
     }
   }
-  
+
   getPortalModels() {
     return this.models.portal;
   }
