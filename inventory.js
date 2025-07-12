@@ -44,68 +44,143 @@ class InventorySystem {
     `;
     
     const inventoryContainer = document.createElement('div');
-    inventoryContainer.style.cssText = `
-      background: rgba(36, 41, 59, 0.95);
-      border: 2px solid rgb(194, 194, 194);
-      border-radius: 15px;
-      padding: 30px;
-      color: white;
-      font-family: 'Courier New', monospace;
-      text-align: center;
-      max-width: 500px;
-      position: relative;
-    `;
+
+const isMobile = window.innerWidth <= 768 || window.innerHeight <= 768 || 
+                 /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+if (isMobile) {
+  inventoryContainer.style.cssText = `
+    background: rgba(36, 41, 59, 0.95);
+    border: 2px solid rgb(194, 194, 194);
+    border-radius: 10px;
+    padding: 15px;
+    color: white;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    max-width: 320px;
+    width: 90vw;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  `;
+} else {
+  inventoryContainer.style.cssText = `
+    background: rgba(36, 41, 59, 0.95);
+    border: 2px solid rgb(194, 194, 194);
+    border-radius: 15px;
+    padding: 30px;
+    color: white;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    max-width: 500px;
+    position: relative;
+  `;
+}
     
     const title = document.createElement('h2');
-    title.textContent = 'INVENTORY';
-    title.style.cssText = `
-      margin: 0 0 20px 0;
-      color: rgb(194, 194, 194);
-      font-size: 24px;
-      letter-spacing: 2px;
-    `;
+title.textContent = 'INVENTORY';
+
+if (isMobile) {
+  title.style.cssText = `
+    margin: 0 0 15px 0;
+    color: rgb(194, 194, 194);
+    font-size: 12px;
+    letter-spacing: 1px;
+  `;
+} else {
+  title.style.cssText = `
+    margin: 0 0 20px 0;
+    color: rgb(194, 194, 194);
+    font-size: 24px;
+    letter-spacing: 2px;
+  `;
+}
     
     const instructions = document.createElement('div');
-    instructions.style.cssText = `
-      margin-bottom: 20px;
-      color: #888;
-      font-size: 12px;
-    `;
-    instructions.innerHTML = 'Click items to select • Hover for details';
+
+if (!isMobile) {
+  instructions.style.cssText = `
+    margin-bottom: 20px;
+    color: #888;
+    font-size: 12px;
+  `;
+  instructions.innerHTML = 'Click to select • Hover for details';
+} else {
+  instructions.style.display = 'none';
+}
     
-    const inventoryGrid = document.createElement('div');
-    inventoryGrid.id = 'inventory-grid';
-    inventoryGrid.style.cssText = `
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-    `;
+
+const inventoryGrid = document.createElement('div');
+inventoryGrid.id = 'inventory-grid';
+
+if (isMobile) {
+  inventoryGrid.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 15px;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: center;
+  `;
+} else {
+  inventoryGrid.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  `;
+}
     
     for (let i = 0; i < this.maxSlots; i++) {
       const slot = document.createElement('div');
       slot.className = 'inventory-slot';
       slot.dataset.slotIndex = i;
-      slot.style.cssText = `
-        width: 80px;
-        height: 80px;
-        border: 2px solid #666;
-        border-radius: 8px;
-        background: rgba(0, 0, 0, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 10px;
-        text-align: center;
-        padding: 5px;
-        box-sizing: border-box;
-      `;
+      if (isMobile) {
+  slot.style.cssText = `
+    width: 45px;
+    height: 45px;
+    border: 2px solid #666;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 8px;
+    text-align: center;
+    padding: 2px;
+    box-sizing: border-box;
+  `;
+} else {
+  slot.style.cssText = `
+    width: 80px;
+    height: 80px;
+    border: 2px solid #666;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 10px;
+    text-align: center;
+    padding: 5px;
+    box-sizing: border-box;
+  `;
+}
       
       slot.addEventListener('mouseenter', (e) => this.showItemTooltip(e, i));
       slot.addEventListener('mouseleave', () => this.hideItemTooltip());
@@ -122,21 +197,77 @@ class InventorySystem {
       margin-bottom: 15px;
       min-height: 20px;
     `;
-    this.selectedItemDisplay.textContent = 'Selected Item: None';
+    this.selectedItemDisplay.textContent = 'Selected: None';
     
     const closeInstr = document.createElement('div');
-    closeInstr.style.cssText = `
-      color: rgb(194, 194, 194);
-      font-size: 16px;
-      font-weight: bold;
-    `;
-    closeInstr.innerHTML = '<kbd style="background: #333; padding: 2px 6px; border-radius: 3px;">I</kbd> to close';
-    
-    inventoryContainer.appendChild(title);
-    inventoryContainer.appendChild(instructions);
-    inventoryContainer.appendChild(this.selectedItemDisplay);
-    inventoryContainer.appendChild(inventoryGrid);
-    inventoryContainer.appendChild(closeInstr);
+
+const closeButton = document.createElement('button');
+closeButton.id = 'inventory-close-btn';
+closeButton.innerHTML = '✕';
+closeButton.style.cssText = `
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  background: rgba(194, 194, 194, 0.2);
+  border: 2px solid rgb(194, 194, 194);
+  border-radius: 50%;
+  color: rgb(194, 194, 194);
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 4501;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+closeButton.addEventListener('mouseenter', () => {
+  closeButton.style.background = 'rgba(194, 194, 194, 0.3)';
+  closeButton.style.transform = 'scale(1.1)';
+  closeButton.style.color = '#fff';
+});
+
+closeButton.addEventListener('mouseleave', () => {
+  closeButton.style.background = 'rgba(194, 194, 194, 0.2)';
+  closeButton.style.transform = 'scale(1)';
+  closeButton.style.color = 'rgb(194, 194, 194)';
+});
+
+closeButton.addEventListener('click', () => {
+  this.closeInventory();
+});
+
+closeButton.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+  this.closeInventory();
+  
+  window.preventESCOverlay = true;
+  setTimeout(() => {
+    if (window.mobileControls && window.mobileControls.isMobileDevice()) {
+      window.gameStarted = true;
+      if (typeof window.updateGameStarted === 'function') {
+        window.updateGameStarted(true);
+      }
+    }
+    window.preventESCOverlay = false;
+  }, 500); 
+});
+
+inventoryContainer.appendChild(title);
+if (!isMobile) {
+  inventoryContainer.appendChild(instructions);
+}
+inventoryContainer.appendChild(this.selectedItemDisplay);
+inventoryContainer.appendChild(inventoryGrid);
+inventoryContainer.appendChild(closeButton);
+inventoryContainer.appendChild(this.selectedItemDisplay);
+inventoryContainer.appendChild(inventoryGrid);
+inventoryContainer.appendChild(closeButton);
     this.inventoryOverlay.appendChild(inventoryContainer);
     document.body.appendChild(this.inventoryOverlay);
     
@@ -164,8 +295,7 @@ class InventorySystem {
   }
   
   setupEventListeners() {
-  }
-  
+}
   toggleInventory() {
     this.isOpen = !this.isOpen;
     
@@ -189,11 +319,34 @@ class InventorySystem {
     this.portfolioAnalytics.trackInteraction('inventory', 'open');
   }
   
-  closeInventory() {
-    this.isOpen = false;
-    this.inventoryOverlay.style.display = 'none';
-    this.hideItemTooltip();
+closeInventory() {
+  this.isOpen = false;
+  this.inventoryOverlay.style.display = 'none';
+  this.hideItemTooltip();
+  
+  const isMobile = window.mobileControls && window.mobileControls.isMobileDevice();
+  
+  if (isMobile) {
+    console.log('Closing inventory on mobile - no pointer lock needed');
     
+    window.preventESCOverlay = true;
+    
+    if (typeof window.updateGameStarted === 'function') {
+      window.updateGameStarted(true);
+    } else {
+      window.gameStarted = true;
+    }
+    
+    setTimeout(() => {
+      if (typeof window.updateUIVisibility === 'function') {
+        window.updateUIVisibility();
+      }
+      setTimeout(() => {
+        window.preventESCOverlay = false;
+      }, 200);
+    }, 100);
+    
+  } else {
     if (document.getElementById('three-canvas')) {
       document.getElementById('three-canvas').requestPointerLock();
       
@@ -203,9 +356,10 @@ class InventorySystem {
         }
       }, 50);
     }
-    
-    this.portfolioAnalytics.trackInteraction('inventory', 'close');
   }
+  
+  this.portfolioAnalytics.trackInteraction('inventory', 'close');
+}
   
   updateInventoryDisplay() {
     const slots = document.querySelectorAll('.inventory-slot');
@@ -230,7 +384,7 @@ class InventorySystem {
     if (this.selectedItem) {
       this.selectedItemDisplay.textContent = `Selected Item: ${this.selectedItem.name}`;
     } else {
-      this.selectedItemDisplay.textContent = 'Selected Item: None';
+      this.selectedItemDisplay.textContent = 'Selected: None';
     }
   }
   
