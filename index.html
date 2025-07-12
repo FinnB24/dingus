@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  
   <meta charset="UTF-8" />
   <title>-_-</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,43 +21,76 @@
 <body>
   <div id="three-canvas"></div>
 
-  <div id="overlay-home" class="overlay visible">
-    <h1>imagine a more creative text here lol</h1>
-    <p>
-      <kbd>WASD oder Arrows</kbd> to move.<br>
-      controls in topRight corrner.<br>
-      <br> <br>
-      <br>Sidenote & Fix Stuff: <br>
-      <br>Day/night cycle sped up<br>
-      <br>pink/blue colision boxes um .glb weil walkign through rn <br>
-      <br>Ctrl+B Buil mode buggy controls <br>
-      <br>remap CtrlB Scale mode weil goofy conflict with moveS+mouseUp after placed model lol <br>
-      <br>overall ugly ass color choice und models/aussehen & actual showcase stuff<br>
-      <br>Gallery Frames rotation <br>
-      <br>Let Crow do its thing<br>
-      <br>initial lag wenn in gallery oder main sc..<br>
+<div id="overlay-home" class="overlay visible">
 
-      <br> <br>
-      <br>yes, the random desks are intentional, trust me<br>
-    </p>
-    <button onclick="closeOverlay('home')">ok</button>
+  <div>
+    <span>
+      <div> <span style="color: #ff9100; font-weight: bold;">
+        ᴵᶠ ᵒⁿ ᵃ ᴹᵒᵇᶦˡᵉ ᴰᵉᵛᶦᶜᵉ ⁻⁻ᵀᵘʳⁿ ᶦᵗ ʰᵒʳᶦᶻᵒⁿᵗᵃˡ ᵃⁿᵈ ʳᵉˡᵒᵃᵈ ᵖᵃᵍᵉ ᵒᵗʰᵉʳʷᶦˢᵉ ᵉᵛᵉʳʸᵗʰᶦⁿᵍ ʷᶦˡˡ ˡᵒᵒᵏ ᵏᶦⁿᵈᵃ ʷᵉᶦʳᵈ | ʸᵒᵘ ᶜᵃⁿ ˢᶜʳᵒˡˡ ᶦⁿ ʷᶦⁿᵈᵒʷˢ ˡᶦᵏᵉ ᵗʰᶦˢ ᵇᵗʷ</span>
+    </span>
   </div>
-  <div id="overlay-2d" class="overlay">
-    <button class="close" onclick="closeOverlay('2d')">&times;</button>
-    <h2>2D Art</h2>
+    
+     <div>
+      <span style="color: rgb(192, 195, 195)">
+        If this website is for whatever reason not working, find a "normal" version of this website
+        <a href="https://www.example.com" target="_blank" rel="noopener noreferrer">here</a>.
+      </span>
+    </div>
+  
+   <div class="overlay-content">
+    <div class="overlay-column">
+      <p>
+        To do: Spectator Mode for Mobile. Put some stuff in here in general lol. Markers more auffälliger. Fix infinite cam rotation on desktop
+        <br>
+        Yes, it might be very laggy <br>
+        <br>
+        imagine a more creative text here lol.<br>
+        Try Pressing J on Church<br>
+        <br>
+        Yes, the random desks are intentional, trust me<br>
+        <br>
+        Reminder to NOT remap crouching to C!
+        Why?. bc Keyinput detected in rows QAY WSX EDC RFV. C & D are in same row = Crouch + move left would not work bc C always overwrites D => would only crouch and not move Right. No keys in TGB Row yet => B is now Crouch. <br>
+      </p>
+    </div>
+    <div class="overlay-column pair">
+      <div class="overlay-column-inner">
+        <p>
+          <div style="color: rgb(192, 195, 195); margin-bottom: 3px;">On Desktop:</div>
+          <div><span style="color: #ffff00;">WASD</span> - Move</div>
+          <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
+          <div><span style="color: #ffff00;">Space</span> - Jump</div>
+          <div><span style="color: #ffff00;">Shift</span> - Sprint</div>
+          <br>
+          <div style="color: rgb(192, 195, 195); margin-bottom: 3px;">Keys:</div>
+          <div><span style="color: #ffff00;">I</span> - Inventory</div>
+          <div><span style="color: #ffff00;">E</span> - Interact</div>
+          <div><span style="color: #ffff00;">M</span> - Map</div>
+          <div><span style="color: #ffff00;">J</span> - Inspect ANY object (except Crow)</div>
+          <div><span style="color: #ffff00;">B</span> - Crouch</div>
+          <div><span style="color: #ffff00;">V</span> - Detect Interactables</div>
+          <div><span style="color: #ffff00;">ESC</span> - Show this window</div>
+        </p>
+      </div>
+      <div class="overlay-column-inner">
+        <p>
+          <div style="color: rgb(192, 195, 195); margin-bottom: 3px;">On Mobile:</div>
+          <div><span style="color: #ffff00;">Left Contr</span> - Move</div>
+          <div><span style="color: #ffff00;">Right Contr</span> - Look around</div>
+          <br>
+          <div style="color: rgb(192, 195, 195); margin-bottom: 3px;">Spectator Mode in Gallery:</div>
+          <div><span style="color: #ffff00;">WASD</span> - Fly</div>
+          <div><span style="color: #ffff00;">Mouse</span> - Look around</div>
+          <div><span style="color: #ffff00;">Space</span> - Up</div>
+          <div><span style="color: #ffff00;">Shift</span> - Down</div>
+          <div><span style="color: #ffff00;">Q</span> - Return to Gallery</div>
+        </p>
+      </div>
+    </div>
   </div>
-  <div id="overlay-3d" class="overlay">
-    <button class="close" onclick="closeOverlay('3d')">&times;</button>
-    <h2>3D Church Model</h2>
-  </div>
-  <div id="overlay-grave" class="overlay">
-    <button class="close" onclick="closeOverlay('grave')">&times;</button>
-    <h2>3D Grave Model</h2>
-  </div>
-  <div id="overlay-contact" class="overlay">
-    <button class="close" onclick="closeOverlay('contact')">&times;</button>
-    <h2>Contact:</h2>
-    <p>dont even think about that</p>
-  </div>
+  <button onclick="closeOverlay('home')"> ok cool </button>
+</div>
+
+
 </body>
 </html>
