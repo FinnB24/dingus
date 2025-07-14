@@ -2248,11 +2248,26 @@ function moveCharacter(dt) {
     } else if (currentTombstoneInView) {
       overlays.openTombstone();
     } else if (currentPortalInView) {
-      if (currentScene === 'main' && currentPortalInView.userData.teleport) {
-        switchToGallery();
-        infoWindows.hideAllWindows()
-        currentPortalInView = null;
-      } else if (currentScene === 'gallery') {
+  if (currentScene === 'main' && currentPortalInView.userData.teleport) {
+    // Check if it's a cross-repository portal
+    if (currentPortalInView.userData.externalUrl) {
+      // Get skin manager and add skin to URL
+      const skinManager = window.characterSystem?.skinManager;
+      if (skinManager) {
+        const urlWithSkin = skinManager.getPortalUrlWithSkin(currentPortalInView.userData.externalUrl);
+        console.log('Navigating to external world:', urlWithSkin);
+        window.location.href = urlWithSkin;
+      } else {
+        // Fallback without skin
+        window.location.href = currentPortalInView.userData.externalUrl;
+      }
+    } else {
+      // Same-repo gallery switching
+      switchToGallery();
+    }
+    infoWindows.hideAllWindows();
+    currentPortalInView = null;
+  } else if (currentScene === 'gallery') {
         if (currentPortalInView.userData.type === 'return-portal') {
           switchToMain();
           infoWindows.hideAllWindows()
