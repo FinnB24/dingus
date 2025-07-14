@@ -91,15 +91,12 @@ class ModelLoader {
         'church.glb',
         (gltf) => {
           this.models.church = gltf.scene;
-          this.models.church.scale.set(0.07, 0.07, 0.07);
+          this.models.church.scale.set(0.9, 0.9, 0.9);
           const box = new THREE.Box3().setFromObject(this.models.church);
           const center = box.getCenter(new THREE.Vector3());
-          this.models.church.position.set(
-            25 - center.x * 0.1,
-            0,
-            -4 - center.z * 0.1
+          this.models.church.position.set(0,0,-5
           );
-          this.models.church.rotation.set(0, 30, 0);
+          this.models.church.rotation.set(0, -2*Math.PI/4, 0);
           this.scene.add(this.models.church);
           this.registerModelWithWorldBuilder('church', gltf);
           this.updateLoadingProgress(resolve);
@@ -466,8 +463,10 @@ class ModelLoader {
     return new Promise((resolve) => {
       this.loadModelOptimized(
         'portal.glb',
+
         (gltf) => {
           const originalPortal = gltf.scene;
+
           const returnPortal = originalPortal.clone();
           returnPortal.scale.set(0.5, 0.5, 0.5);
           const box = new THREE.Box3().setFromObject(returnPortal);
@@ -484,6 +483,8 @@ class ModelLoader {
             position: new THREE.Vector3(0, 1, 15)
           };
           galleryScene.add(returnPortal);
+
+
           const portalModel = originalPortal.clone();
           portalModel.scale.set(0.5, 0.5, 0.5);
           const portalBox = new THREE.Box3().setFromObject(portalModel);
@@ -500,10 +501,13 @@ class ModelLoader {
             destination: '3d art maybe',
             position: new THREE.Vector3(0, 1, -12),
             teleport: true,
-            sceneTarget: 'gallery3D'
+            externalUrl: 'https://finnb24.github.io/space-hub/'
+//////////// FOR ACTUAL PORTAL USE, JUST PUT THIS HERE!!    externalUrl: 'https://www.example.com/'
           };
           scene.add(portalModel);
+
           this.models.portal.push(portalModel);
+
           const canvas = document.createElement('canvas');
           canvas.width = 128;
           canvas.height = 32;
